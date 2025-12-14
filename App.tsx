@@ -8,8 +8,11 @@ import HomePage from './screens/HomePage';
 import TradePage from './screens/TradePage';
 import MyPage from './screens/MyPage';
 
+// 定义标签类型
+type TabType = 'home' | 'trade' | 'my';
+
 export default function App() {
-  const [currentTab, setCurrentTab] = useState('trade');
+  const [currentTab, setCurrentTab] = useState<TabType>('trade');
 
   return (
     <View style={styles.container}>

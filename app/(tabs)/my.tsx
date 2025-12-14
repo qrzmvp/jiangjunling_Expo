@@ -1,0 +1,400 @@
+import React from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { UserInfo, Stats } from '../../types';
+
+const MyPage: React.FC = () => {
+  // 使用类型定义的数据
+  const userInfo: UserInfo = {
+    username: 'VGro6220',
+    accountId: '5886220',
+    verified: true,
+  };
+
+  const stats: Stats = {
+    subscriptions: 36,
+    following: 5,
+    friends: 16,
+    favorites: 99,
+  };
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.myHeader}>
+        <Ionicons name="arrow-back" size={24} color="#EAEBEF" />
+        <Text style={styles.myHeaderTitle}>个人中心</Text>
+        <View style={styles.myHeaderRight}>
+          <Ionicons name="chatbubble-outline" size={24} color="#EAEBEF" />
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>3</Text>
+          </View>
+        </View>
+      </View>
+
+      <ScrollView style={styles.myScrollView}>
+        {/* Profile Section */}
+        <View style={styles.profileSection}>
+          <View style={styles.profileInfo}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>V</Text>
+              </View>
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.userInfo}>
+              <Text style={styles.username}>VGro6220</Text>
+              <View style={styles.accountRow}>
+                <Text style={styles.accountId}>账号:5886220</Text>
+                <Ionicons name="copy-outline" size={16} color="#8A919E" style={{ marginLeft: 4 }} />
+              </View>
+            </View>
+          </View>
+          <View style={styles.qrCode}>
+            <Ionicons name="qr-code-outline" size={24} color="#8A919E" />
+            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+          </View>
+        </View>
+
+        {/* Stats Section */}
+        <View style={styles.statsCard}>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>36</Text>
+              <Text style={styles.statLabel}>订阅</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>5</Text>
+              <Text style={styles.statLabel}>关注</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>16</Text>
+              <Text style={styles.statLabel}>朋友</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>99+</Text>
+              <Text style={styles.statLabel}>收藏|足迹</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Promotion Banner */}
+        <View style={styles.promoBanner}>
+          <View>
+            <Text style={styles.promoTitle}>新人开户赢好礼</Text>
+            <Text style={styles.promoSubtitle}>行情卡、免佣卡等你来拿！</Text>
+          </View>
+          <Text style={styles.promoIcon}>🎁</Text>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <View style={styles.actionCard}>
+            <View style={[styles.actionIcon, { backgroundColor: '#4A90E2' }]}>
+              <Ionicons name="gift" size={24} color="#FFFFFF" />
+            </View>
+            <Text style={styles.actionTitle}>活动中心</Text>
+            <Text style={styles.actionSubtitle}>精彩活动等您参与</Text>
+          </View>
+          <View style={styles.actionCard}>
+            <View style={[styles.actionIcon, { backgroundColor: '#E5404A' }]}>
+              <Ionicons name="ticket" size={24} color="#FFFFFF" />
+            </View>
+            <Text style={styles.actionTitle}>邀请好友</Text>
+            <Text style={styles.actionSubtitle}>邀请越多奖励越多</Text>
+          </View>
+          <View style={styles.actionCard}>
+            <View style={[styles.actionIcon, { backgroundColor: '#F5A623' }]}>
+              <Ionicons name="wallet" size={24} color="#FFFFFF" />
+            </View>
+            <Text style={styles.actionTitle}>我的酱币</Text>
+            <Text style={styles.actionSubtitle}>用酱币兑换好礼</Text>
+          </View>
+        </View>
+
+        {/* Menu List 1 */}
+        <View style={styles.menuCard}>
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <Ionicons name="trending-up" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>高级行情</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <Ionicons name="pricetag" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>我的卡券</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Menu List 2 */}
+        <View style={styles.menuCard}>
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <Ionicons name="help-circle-outline" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>常见问题</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <Ionicons name="happy-outline" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>产品反馈</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <Ionicons name="call-outline" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>联系客服</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <Ionicons name="settings-outline" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>设置</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.myFooter}>
+          <Ionicons name="information-circle-outline" size={14} color="#8A919E" />
+          <Text style={styles.footerText}>中咨证券拥有香港证券全牌照</Text>
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#1E2026',
+    paddingTop: Platform.OS === 'web' ? 0 : 50,
+  },
+  myHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  myHeaderTitle: {
+    color: '#EAEBEF',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  myHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    backgroundColor: '#E5404A',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  myScrollView: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  profileSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  profileInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#4A90E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#F5A623',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#1E2026',
+  },
+  userInfo: {
+    justifyContent: 'center',
+  },
+  username: {
+    color: '#EAEBEF',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  accountId: {
+    color: '#8A919E',
+    fontSize: 13,
+  },
+  qrCode: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statsCard: {
+    backgroundColor: '#2C2E36',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    color: '#EAEBEF',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statLabel: {
+    color: '#8A919E',
+    fontSize: 12,
+  },
+  promoBanner: {
+    backgroundColor: '#3A2D1F',
+    padding: 16,
+    borderRadius: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  promoTitle: {
+    color: '#F5A623',
+    fontSize: 15,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  promoSubtitle: {
+    color: '#D4A574',
+    fontSize: 12,
+  },
+  promoIcon: {
+    fontSize: 48,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  actionCard: {
+    backgroundColor: '#2C2E36',
+    borderRadius: 12,
+    padding: 12,
+    width: '31%',
+    alignItems: 'center',
+  },
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionTitle: {
+    color: '#EAEBEF',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  actionSubtitle: {
+    color: '#8A919E',
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  menuCard: {
+    backgroundColor: '#2C2E36',
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  menuLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  menuText: {
+    color: '#EAEBEF',
+    fontSize: 15,
+    marginLeft: 12,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#40434D',
+    marginLeft: 54,
+  },
+  myFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  footerText: {
+    color: '#8A919E',
+    fontSize: 12,
+    marginLeft: 4,
+  },
+});
+
+export default MyPage;
