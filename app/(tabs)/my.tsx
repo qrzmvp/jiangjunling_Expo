@@ -21,14 +21,15 @@ const MyPage: React.FC = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.myHeader}>
-        <Ionicons name="arrow-back" size={24} color="#EAEBEF" />
+        <View style={{ width: 24 }} />
         <Text style={styles.myHeaderTitle}>个人中心</Text>
-        <View style={styles.myHeaderRight}>
+        <View style={{ width: 24 }} />
+        {/* <View style={styles.myHeaderRight}>
           <Ionicons name="chatbubble-outline" size={24} color="#EAEBEF" />
           <View style={styles.badge}>
             <Text style={styles.badgeText}>3</Text>
           </View>
-        </View>
+        </View> */}
       </View>
 
       <ScrollView style={styles.myScrollView}>
@@ -80,16 +81,16 @@ const MyPage: React.FC = () => {
         </View>
 
         {/* Promotion Banner */}
-        <View style={styles.promoBanner}>
+        {/* <View style={styles.promoBanner}>
           <View>
             <Text style={styles.promoTitle}>新人开户赢好礼</Text>
             <Text style={styles.promoSubtitle}>行情卡、免佣卡等你来拿！</Text>
           </View>
           <Text style={styles.promoIcon}>🎁</Text>
-        </View>
+        </View> */}
 
         {/* Quick Actions */}
-        <View style={styles.quickActions}>
+        {/* <View style={styles.quickActions}>
           <View style={styles.actionCard}>
             <View style={[styles.actionIcon, { backgroundColor: '#4A90E2' }]}>
               <Ionicons name="gift" size={24} color="#FFFFFF" />
@@ -111,7 +112,7 @@ const MyPage: React.FC = () => {
             <Text style={styles.actionTitle}>我的酱币</Text>
             <Text style={styles.actionSubtitle}>用酱币兑换好礼</Text>
           </View>
-        </View>
+        </View> */}
 
         {/* Menu List 1 */}
         <View style={styles.menuCard}>
@@ -168,10 +169,10 @@ const MyPage: React.FC = () => {
         </View>
 
         {/* Footer */}
-        <View style={styles.myFooter}>
+        {/* <View style={styles.myFooter}>
           <Ionicons name="information-circle-outline" size={14} color="#8A919E" />
           <Text style={styles.footerText}>中咨证券拥有香港证券全牌照</Text>
-        </View>
+        </View> */}
 
         <View style={{ height: 40 }} />
       </ScrollView>
