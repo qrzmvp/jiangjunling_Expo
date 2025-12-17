@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -13,6 +13,53 @@ const COLORS = {
   border: "#27272a",
   yellow: "#eab308", // yellow-500
   yellowText: "#facc15", // yellow-400
+};
+
+const NumberTicker = ({ value, style, duration = 1000 }: { value: string, style?: any, duration?: number }) => {
+  const [displayValue, setDisplayValue] = useState("0.00");
+  
+  useEffect(() => {
+    const isNegative = value.includes('-');
+    const isPositive = value.includes('+');
+    const cleanValue = value.replace(/,/g, '').replace(/[+\-]/g, '');
+    const targetValue = parseFloat(cleanValue);
+    
+    if (isNaN(targetValue)) {
+      setDisplayValue(value);
+      return;
+    }
+
+    const startTime = Date.now();
+    let animationFrameId: number;
+    
+    const animate = () => {
+      const now = Date.now();
+      const progress = Math.min((now - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 4); // Ease out quart
+      
+      const currentValue = targetValue * ease;
+      let formatted = currentValue.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      
+      if (isPositive) formatted = '+' + formatted;
+      if (isNegative) formatted = '-' + formatted;
+      
+      setDisplayValue(formatted);
+      
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(value);
+      }
+    };
+    
+    animationFrameId = requestAnimationFrame(animate);
+    
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [value, duration]);
+
+  return <Text style={style}>{displayValue}</Text>;
 };
 
 const TradePage: React.FC = () => {
@@ -129,32 +176,35 @@ const TradePage: React.FC = () => {
             <Text style={styles.arrow}>›</Text>
           </View>
           
-          <Text style={styles.mainBalance}>2,019,899.00</Text>
+          <NumberTicker value="2,019,899.00" style={styles.mainBalance} />
           
           <View style={styles.metricsGrid}>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>持仓市值</Text>
-              <Text style={styles.metricValue}>1,019,899.00</Text>
+              <NumberTicker value="1,019,899.00" style={styles.metricValue} />
             </View>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>持仓盈亏</Text>
-              <Text style={[styles.metricValue, styles.greenText]}>+15,987.09</Text>
+              <NumberTicker value="+15,987.09" style={[styles.metricValue, styles.greenText]} />
             </View>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>今日盈亏</Text>
-              <Text style={[styles.metricValue, styles.greenText]}>+1,987.09/0.14%</Text>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                <NumberTicker value="+1,987.09" style={[styles.metricValue, styles.greenText]} />
+                <Text style={[styles.metricValue, styles.greenText]}>/0.14%</Text>
+              </View>
             </View>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>冻结资金</Text>
-              <Text style={styles.metricValue}>9,899.00</Text>
+              <NumberTicker value="9,899.00" style={styles.metricValue} />
             </View>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>可用资金</Text>
-              <Text style={styles.metricValue}>1,000,899.00</Text>
+              <NumberTicker value="1,000,899.00" style={styles.metricValue} />
             </View>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>可提资金</Text>
-              <Text style={styles.metricValue}>5,899.00</Text>
+              <NumberTicker value="5,899.00" style={styles.metricValue} />
             </View>
           </View>
         </View>
