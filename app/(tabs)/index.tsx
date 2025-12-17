@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, NativeSyntheticEvent, NativeScrollEvent, useWindowDimensions, LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
@@ -437,13 +437,38 @@ const CopyTabContent = () => (
 );
 
 export default function HomePage() {
+  const { width: windowWidth } = useWindowDimensions();
+  const [containerWidth, setContainerWidth] = React.useState(windowWidth);
   const [activeTab, setActiveTab] = React.useState<'overview' | 'copy'>('overview');
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const [heights, setHeights] = React.useState({ overview: 0, copy: 0 });
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / containerWidth);
+    const newTab = index === 0 ? 'overview' : 'copy';
+    if (newTab !== activeTab) {
+      setActiveTab(newTab);
+    }
+  };
+
+  const handleTabPress = (tab: 'overview' | 'copy') => {
+    setActiveTab(tab);
+    scrollViewRef.current?.scrollTo({
+      x: tab === 'overview' ? 0 : containerWidth,
+      animated: true,
+    });
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[1]}
+      >
+        {/* Header Top */}
+        <View style={styles.headerTopContainer}>
           <View style={styles.headerTop}>
             <View style={styles.userInfo}>
               <View style={styles.userAvatarContainer}>
@@ -475,18 +500,21 @@ export default function HomePage() {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
 
+        {/* Sticky Nav Tabs */}
+        <View style={styles.stickyNavTabs}>
           <View style={styles.navTabs}>
             <TouchableOpacity 
               style={styles.tabItem} 
-              onPress={() => setActiveTab('overview')}
+              onPress={() => handleTabPress('overview')}
             >
               <Text style={activeTab === 'overview' ? styles.tabTextActive : styles.tabText}>Overview</Text>
               {activeTab === 'overview' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.tabItem}
-              onPress={() => setActiveTab('copy')}
+              onPress={() => handleTabPress('copy')}
             >
               <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>Copy</Text>
               {activeTab === 'copy' && <View style={styles.tabIndicator} />}
@@ -494,8 +522,29 @@ export default function HomePage() {
           </View>
         </View>
 
-        <View style={styles.content}>
-          {activeTab === 'overview' ? <OverviewTabContent /> : <CopyTabContent />}
+        <View onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            style={{ height: heights[activeTab] || undefined }}
+          >
+            <View style={{ width: containerWidth }} onLayout={(e) => {
+              const height = e.nativeEvent.layout.height;
+              setHeights(h => ({ ...h, overview: height }));
+            }}>
+              <OverviewTabContent />
+            </View>
+            <View style={{ width: containerWidth }} onLayout={(e) => {
+              const height = e.nativeEvent.layout.height;
+              setHeights(h => ({ ...h, copy: height }));
+            }}>
+              <CopyTabContent />
+            </View>
+          </ScrollView>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -510,11 +559,15 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  header: {
+  headerTopContainer: {
+    backgroundColor: COLORS.background,
+    paddingTop: 16,
+  },
+  stickyNavTabs: {
     backgroundColor: COLORS.background,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(39, 39, 42, 0.5)',
-    paddingTop: 16,
+    zIndex: 100,
   },
   headerTop: {
     flexDirection: 'row',
