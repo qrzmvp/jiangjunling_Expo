@@ -317,7 +317,7 @@ const OverviewTabContent = () => (
     </View>
 
     {/* Leaderboard Section */}
-    <View style={{ paddingHorizontal: 16, paddingBottom: 20 }}>
+    <View style={{ paddingHorizontal: 16, paddingBottom: 20, paddingTop: 24 }}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Leaderboard</Text>
         <View style={styles.filterGroup}>
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   filterGroup: {
     flexDirection: 'row',
