@@ -3,6 +3,19 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from '
 import { Ionicons } from '@expo/vector-icons';
 import { UserInfo, Stats } from '../../types';
 
+const COLORS = {
+  primary: "#2ebd85",
+  danger: "#f6465d",
+  background: "#000000",
+  surface: "#131313",
+  surfaceLight: "#1c1c1e", // Lighter gray for cards
+  textMain: "#ffffff",
+  textMuted: "#9ca3af",
+  border: "#27272a",
+  yellow: "#eab308", // yellow-500
+  yellowText: "#facc15", // yellow-400
+};
+
 const MyPage: React.FC = () => {
   // 使用类型定义的数据
   const userInfo: UserInfo = {
@@ -183,7 +196,7 @@ const MyPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1E2026',
+    backgroundColor: COLORS.background,
     paddingTop: Platform.OS === 'web' ? 0 : 50,
   },
   myHeader: {
@@ -194,7 +207,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   myHeaderTitle: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 18,
     fontWeight: '600',
   },
@@ -206,7 +219,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -8,
-    backgroundColor: '#E5404A',
+    backgroundColor: COLORS.danger,
     width: 16,
     height: 16,
     borderRadius: 8,
@@ -214,7 +227,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
-    color: '#FFFFFF',
+    color: COLORS.textMain,
     fontSize: 10,
     fontWeight: 'bold',
   },
@@ -245,7 +258,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarText: {
-    color: '#FFFFFF',
+    color: COLORS.textMain,
     fontSize: 28,
     fontWeight: 'bold',
   },
@@ -253,20 +266,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: -2,
     right: -2,
-    backgroundColor: '#F5A623',
+    backgroundColor: COLORS.yellow,
     width: 20,
     height: 20,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#1E2026',
+    borderColor: COLORS.background,
   },
   userInfo: {
     justifyContent: 'center',
   },
   username: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 4,
@@ -276,7 +289,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   accountId: {
-    color: '#8A919E',
+    color: COLORS.textMuted,
     fontSize: 13,
   },
   qrCode: {
@@ -284,7 +297,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statsCard: {
-    backgroundColor: '#2C2E36',
+    backgroundColor: COLORS.surfaceLight,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -297,13 +310,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 4,
   },
   statLabel: {
-    color: '#8A919E',
+    color: COLORS.textMuted,
     fontSize: 12,
   },
   promoBanner: {
@@ -334,7 +347,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   actionCard: {
-    backgroundColor: '#2C2E36',
+    backgroundColor: COLORS.surfaceLight,
     borderRadius: 12,
     padding: 12,
     width: '31%',
@@ -349,19 +362,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   actionTitle: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 4,
     textAlign: 'center',
   },
   actionSubtitle: {
-    color: '#8A919E',
+    color: COLORS.textMuted,
     fontSize: 10,
     textAlign: 'center',
   },
   menuCard: {
-    backgroundColor: '#2C2E36',
+    backgroundColor: COLORS.surfaceLight,
     borderRadius: 12,
     marginBottom: 16,
   },
@@ -376,13 +389,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuText: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 15,
     marginLeft: 12,
   },
   menuDivider: {
     height: 1,
-    backgroundColor: '#40434D',
+    backgroundColor: COLORS.border,
     marginLeft: 54,
   },
   myFooter: {
@@ -392,7 +405,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   footerText: {
-    color: '#8A919E',
+    color: COLORS.textMuted,
     fontSize: 12,
     marginLeft: 4,
   },

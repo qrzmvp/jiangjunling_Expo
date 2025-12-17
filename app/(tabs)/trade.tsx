@@ -2,6 +2,19 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+const COLORS = {
+  primary: "#2ebd85",
+  danger: "#f6465d",
+  background: "#000000",
+  surface: "#131313",
+  surfaceLight: "#1c1c1e", // Lighter gray for cards
+  textMain: "#ffffff",
+  textMuted: "#9ca3af",
+  border: "#27272a",
+  yellow: "#eab308", // yellow-500
+  yellowText: "#facc15", // yellow-400
+};
+
 const TradePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'position' | 'order'>('position');
 
@@ -289,7 +302,7 @@ const TradePage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1E2026',
+    backgroundColor: COLORS.background,
     paddingTop: Platform.OS === 'web' ? 0 : 50,
   },
   header: {
@@ -300,7 +313,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   headerTitle: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 20,
     fontWeight: '600',
   },
@@ -321,7 +334,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 6,
-    backgroundColor: '#000000',
+    backgroundColor: COLORS.surfaceLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -332,14 +345,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   accountName: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 16,
     fontWeight: '600',
   },
   primaryNav: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#40434D',
+    borderBottomColor: COLORS.border,
     marginBottom: 16,
     marginTop: 8,
     gap: 24,
@@ -350,19 +363,19 @@ const styles = StyleSheet.create({
   navItemActive: {
     paddingVertical: 8,
     borderBottomWidth: 2,
-    borderBottomColor: '#FFFFFF',
+    borderBottomColor: COLORS.textMain,
   },
   navText: {
-    color: '#8A919E',
+    color: COLORS.textMuted,
     fontSize: 14,
   },
   navTextActive: {
-    color: '#FFFFFF',
+    color: COLORS.textMain,
     fontSize: 14,
     fontWeight: '600',
   },
   balanceCard: {
-    backgroundColor: '#2C2E36',
+    backgroundColor: COLORS.surfaceLight,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -379,27 +392,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   assetLabelText: {
-    color: '#8A919E',
+    color: COLORS.textMuted,
     fontSize: 12,
   },
   currencyBadge: {
-    backgroundColor: '#2C2E36',
+    backgroundColor: COLORS.surfaceLight,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#40434D',
+    borderColor: COLORS.border,
   },
   currencyText: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 12,
   },
   arrow: {
-    color: '#8A919E',
+    color: COLORS.textMuted,
     fontSize: 20,
   },
   mainBalance: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 36,
     fontWeight: 'bold',
     marginBottom: 16,
@@ -414,19 +427,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   metricLabel: {
-    color: '#8A919E',
+    color: COLORS.textMuted,
     fontSize: 11,
     marginBottom: 4,
   },
   metricValue: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 13,
   },
   greenText: {
-    color: '#28C78C',
+    color: COLORS.primary,
   },
   redText: {
-    color: '#E5404A',
+    color: COLORS.danger,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -435,31 +448,31 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.textMain,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
   },
   actionButtonText: {
-    color: '#1E2026',
+    color: COLORS.background,
     fontSize: 14,
     fontWeight: '600',
   },
   secondaryNav: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#40434D',
+    borderBottomColor: COLORS.border,
     marginBottom: 16,
     gap: 24,
   },
   positionCard: {
-    backgroundColor: '#2C2E36',
+    backgroundColor: COLORS.surfaceLight,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
   },
   orderCard: {
-    backgroundColor: '#2C2E36',
+    backgroundColor: COLORS.surfaceLight,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -471,12 +484,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   symbolTitle: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 18,
     fontWeight: '600',
   },
   symbolSubtitle: {
-    color: '#8A919E',
+    color: COLORS.textMuted,
     fontSize: 14,
     fontWeight: 'normal',
   },
@@ -488,7 +501,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#40434D',
+    backgroundColor: COLORS.border,
   },
   orderTypeText: {
     fontSize: 14,
@@ -502,19 +515,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cancelButton: {
-    backgroundColor: '#40434D',
+    backgroundColor: COLORS.border,
     paddingVertical: 10,
     borderRadius: 6,
     alignItems: 'center',
     marginTop: 8,
   },
   cancelButtonText: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 14,
     fontWeight: '600',
   },
   strategyCard: {
-    backgroundColor: '#2C2E36',
+    backgroundColor: COLORS.surfaceLight,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -527,12 +540,12 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   strategyTitle: {
-    color: '#EAEBEF',
+    color: COLORS.textMain,
     fontSize: 18,
     fontWeight: '600',
   },
   strategySubtitle: {
-    color: '#8A919E',
+    color: COLORS.textMuted,
     fontSize: 14,
     fontWeight: 'normal',
   },
@@ -546,7 +559,7 @@ const styles = StyleSheet.create({
   },
   dividerLine: {
     height: 1,
-    backgroundColor: '#40434D',
+    backgroundColor: COLORS.border,
     marginBottom: 16,
   },
   strategyMetrics: {
