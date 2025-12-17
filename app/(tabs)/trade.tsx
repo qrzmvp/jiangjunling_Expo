@@ -1,8 +1,75 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const TradePage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'position' | 'order'>('position');
+
+  // 模拟持仓数据
+  const positionData = [
+    {
+      id: 1,
+      symbol: 'BTC/USD',
+      name: 'Bitcoin',
+      shares: 0.5,
+      avgPrice: 98000.00,
+      currentPrice: 109384.00,
+      marketValue: 54692.00,
+      profit: 5692.00,
+      profitRate: 11.61,
+      isProfit: true,
+    },
+    {
+      id: 2,
+      symbol: 'ETH/USD',
+      name: 'Ethereum',
+      shares: 10,
+      avgPrice: 3650.00,
+      currentPrice: 3580.00,
+      marketValue: 35800.00,
+      profit: -700.00,
+      profitRate: -1.92,
+      isProfit: false,
+    },
+  ];
+
+  // 模拟挂单数据
+  const orderData = [
+    {
+      id: 1,
+      symbol: 'BTC/USD',
+      name: 'Bitcoin',
+      type: 'buy',
+      orderType: '限价单',
+      shares: 0.2,
+      orderPrice: 108000.00,
+      status: '未成交',
+      time: '2025-12-15 09:30',
+    },
+    {
+      id: 2,
+      symbol: 'ETH/USD',
+      name: 'Ethereum',
+      type: 'sell',
+      orderType: '限价单',
+      shares: 5,
+      orderPrice: 3700.00,
+      status: '部分成交',
+      filledShares: 2,
+      time: '2025-12-15 10:15',
+    },
+    {
+      id: 3,
+      symbol: 'SOL/USD',
+      name: 'Solana',
+      type: 'buy',
+      orderType: '市价单',
+      shares: 15,
+      status: '未成交',
+      time: '2025-12-15 11:05',
+    },
+  ];
+
   return (
     <View style={styles.container}>
       {/* Header with Account Selector */}
@@ -80,7 +147,7 @@ const TradePage: React.FC = () => {
         </View>
 
         {/* Action Buttons */}
-        <View style={styles.actionButtons}>
+        {/* <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.actionButton}>
             <Text style={styles.actionButtonText}>入金</Text>
           </TouchableOpacity>
@@ -90,65 +157,128 @@ const TradePage: React.FC = () => {
           <TouchableOpacity style={styles.actionButton}>
             <Text style={styles.actionButtonText}>交易</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Secondary Navigation */}
         <View style={styles.secondaryNav}>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navText}>持仓(2)</Text>
+          <TouchableOpacity 
+            style={activeTab === 'position' ? styles.navItemActive : styles.navItem}
+            onPress={() => setActiveTab('position')}
+          >
+            <Text style={activeTab === 'position' ? styles.navTextActive : styles.navText}>持仓(2)</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navText}>订单(3)</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItemActive}>
-            <Text style={styles.navTextActive}>策略订单</Text>
+          <TouchableOpacity 
+            style={activeTab === 'order' ? styles.navItemActive : styles.navItem}
+            onPress={() => setActiveTab('order')}
+          >
+            <Text style={activeTab === 'order' ? styles.navTextActive : styles.navText}>挂单(3)</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Strategy Order Card */}
-        <View style={styles.strategyCard}>
-          <View style={styles.strategyHeader}>
-            <View>
-              <Text style={styles.strategyTitle}>
-                BTC/USD <Text style={styles.strategySubtitle}>Bitcoin</Text>
+        {/* 持仓列表 */}
+        {activeTab === 'position' && positionData.map((position) => (
+          <View key={position.id} style={styles.positionCard}>
+            <View style={styles.cardTitleRow}>
+              <Text style={styles.symbolTitle}>
+                {position.symbol} <Text style={styles.symbolSubtitle}>{position.name}</Text>
               </Text>
-              <Text style={[styles.metricLabel, styles.greenText, { marginTop: 8 }]}>累计盈亏</Text>
-              <Text style={[styles.strategyProfit, styles.greenText]}>+2,200.09</Text>
+              <Text style={[styles.profitText, position.isProfit ? styles.greenText : styles.redText]}>
+                {position.isProfit ? '+' : ''}{position.profit.toFixed(2)}
+              </Text>
             </View>
-            <View style={styles.strategyStatus}>
-              <Text style={styles.metricLabel}>网格交易</Text>
-              <Text style={[styles.greenText, { fontSize: 12 }]}>进行中</Text>
-            </View>
-          </View>
 
-          <View style={styles.strategyMetrics}>
-            <View style={styles.strategyRow}>
-              <Text style={styles.metricLabel}>监控区间</Text>
-              <Text style={styles.metricLabel}>现价</Text>
-              <Text style={styles.metricLabel}>当前基准价</Text>
-            </View>
-            <View style={styles.strategyRow}>
-              <Text style={styles.metricValue}>109,000.00</Text>
-              <Text style={styles.metricValue}>109,384.00</Text>
-              <Text style={styles.metricValue}>90,000~120,000</Text>
-            </View>
-            <View style={styles.strategyRow}>
-              <Text style={styles.metricLabel}>现价距基准价</Text>
-              <Text style={styles.metricLabel}></Text>
-              <Text style={[styles.metricValue, styles.greenText]}>+100.00/+0.09%</Text>
-            </View>
-            <View style={styles.strategyRow}>
-              <Text style={styles.metricLabel}>触发次数</Text>
-              <Text style={styles.metricLabel}>累计买入</Text>
-              <Text style={styles.metricLabel}>累计卖出</Text>
-            </View>
-            <View style={styles.strategyRow}>
-              <Text style={styles.metricValue}>139</Text>
-              <Text style={styles.metricValue}>3</Text>
-              <Text style={styles.metricValue}>2</Text>
+            <View style={styles.dividerLine} />
+
+            <View style={styles.positionMetrics}>
+              <View style={styles.metricRowContainer}>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>持仓</Text>
+                  <Text style={styles.metricValue}>{position.shares}</Text>
+                </View>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>成本价</Text>
+                  <Text style={styles.metricValue}>{position.avgPrice.toFixed(2)}</Text>
+                </View>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>现价</Text>
+                  <Text style={styles.metricValue}>{position.currentPrice.toFixed(2)}</Text>
+                </View>
+              </View>
+
+              <View style={styles.metricRowContainer}>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>市值</Text>
+                  <Text style={styles.metricValue}>{position.marketValue.toFixed(2)}</Text>
+                </View>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>盈亏比例</Text>
+                  <Text style={[styles.metricValue, position.isProfit ? styles.greenText : styles.redText]}>
+                    {position.isProfit ? '+' : ''}{position.profitRate.toFixed(2)}%
+                  </Text>
+                </View>
+                <View style={styles.metricCol} />
+              </View>
             </View>
           </View>
-        </View>
+        ))}
+
+        {/* 挂单列表 */}
+        {activeTab === 'order' && orderData.map((order) => (
+          <View key={order.id} style={styles.orderCard}>
+            <View style={styles.cardTitleRow}>
+              <Text style={styles.symbolTitle}>
+                {order.symbol} <Text style={styles.symbolSubtitle}>{order.name}</Text>
+              </Text>
+              <View style={styles.orderTypeBadge}>
+                <Text style={[styles.orderTypeText, order.type === 'buy' ? styles.greenText : styles.redText]}>
+                  {order.type === 'buy' ? '买入' : '卖出'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.dividerLine} />
+
+            <View style={styles.orderMetrics}>
+              <View style={styles.metricRowContainer}>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>类型</Text>
+                  <Text style={styles.metricValue}>{order.orderType}</Text>
+                </View>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>数量</Text>
+                  <Text style={styles.metricValue}>{order.shares}</Text>
+                </View>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>状态</Text>
+                  <Text style={styles.metricValue}>{order.status}</Text>
+                </View>
+              </View>
+
+              <View style={styles.metricRowContainer}>
+                {order.orderPrice && (
+                  <View style={styles.metricCol}>
+                    <Text style={styles.metricLabel}>委托价</Text>
+                    <Text style={styles.metricValue}>{order.orderPrice.toFixed(2)}</Text>
+                  </View>
+                )}
+                {order.filledShares && (
+                  <View style={styles.metricCol}>
+                    <Text style={styles.metricLabel}>已成交</Text>
+                    <Text style={styles.metricValue}>{order.filledShares}</Text>
+                  </View>
+                )}
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>时间</Text>
+                  <Text style={styles.metricValue}>{order.time}</Text>
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.cancelButton}>
+              <Text style={styles.cancelButtonText}>撤单</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -322,6 +452,67 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 24,
   },
+  positionCard: {
+    backgroundColor: '#2C2E36',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  orderCard: {
+    backgroundColor: '#2C2E36',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  cardTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  symbolTitle: {
+    color: '#EAEBEF',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  symbolSubtitle: {
+    color: '#8A919E',
+    fontSize: 14,
+    fontWeight: 'normal',
+  },
+  profitText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  orderTypeBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: '#40434D',
+  },
+  orderTypeText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  positionMetrics: {
+    gap: 16,
+  },
+  orderMetrics: {
+    gap: 16,
+    marginBottom: 16,
+  },
+  cancelButton: {
+    backgroundColor: '#40434D',
+    paddingVertical: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cancelButtonText: {
+    color: '#EAEBEF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   strategyCard: {
     backgroundColor: '#2C2E36',
     padding: 16,
@@ -331,7 +522,9 @@ const styles = StyleSheet.create({
   strategyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 16,
+    paddingBottom: 16,
   },
   strategyTitle: {
     color: '#EAEBEF',
@@ -344,15 +537,28 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
   },
   strategyProfit: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginTop: 4,
   },
   strategyStatus: {
     alignItems: 'flex-end',
   },
+  dividerLine: {
+    height: 1,
+    backgroundColor: '#40434D',
+    marginBottom: 16,
+  },
   strategyMetrics: {
-    gap: 8,
+    gap: 16,
+  },
+  metricRowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  metricCol: {
+    flex: 1,
   },
   strategyRow: {
     flexDirection: 'row',

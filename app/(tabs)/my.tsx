@@ -75,7 +75,7 @@ const MyPage: React.FC = () => {
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>99+</Text>
-              <Text style={styles.statLabel}>收藏|足迹</Text>
+              <Text style={styles.statLabel}>交易账户</Text>
             </View>
           </View>
         </View>
@@ -127,7 +127,7 @@ const MyPage: React.FC = () => {
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
               <Ionicons name="pricetag" size={22} color="#8A919E" />
-              <Text style={styles.menuText}>我的卡券</Text>
+              <Text style={styles.menuText}>交易所账户</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
