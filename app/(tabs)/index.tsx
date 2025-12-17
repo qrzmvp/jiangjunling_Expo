@@ -206,7 +206,7 @@ const OverviewTabContent = () => (
   <>
     {/* Profit Trend Section */}
     <View style={styles.card}>
-      <Text style={styles.sectionTitle}>收益走势</Text>
+      <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>收益走势</Text>
       
       <View style={styles.timeFilter}>
         <TouchableOpacity style={styles.timeBtnActive}>
@@ -317,7 +317,7 @@ const OverviewTabContent = () => (
     </View>
 
     {/* Leaderboard Section */}
-    <View>
+    <View style={{ paddingHorizontal: 16, paddingBottom: 20 }}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Leaderboard</Text>
         <View style={styles.filterGroup}>
@@ -368,7 +368,7 @@ const OverviewTabContent = () => (
 );
 
 const CopyTabContent = () => (
-  <View style={styles.copyTabContainer}>
+  <View style={[styles.copyTabContainer, { paddingHorizontal: 16, paddingTop: 16 }]}>
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>Recommended traders</Text>
       <TouchableOpacity style={styles.moreBtn}>
