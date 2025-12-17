@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, NativeSyntheticEvent, NativeScrollEvent, useWindowDimensions, LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
@@ -104,7 +105,8 @@ const TraderCard = ({
   days, 
   coins,
   chartPath,
-  statusColor = COLORS.yellow 
+  statusColor = COLORS.yellow,
+  onPress
 }: {
   name: string,
   avatar: string,
@@ -117,10 +119,11 @@ const TraderCard = ({
   days: number,
   coins: string[],
   chartPath: string,
-  statusColor?: string
+  statusColor?: string,
+  onPress?: () => void
 }) => {
   return (
-    <View style={styles.traderCard}>
+    <TouchableOpacity style={styles.traderCard} onPress={onPress} activeOpacity={0.9}>
       {/* Header */}
       <View style={styles.cardHeader}>
         <View style={styles.traderInfo}>
@@ -198,7 +201,7 @@ const TraderCard = ({
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -367,7 +370,10 @@ const OverviewTabContent = () => (
   </>
 );
 
-const CopyTabContent = () => (
+const CopyTabContent = () => {
+  const router = useRouter();
+  
+  return (
   <View style={[styles.copyTabContainer, { paddingHorizontal: 16, paddingTop: 16 }]}>
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>Recommended traders</Text>
@@ -395,6 +401,7 @@ const CopyTabContent = () => (
         ]}
         chartPath="M0,35 Q10,32 20,30 T40,20 T60,25 T80,10 L100,20"
         statusColor={COLORS.yellow}
+        onPress={() => router.push('/trader-detail')}
       />
       <TraderCard 
         name="BeyondHJJ"
@@ -413,6 +420,7 @@ const CopyTabContent = () => (
         ]}
         chartPath="M0,30 Q15,32 25,25 T45,28 T65,15 T85,25 L100,18"
         statusColor={COLORS.yellow}
+        onPress={() => router.push('/trader-detail')}
       />
       <TraderCard 
         name="Average-Moon-Cypress"
@@ -431,10 +439,12 @@ const CopyTabContent = () => (
         ]}
         chartPath="M0,38 Q20,35 30,28 T50,20 T70,10 L100,5"
         statusColor="#3b82f6" // blue-500
+        onPress={() => router.push('/trader-detail')}
       />
     </View>
   </View>
-);
+  );
+};
 
 export default function HomePage() {
   const { width: windowWidth } = useWindowDimensions();
