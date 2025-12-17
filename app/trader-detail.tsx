@@ -94,7 +94,7 @@ const TraderDetailScreen = () => {
                 <Text style={styles.statLabel}>胜率</Text>
                 <Text style={styles.statValue}>68.5%</Text>
               </View>
-              <View style={styles.statItem}>
+              <View style={[styles.statItem, { alignItems: 'center' }]}>
                 <Text style={styles.statLabel}>AUM (USDT)</Text>
                 <Text style={styles.statValue}>1.98M</Text>
               </View>
