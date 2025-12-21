@@ -358,12 +358,36 @@ const OverviewTabContent = () => {
 
 const CopyTabContent = () => {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = React.useState('综合');
+  const [activeFilters, setActiveFilters] = React.useState<string[]>(['综合']);
   const filters = ['综合', '近一周收益', '近一月收益', '已订阅', '已关注'];
 
+  const handleFilterPress = (filter: string) => {
+    if (filter === '综合') {
+      setActiveFilters(['综合']);
+      return;
+    }
+
+    let newFilters = [...activeFilters];
+    if (newFilters.includes('综合')) {
+      newFilters = newFilters.filter(f => f !== '综合');
+    }
+
+    if (newFilters.includes(filter)) {
+      newFilters = newFilters.filter(f => f !== filter);
+    } else {
+      newFilters.push(filter);
+    }
+
+    if (newFilters.length === 0) {
+      setActiveFilters(['综合']);
+    } else {
+      setActiveFilters(newFilters);
+    }
+  };
+
   const getRoiLabel = () => {
-    if (activeFilter === '近一周收益') return 'Lead trader 7D PnL';
-    if (activeFilter === '近一月收益') return 'Lead trader 30D PnL';
+    if (activeFilters.includes('近一周收益')) return 'Lead trader 7D PnL';
+    if (activeFilters.includes('近一月收益')) return 'Lead trader 30D PnL';
     return 'Lead trader 90D PnL';
   };
   
@@ -372,26 +396,28 @@ const CopyTabContent = () => {
 
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flex: 1 }}>
-        {filters.map((filter) => (
+        {filters.map((filter) => {
+          const isActive = activeFilters.includes(filter);
+          return (
           <TouchableOpacity 
             key={filter} 
             style={{
               paddingHorizontal: 12,
               paddingVertical: 6,
               borderRadius: 16,
-              backgroundColor: activeFilter === filter ? COLORS.surfaceLight : 'transparent',
+              backgroundColor: isActive ? COLORS.surfaceLight : 'transparent',
               borderWidth: 1,
-              borderColor: activeFilter === filter ? COLORS.primary : COLORS.border,
+              borderColor: isActive ? COLORS.primary : COLORS.border,
             }}
-            onPress={() => setActiveFilter(filter)}
+            onPress={() => handleFilterPress(filter)}
           >
             <Text style={{
-              color: activeFilter === filter ? COLORS.primary : COLORS.textMuted,
+              color: isActive ? COLORS.primary : COLORS.textMuted,
               fontSize: 12,
-              fontWeight: activeFilter === filter ? 'bold' : 'normal',
+              fontWeight: isActive ? 'bold' : 'normal',
             }}>{filter}</Text>
           </TouchableOpacity>
-        ))}
+        )})}
       </ScrollView>
       <TouchableOpacity style={{ padding: 4 }} onPress={() => router.push('/search')}>
         <MaterialIcons name="search" size={24} color={COLORS.textMuted} />
