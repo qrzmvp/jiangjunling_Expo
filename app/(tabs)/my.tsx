@@ -71,10 +71,13 @@ const MyPage: React.FC = () => {
               </View>
             </View>
           </View>
-          <View style={styles.qrCode}>
+          <TouchableOpacity 
+            style={styles.qrCode}
+            onPress={() => router.push('/qrcode')}
+          >
             <Ionicons name="qr-code-outline" size={24} color="#8A919E" />
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
-          </View>
+          </TouchableOpacity>
         </TouchableOpacity>
 
         {/* Stats Section */}
@@ -88,10 +91,10 @@ const MyPage: React.FC = () => {
               <Text style={styles.statNumber}>5</Text>
               <Text style={styles.statLabel}>关注</Text>
             </View>
-            <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statItem} onPress={() => router.push('/invite-friends')}>
               <Text style={styles.statNumber}>16</Text>
               <Text style={styles.statLabel}>朋友</Text>
-            </View>
+            </TouchableOpacity>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>99+</Text>
               <Text style={styles.statLabel}>交易账户</Text>
@@ -157,7 +160,10 @@ const MyPage: React.FC = () => {
 
         {/* Menu List 2 */}
         <View style={styles.menuCard}>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/invite-friends')}
+          >
             <View style={styles.menuLeft}>
               <Ionicons name="person-add-outline" size={22} color="#8A919E" />
               <Text style={styles.menuText}>邀请好友</Text>

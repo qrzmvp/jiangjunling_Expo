@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -63,6 +64,7 @@ const NumberTicker = ({ value, style, duration = 1000 }: { value: string, style?
 };
 
 const TradePage: React.FC = () => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'position' | 'order'>('position');
 
   // 模拟持仓数据
@@ -134,13 +136,13 @@ const TradePage: React.FC = () => {
     <View style={styles.container}>
       {/* Header with Account Selector */}
       <View style={styles.header}>
-        <View style={styles.accountInfo}>
+        <TouchableOpacity style={styles.accountInfo} onPress={() => router.push('/profile/exchange-accounts')}>
           <View style={styles.okxIcon}>
             <Text style={styles.okxText}>OKX</Text>
           </View>
           <Text style={styles.accountName}>我的账户(1001)</Text>
           <Ionicons name="chevron-down" size={18} color="#8A919E" style={{ marginLeft: 4 }} />
-        </View>
+        </TouchableOpacity>
         <TouchableOpacity>
           <Ionicons name="add" size={28} color="#EAEBEF" />
         </TouchableOpacity>
