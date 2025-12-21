@@ -2,9 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, NativeSyntheticEvent, NativeScrollEvent, useWindowDimensions, LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Defs, LinearGradient, Stop, Rect, Circle, G, Image as SvgImage, Text as SvgText, ClipPath } from 'react-native-svg';
 import { AddToHomeScreen } from '../../components/AddToHomeScreen';
+import { TraderCard } from '../../components/TraderCard';
 
 const { width } = Dimensions.get('window');
 
@@ -95,131 +96,6 @@ const LeaderboardItem = ({ rank, name, roi, avatar, isTop = false }: { rank: num
         <Text style={styles.copyButtonText}>{isSubscribed ? '已copy' : 'Copy'}</Text>
       </TouchableOpacity>
     </View>
-  );
-};
-
-// 交易员卡片组件
-const TraderCard = ({ 
-  name, 
-  avatar, 
-  followers, 
-  maxFollowers, 
-  roi, 
-  roiLabel = "Lead trader 90D PnL",
-  pnl, 
-  winRate, 
-  aum, 
-  days, 
-  coins,
-  chartPath,
-  statusColor = COLORS.yellow,
-  onPress
-}: {
-  name: string,
-  avatar: string,
-  followers: number,
-  maxFollowers: number,
-  roi: string,
-  roiLabel?: string,
-  pnl: string,
-  winRate: string,
-  aum: string,
-  days: number,
-  coins: string[],
-  chartPath: string,
-  statusColor?: string,
-  onPress?: () => void
-}) => {
-  const [isSubscribed, setIsSubscribed] = React.useState(false);
-  const [isFavorite, setIsFavorite] = React.useState(false);
-
-  return (
-    <TouchableOpacity style={styles.traderCard} onPress={onPress} activeOpacity={0.9}>
-      {/* Header */}
-      <View style={styles.cardHeader}>
-        <View style={styles.traderInfo}>
-          <View style={styles.traderAvatarContainer}>
-            <Image source={{ uri: avatar }} style={styles.traderAvatar} />
-            <View style={styles.statusIndicatorContainer}>
-              <View style={[styles.statusIndicator, { backgroundColor: statusColor }]} />
-            </View>
-          </View>
-          <View>
-            <Text style={styles.traderName}>{name}</Text>
-            <View style={styles.followerInfo}>
-              <MaterialIcons name="group" size={10} color={COLORS.textMuted} style={{ marginRight: 4 }} />
-              <Text style={styles.followerText}>{followers}/{maxFollowers}</Text>
-            </View>
-          </View>
-        </View>
-        <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.starBtn} onPress={() => setIsFavorite(!isFavorite)}>
-            <MaterialIcons 
-              name={isFavorite ? "star" : "star-border"} 
-              size={20} 
-              color={isFavorite ? COLORS.yellow : COLORS.textMuted} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.cardCopyBtn, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
-            onPress={() => setIsSubscribed(!isSubscribed)}
-          >
-            <Text style={styles.cardCopyBtnText}>{isSubscribed ? '已copy' : 'Copy'}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Main Stats & Chart */}
-      <View style={styles.mainStatsRow}>
-        <View>
-          <View style={styles.statLabelRow}>
-            <Text style={styles.statLabel}>{roiLabel}</Text>
-          </View>
-          <Text style={styles.roiText}>{roi}</Text>
-          <Text style={styles.pnlText}>{pnl}</Text>
-        </View>
-        <View style={styles.miniChartContainer}>
-          <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
-            <Path 
-              d={chartPath} 
-              fill="none" 
-              stroke={COLORS.primary} 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </View>
-      </View>
-
-      {/* Footer Stats */}
-      <View style={styles.cardFooter}>
-        <View style={styles.footerLeft}>
-          <View style={styles.footerStatRow}>
-            <Text style={styles.footerLabel}>Win rate</Text>
-            <Text style={styles.footerValue}>{winRate}</Text>
-          </View>
-          <View style={styles.footerStatRow}>
-            <Text style={styles.footerLabel}>AUM</Text>
-            <Text style={styles.footerValue}>{aum}</Text>
-          </View>
-        </View>
-        <View style={styles.footerRight}>
-          <View style={styles.daysInfo}>
-            <MaterialIcons name="calendar-today" size={12} color={COLORS.textMuted} style={{ marginRight: 4 }} />
-            <Text style={styles.daysText}>{days} days</Text>
-          </View>
-          <View style={styles.coinIcons}>
-            {coins.map((coin, index) => (
-              <Image key={index} source={{ uri: coin }} style={[styles.coinIcon, { zIndex: coins.length - index, marginLeft: index > 0 ? -6 : 0 }]} />
-            ))}
-            <View style={[styles.moreCoinsBadge, { zIndex: 0, marginLeft: -6 }]}>
-              <Text style={styles.moreCoinsText}>2</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
   );
 };
 
@@ -517,7 +393,7 @@ const CopyTabContent = () => {
           </TouchableOpacity>
         ))}
       </ScrollView>
-      <TouchableOpacity style={{ padding: 4 }}>
+      <TouchableOpacity style={{ padding: 4 }} onPress={() => router.push('/search')}>
         <MaterialIcons name="search" size={24} color={COLORS.textMuted} />
       </TouchableOpacity>
     </View>
@@ -589,11 +465,18 @@ const CopyTabContent = () => {
 
 export default function HomePage() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { width: windowWidth } = useWindowDimensions();
   const [containerWidth, setContainerWidth] = React.useState(windowWidth);
   const [activeTab, setActiveTab] = React.useState<'overview' | 'copy'>('overview');
   const scrollViewRef = React.useRef<ScrollView>(null);
   const [heights, setHeights] = React.useState({ overview: 0, copy: 0 });
+
+  React.useEffect(() => {
+    if (params.tab === 'copy') {
+      handleTabPress('copy');
+    }
+  }, [params.tab]);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -665,7 +548,7 @@ export default function HomePage() {
               style={styles.tabItem}
               onPress={() => handleTabPress('copy')}
             >
-              <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>Copy</Text>
+              <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>Traders</Text>
               {activeTab === 'copy' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
           </View>
@@ -680,6 +563,7 @@ export default function HomePage() {
             onScroll={handleScroll}
             scrollEventThrottle={16}
             style={{ height: heights[activeTab] || undefined }}
+            contentOffset={{ x: activeTab === 'overview' ? 0 : containerWidth, y: 0 }}
           >
             <View style={{ width: containerWidth }} onLayout={(e) => {
               const height = e.nativeEvent.layout.height;
