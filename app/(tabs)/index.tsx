@@ -105,6 +105,7 @@ const TraderCard = ({
   followers, 
   maxFollowers, 
   roi, 
+  roiLabel = "Lead trader 90D PnL",
   pnl, 
   winRate, 
   aum, 
@@ -119,6 +120,7 @@ const TraderCard = ({
   followers: number,
   maxFollowers: number,
   roi: string,
+  roiLabel?: string,
   pnl: string,
   winRate: string,
   aum: string,
@@ -171,7 +173,7 @@ const TraderCard = ({
       <View style={styles.mainStatsRow}>
         <View>
           <View style={styles.statLabelRow}>
-            <Text style={styles.statLabel}>Lead trader 90D PnL</Text>
+            <Text style={styles.statLabel}>{roiLabel}</Text>
           </View>
           <Text style={styles.roiText}>{roi}</Text>
           <Text style={styles.pnlText}>{pnl}</Text>
@@ -434,15 +436,10 @@ const OverviewTabContent = () => {
     {/* Leaderboard Section */}
     <View style={{ paddingHorizontal: 16, paddingBottom: 20, paddingTop: 24 }}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Leaderboard</Text>
-        <View style={styles.filterGroup}>
-          <TouchableOpacity style={styles.filterBtnActive}>
-            <Text style={styles.filterBtnTextActive}>Weekly</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterBtn}>
-            <Text style={styles.filterBtnText}>Monthly</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={[styles.sectionTitle, { fontSize: 14, fontWeight: '600' }]}>排行榜（近一周）</Text>
+        <TouchableOpacity>
+          <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>更多 {'>'}</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.leaderboardList}>
@@ -485,19 +482,49 @@ const OverviewTabContent = () => {
 
 const CopyTabContent = () => {
   const router = useRouter();
+  const [activeFilter, setActiveFilter] = React.useState('综合');
+  const filters = ['综合', '近一周收益', '近一月收益', '已订阅', '已关注'];
+
+  const getRoiLabel = () => {
+    if (activeFilter === '近一周收益') return 'Lead trader 7D PnL';
+    if (activeFilter === '近一月收益') return 'Lead trader 30D PnL';
+    return 'Lead trader 90D PnL';
+  };
   
   return (
   <View style={[styles.copyTabContainer, { paddingHorizontal: 16, paddingTop: 16 }]}>
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>Recommended traders</Text>
-      <TouchableOpacity style={styles.moreBtn}>
-        <Text style={styles.moreBtnText}>More</Text>
-        <MaterialIcons name="chevron-right" size={16} color={COLORS.textMuted} />
+
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flex: 1 }}>
+        {filters.map((filter) => (
+          <TouchableOpacity 
+            key={filter} 
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+              backgroundColor: activeFilter === filter ? COLORS.surfaceLight : 'transparent',
+              borderWidth: 1,
+              borderColor: activeFilter === filter ? COLORS.primary : COLORS.border,
+            }}
+            onPress={() => setActiveFilter(filter)}
+          >
+            <Text style={{
+              color: activeFilter === filter ? COLORS.primary : COLORS.textMuted,
+              fontSize: 12,
+              fontWeight: activeFilter === filter ? 'bold' : 'normal',
+            }}>{filter}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      <TouchableOpacity style={{ padding: 4 }}>
+        <MaterialIcons name="search" size={24} color={COLORS.textMuted} />
       </TouchableOpacity>
     </View>
 
     <View style={styles.traderList}>
       <TraderCard 
+        roiLabel={getRoiLabel()} 
         name="zh138"
         avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuCA6jm-quFFL4rGgnuqOTX6aa7ja62sdDdo3axzhQrnFedupfbhBgf-e6uQk2UJW6Fw_P6j3rE-Chdj1ROGQUydNYpLFiDKTnaRkds9OmErntL2HdtacO_UqSoB5ba2135lFtLoHiQHxZEScqx0miCEfAjnfV5_KSl5QyMd8yLi2gw_PLYz0wZiLCXKt2wdodUjdjvSKNgWzPDtwupJElJqhtE9RKBIQ9kS_wrdn6X3Mco8KWrf3EmG7376RFVDEW_ffsBfco13qw"
         followers={46}
@@ -517,6 +544,7 @@ const CopyTabContent = () => {
         onPress={() => router.push('/trader/detail')}
       />
       <TraderCard 
+        roiLabel={getRoiLabel()}
         name="BeyondHJJ"
         avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuBzZa78G7eCvQ3Qfir53Hh3en0nyDyqTSQLbXpOwuGfgmNT5K8kK94gFtLZ9c4QsAjTMvLKoJG-ZohYppqv5hWBKiP8tms6JOyEYTUPB-D0glDcbsQTF4Ba9k1opWJScsAodRQkxc1KcoUOmvSt6CsC8FvXUvDGJruHwegzMFzTaFLM_eF5JWZK8HPtqhNbHRWnliPvTu693N4wpz-ZmEZFfhYTq1BUb9135nVBVxM59E0nYYPndbBJBhQkWX9zheGiN9QcioZyIg"
         followers={15}
@@ -616,9 +644,6 @@ export default function HomePage() {
               </View>
             </TouchableOpacity>
             <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.iconBtn}>
-                <MaterialIcons name="search" size={24} color={COLORS.textMuted} />
-              </TouchableOpacity>
               <TouchableOpacity style={styles.iconBtn}>
                 <MaterialIcons name="ios-share" size={24} color={COLORS.textMuted} />
               </TouchableOpacity>
