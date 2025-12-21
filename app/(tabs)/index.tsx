@@ -99,7 +99,7 @@ const LeaderboardItem = ({ rank, name, roi, avatar, isTop = false }: { rank: num
   );
 };
 
-const OverviewTabContent = () => {
+const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
   // Mock Chart Data
   const chartData = [
     { date: '10-21', value: 20, bar: 30 },
@@ -313,7 +313,7 @@ const OverviewTabContent = () => {
     <View style={{ paddingHorizontal: 16, paddingBottom: 20, paddingTop: 24 }}>
       <View style={styles.sectionHeader}>
         <Text style={[styles.sectionTitle, { fontSize: 14, fontWeight: '600' }]}>排行榜（近一周）</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={onMorePress}>
           <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>更多 {'>'}</Text>
         </TouchableOpacity>
       </View>
@@ -356,9 +356,13 @@ const OverviewTabContent = () => {
   );
 };
 
-const CopyTabContent = () => {
+interface CopyTabContentProps {
+  activeFilters: string[];
+  setActiveFilters: (filters: string[]) => void;
+}
+
+const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps) => {
   const router = useRouter();
-  const [activeFilters, setActiveFilters] = React.useState<string[]>(['综合']);
   const filters = ['综合', '近一周收益', '近一月收益', '已订阅', '已关注'];
 
   const handleFilterPress = (filter: string) => {
@@ -497,6 +501,12 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = React.useState<'overview' | 'copy'>('overview');
   const scrollViewRef = React.useRef<ScrollView>(null);
   const [heights, setHeights] = React.useState({ overview: 0, copy: 0 });
+  const [activeFilters, setActiveFilters] = React.useState<string[]>(['综合']);
+
+  const handleMorePress = () => {
+    handleTabPress('copy');
+    setActiveFilters(['近一周收益']);
+  };
 
   React.useEffect(() => {
     if (params.tab === 'copy') {
@@ -595,13 +605,13 @@ export default function HomePage() {
               const height = e.nativeEvent.layout.height;
               setHeights(h => ({ ...h, overview: height }));
             }}>
-              <OverviewTabContent />
+              <OverviewTabContent onMorePress={handleMorePress} />
             </View>
             <View style={{ width: containerWidth }} onLayout={(e) => {
               const height = e.nativeEvent.layout.height;
               setHeights(h => ({ ...h, copy: height }));
             }}>
-              <CopyTabContent />
+              <CopyTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
             </View>
           </ScrollView>
         </View>

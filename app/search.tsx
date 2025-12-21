@@ -97,7 +97,7 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.push('/(tabs)?tab=copy')} style={styles.backBtn}>
           <MaterialIcons name="arrow-back" size={24} color={COLORS.textMain} />
         </TouchableOpacity>
         <View style={styles.searchBar}>
