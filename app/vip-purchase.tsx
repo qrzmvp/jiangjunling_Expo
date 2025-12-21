@@ -16,13 +16,13 @@ const COLORS = {
 
 const PACKAGES = [
   { id: 'monthly', name: '月度会员', price: '29.9', originalPrice: '39.9' },
-  { id: 'quarterly', name: '季度会员', price: '79.9', originalPrice: '119.7', recommend: true },
-  { id: 'yearly', name: '年度会员', price: '299.9', originalPrice: '478.8' },
+  { id: 'quarterly', name: '季度会员', price: '79.9', originalPrice: '119.7' },
+  { id: 'yearly', name: '年度会员', price: '299.9', originalPrice: '478.8', recommend: true },
 ];
 
 export default function VipPurchasePage() {
   const router = useRouter();
-  const [selectedPackage, setSelectedPackage] = useState('quarterly');
+  const [selectedPackage, setSelectedPackage] = useState('yearly');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -44,30 +44,60 @@ export default function VipPurchasePage() {
         </View>
 
         <View style={styles.benefitsContainer}>
-          <View style={styles.benefitItem}>
-            <View style={styles.benefitIcon}>
-              <Ionicons name="flash" size={20} color={COLORS.gold} />
+          <View style={styles.benefitsRow}>
+            <View style={styles.benefitItem}>
+              <View style={styles.benefitIcon}>
+                <Ionicons name="people" size={20} color={COLORS.gold} />
+              </View>
+              <Text style={styles.benefitText}>交易员集合</Text>
             </View>
-            <Text style={styles.benefitText}>极速交易</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <View style={styles.benefitIcon}>
-              <Ionicons name="analytics" size={20} color={COLORS.gold} />
+            <View style={styles.benefitItem}>
+              <View style={styles.benefitIcon}>
+                <Ionicons name="pie-chart" size={20} color={COLORS.gold} />
+              </View>
+              <Text style={styles.benefitText}>实时持仓</Text>
             </View>
-            <Text style={styles.benefitText}>高级行情</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <View style={styles.benefitIcon}>
-              <Ionicons name="headset" size={20} color={COLORS.gold} />
+            <View style={styles.benefitItem}>
+              <View style={styles.benefitIcon}>
+                <Ionicons name="list" size={20} color={COLORS.gold} />
+              </View>
+              <Text style={styles.benefitText}>实时挂单</Text>
             </View>
-            <Text style={styles.benefitText}>专属客服</Text>
-          </View>
-          <View style={styles.benefitItem}>
-            <View style={styles.benefitIcon}>
-              <Ionicons name="shield-checkmark" size={20} color={COLORS.gold} />
+            <View style={styles.benefitItem}>
+              <View style={styles.benefitIcon}>
+                <Ionicons name="time" size={20} color={COLORS.gold} />
+              </View>
+              <Text style={styles.benefitText}>历史调仓</Text>
             </View>
-            <Text style={styles.benefitText}>安全保障</Text>
           </View>
+
+          <View style={[styles.benefitsRow, { marginTop: 16 }]}>
+            <View style={styles.benefitItem}>
+              <View style={styles.benefitIcon}>
+                <Ionicons name="flash" size={20} color={COLORS.gold} />
+              </View>
+              <Text style={styles.benefitText}>极速交易</Text>
+            </View>
+            <View style={styles.benefitItem}>
+              <View style={styles.benefitIcon}>
+                <Ionicons name="analytics" size={20} color={COLORS.gold} />
+              </View>
+              <Text style={styles.benefitText}>专业行情</Text>
+            </View>
+            <View style={styles.benefitItem}>
+              <View style={styles.benefitIcon}>
+                <Ionicons name="headset" size={20} color={COLORS.gold} />
+              </View>
+              <Text style={styles.benefitText}>专属客服</Text>
+            </View>
+            <View style={styles.benefitItem}>
+              <View style={styles.benefitIcon}>
+                <Ionicons name="shield-checkmark" size={20} color={COLORS.gold} />
+              </View>
+              <Text style={styles.benefitText}>安全保障</Text>
+            </View>
+          </View>
+
         </View>
 
         <Text style={styles.sectionTitle}>选择套餐</Text>
@@ -165,12 +195,14 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
   },
   benefitsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 40,
     backgroundColor: COLORS.surface,
     padding: 20,
     borderRadius: 16,
+  },
+  benefitsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   benefitItem: {
     alignItems: 'center',
