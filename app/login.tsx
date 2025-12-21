@@ -37,6 +37,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [isPasswordLogin, setIsPasswordLogin] = useState(false);
 
   const theme = {
@@ -114,9 +115,18 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.text }]}>
-                {isPasswordLogin ? '密码' : '验证码'}
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={[styles.label, { color: theme.text }]}>
+                  {isPasswordLogin ? '密码' : '验证码'}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => setIsPasswordLogin(!isPasswordLogin)}
+                >
+                  <Text style={{ fontSize: 14, color: theme.text, fontWeight: '500' }}>
+                    {isPasswordLogin ? '切换验证码登录' : '切换密码登录'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.inputWrapper}>
                 {isPasswordLogin ? (
                   <TextInput
@@ -161,14 +171,26 @@ export default function LoginScreen() {
               </View>
             </View>
 
-            <TouchableOpacity 
-              style={styles.switchLoginButton}
-              onPress={() => setIsPasswordLogin(!isPasswordLogin)}
-            >
-              <Text style={styles.switchLoginText}>
-                {isPasswordLogin ? '切换验证码登录' : '切换密码登录'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: theme.text }]}>邀请码 (选填)</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.inputBg,
+                      borderColor: theme.inputBorder,
+                      color: theme.text,
+                    },
+                  ]}
+                  placeholder="请输入邀请码"
+                  placeholderTextColor={theme.placeholder}
+                  value={inviteCode}
+                  onChangeText={setInviteCode}
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
           </View>
 
           <View style={styles.actionContainer}>
