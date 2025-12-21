@@ -100,6 +100,7 @@ const LeaderboardItem = ({ rank, name, roi, avatar, isTop = false }: { rank: num
 };
 
 const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
+  const { width: windowWidth } = useWindowDimensions();
   const [timeFilter, setTimeFilter] = React.useState('近一周');
   const [hiddenTraders, setHiddenTraders] = React.useState<string[]>([]);
 
@@ -229,8 +230,10 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
     return { yAxisMax: max, yAxisMin: min, yRange: max - min };
   }, [traders]);
 
-  const pointWidth = 60;
-  const chartWidth = Math.max(300, traders[0].data.length * pointWidth); // Dynamic width
+  const availableWidth = windowWidth - 64; // 16*2 margin + 16*2 padding
+  const dataLength = traders[0].data.length;
+  const pointWidth = dataLength <= 7 ? availableWidth / dataLength : 60;
+  const chartWidth = Math.max(availableWidth, dataLength * pointWidth);
   const chartHeight = 256;
   const xStep = pointWidth;
 
