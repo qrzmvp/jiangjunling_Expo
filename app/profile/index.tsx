@@ -58,7 +58,7 @@ export default function PersonalInfoPage() {
           {/* Nickname Row */}
           <TouchableOpacity 
             style={styles.row}
-            onPress={() => router.push('/edit-nickname')}
+            onPress={() => router.push('/profile/edit-nickname')}
           >
             <Text style={styles.label}>昵称</Text>
             <View style={styles.rowRight}>

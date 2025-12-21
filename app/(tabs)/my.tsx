@@ -51,7 +51,7 @@ const MyPage: React.FC = () => {
         {/* Profile Section */}
         <TouchableOpacity 
           style={styles.profileSection}
-          onPress={() => router.push('/personal-info')}
+          onPress={() => router.push('/profile')}
           activeOpacity={0.8}
         >
           <View style={styles.profileInfo}>
@@ -143,7 +143,10 @@ const MyPage: React.FC = () => {
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
           <View style={styles.menuDivider} />
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/profile/exchange-accounts')}
+          >
             <View style={styles.menuLeft}>
               <Ionicons name="pricetag" size={22} color="#8A919E" />
               <Text style={styles.menuText}>交易所账户</Text>
