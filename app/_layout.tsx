@@ -13,6 +13,15 @@ export default function RootLayout() {
       >
         <Stack.Screen name="splash" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen 
+          name="qrcode" 
+          options={{
+            presentation: 'transparentModal',
+            animation: 'fade',
+            headerShown: false,
+            contentStyle: { backgroundColor: 'transparent' },
+          }} 
+        />
       </Stack>
     </>
   );

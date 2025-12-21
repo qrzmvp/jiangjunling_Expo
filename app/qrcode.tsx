@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -23,20 +23,12 @@ export default function QRCodePage() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <MaterialIcons name="arrow-back-ios" size={20} color={COLORS.textMain} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>二维码名片</Text>
-        <View style={{ width: 40 }} /> 
-      </View>
+    <View style={styles.container}>
+      <TouchableWithoutFeedback onPress={() => router.back()}>
+        <View style={styles.overlay} />
+      </TouchableWithoutFeedback>
 
-      <View style={styles.content}>
+      <View style={styles.content} pointerEvents="box-none">
         {/* Card */}
         <View style={styles.card}>
           {/* Card Top (White) */}
@@ -121,21 +113,29 @@ export default function QRCodePage() {
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  content: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    zIndex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    display: 'none', // Hide header
   },
   backButton: {
     padding: 8,
@@ -146,16 +146,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.textMain,
   },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
   card: {
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 300, // Slightly smaller for modal
     borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1,
@@ -286,7 +279,7 @@ const styles = StyleSheet.create({
     gap: 16,
     marginTop: 32,
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 300,
   },
   actionButtonOutline: {
     flex: 1,
@@ -296,6 +289,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(240, 240, 240, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)', // Add background for visibility
   },
   actionButtonTextOutline: {
     color: COLORS.textMain,
