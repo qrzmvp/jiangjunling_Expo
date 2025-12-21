@@ -544,6 +544,7 @@ const CopyTabContent = () => {
 };
 
 export default function HomePage() {
+  const router = useRouter();
   const { width: windowWidth } = useWindowDimensions();
   const [containerWidth, setContainerWidth] = React.useState(windowWidth);
   const [activeTab, setActiveTab] = React.useState<'overview' | 'copy'>('overview');
@@ -577,7 +578,7 @@ export default function HomePage() {
         {/* Header Top */}
         <View style={styles.headerTopContainer}>
           <View style={styles.headerTop}>
-            <View style={styles.userInfo}>
+            <TouchableOpacity style={styles.userInfo} onPress={() => router.push('/(tabs)/my')}>
               <View style={styles.userAvatarContainer}>
                 <Image 
                   source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAd41aAXypJ-KoThdlQwaGvekk668Wn24nqPwjwrYnBoIOw9pU3-LQYE9Fsl8_qQILrWGjvZyQITeAQOBevDrIemfVF3QzYQpYfK1w5ZOOhnFMSx6XdJI_f4eLVb5Pd4PZyDEhf5-VCRsq-Oqx2lYS1BPhzGVQWlahH0z-uyOAo3QeC4LaKCSbr-e5l55Ch6YEltOtm-mWr9rnLtfioCWZP9g0iH6wA-kJ2MSoJl36o4IVmy332j2yZ3eD-iy5BIINUrxaacF_rUA" }} 
@@ -586,10 +587,9 @@ export default function HomePage() {
                 <View style={styles.onlineIndicator} />
               </View>
               <View style={styles.userDetails}>
-                <TouchableOpacity style={styles.userNameBtn}>
+                <View style={styles.userNameBtn}>
                   <Text style={styles.userName}>Alex_Trader</Text>
-                  <MaterialIcons name="expand-more" size={18} color={COLORS.textMuted} />
-                </TouchableOpacity>
+                </View>
                 <View style={styles.userBadges}>
                   <View style={styles.vipBadge}>
                     <Text style={styles.vipText}>VIP 3</Text>
@@ -597,7 +597,7 @@ export default function HomePage() {
                   <Text style={styles.uidText}>UID: 82910</Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
             <View style={styles.headerActions}>
               <TouchableOpacity style={styles.iconBtn}>
                 <MaterialIcons name="search" size={24} color={COLORS.textMuted} />

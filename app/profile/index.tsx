@@ -113,6 +113,18 @@ export default function PersonalInfoPage() {
           </TouchableOpacity>
 
         </View>
+
+        {/* Logout Button */}
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          activeOpacity={0.7}
+          onPress={() => {
+            console.log('Logout pressed');
+            // router.replace('/login'); // Uncomment when login page exists
+          }}
+        >
+          <Text style={styles.logoutText}>退出登录</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -228,5 +240,20 @@ const styles = StyleSheet.create({
     color: COLORS.textSubDark,
     textAlign: 'right',
     flex: 1,
+  },
+  logoutButton: {
+    marginTop: 24,
+    backgroundColor: COLORS.cardDark,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.borderDark,
+  },
+  logoutText: {
+    color: '#FF4D4F',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
