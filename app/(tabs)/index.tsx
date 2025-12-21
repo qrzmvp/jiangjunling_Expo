@@ -128,6 +128,7 @@ const TraderCard = ({
   onPress?: () => void
 }) => {
   const [isSubscribed, setIsSubscribed] = React.useState(false);
+  const [isFavorite, setIsFavorite] = React.useState(false);
 
   return (
     <TouchableOpacity style={styles.traderCard} onPress={onPress} activeOpacity={0.9}>
@@ -149,8 +150,12 @@ const TraderCard = ({
           </View>
         </View>
         <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.starBtn}>
-            <MaterialIcons name="star-border" size={20} color={COLORS.textMuted} />
+          <TouchableOpacity style={styles.starBtn} onPress={() => setIsFavorite(!isFavorite)}>
+            <MaterialIcons 
+              name={isFavorite ? "star" : "star-border"} 
+              size={20} 
+              color={isFavorite ? COLORS.yellow : COLORS.textMuted} 
+            />
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.cardCopyBtn, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}

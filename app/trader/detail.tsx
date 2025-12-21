@@ -23,6 +23,7 @@ const TraderDetailScreen = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   // Mock Chart Data
   const chartData = [
@@ -108,8 +109,12 @@ const TraderDetailScreen = () => {
                   </View>
                 </View>
                 <View style={styles.actionButtons}>
-                  <TouchableOpacity style={styles.starButton}>
-                    <MaterialIcons name="star-border" size={24} color={COLORS.textSub} />
+                  <TouchableOpacity style={styles.starButton} onPress={() => setIsFavorite(!isFavorite)}>
+                    <MaterialIcons 
+                      name={isFavorite ? "star" : "star-border"} 
+                      size={24} 
+                      color={isFavorite ? COLORS.yellow : COLORS.textSub} 
+                    />
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
