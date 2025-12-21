@@ -83,8 +83,8 @@ const TraderDetailScreen = () => {
   
   if (dataLength > 1) {
     if (dataLength <= 7) {
-      // Fit in screen, leave ~40px for avatar at the end
-      xStep = (chartAreaWidth - 40) / (dataLength - 1);
+      // Fit in screen, leave ~30px for avatar at the end
+      xStep = (chartAreaWidth - 30) / (dataLength - 1);
       chartWidth = chartAreaWidth;
     } else {
       // Scrollable
@@ -165,8 +165,13 @@ const TraderDetailScreen = () => {
               <View style={styles.nameRow}>
                 <View style={styles.nameContainer}>
                   <Text style={styles.traderName} numberOfLines={1}>Aaron</Text>
-                  <View style={styles.tagContainer}>
-                    <Text style={styles.tagText}>模拟</Text>
+                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                    <View style={styles.tagContainer}>
+                      <Text style={styles.tagText}>合约</Text>
+                    </View>
+                    <View style={[styles.tagContainer, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                      <Text style={[styles.tagText, { color: '#3b82f6' }]}>模拟</Text>
+                    </View>
                   </View>
                 </View>
                 <View style={styles.actionButtons}>

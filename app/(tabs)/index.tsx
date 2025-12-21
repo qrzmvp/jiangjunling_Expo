@@ -271,8 +271,8 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
   
   if (dataLength > 1) {
     if (dataLength <= 7) {
-      // Fit in screen, leave ~40px for avatar at the end
-      xStep = (chartAreaWidth - 40) / (dataLength - 1);
+      // Fit in screen, leave ~30px for avatar at the end
+      xStep = (chartAreaWidth - 30) / (dataLength - 1);
       chartWidth = chartAreaWidth;
     } else {
       // Scrollable

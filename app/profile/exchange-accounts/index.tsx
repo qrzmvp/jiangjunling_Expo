@@ -79,7 +79,10 @@ export default function ExchangeAccountsList() {
               <View style={styles.accountNameRow}>
                 <Text style={styles.accountName}>Binance</Text>
                 <View style={styles.tag}>
-                  <Text style={styles.tagText}>现货</Text>
+                  <Text style={styles.tagText}>合约</Text>
+                </View>
+                <View style={[styles.tag, { backgroundColor: 'rgba(46, 189, 133, 0.15)' }]}>
+                  <Text style={[styles.tagText, { color: COLORS.success }]}>真实</Text>
                 </View>
               </View>
               <Text style={styles.accountSubtext}>主账户 • API ...8392</Text>
@@ -110,6 +113,9 @@ export default function ExchangeAccountsList() {
                 <View style={styles.tag}>
                   <Text style={styles.tagText}>合约</Text>
                 </View>
+                <View style={[styles.tag, { backgroundColor: 'rgba(46, 189, 133, 0.15)' }]}>
+                  <Text style={[styles.tagText, { color: COLORS.success }]}>真实</Text>
+                </View>
               </View>
               <Text style={styles.accountSubtext}>交易号 2 • API ...1102</Text>
             </View>
@@ -136,6 +142,12 @@ export default function ExchangeAccountsList() {
             <View style={styles.accountDetails}>
               <View style={styles.accountNameRow}>
                 <Text style={styles.accountName}>Bybit</Text>
+                <View style={styles.tag}>
+                  <Text style={styles.tagText}>合约</Text>
+                </View>
+                <View style={[styles.tag, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                  <Text style={[styles.tagText, { color: '#3b82f6' }]}>模拟</Text>
+                </View>
               </View>
               <Text style={styles.accountSubtext}>策略组 A • API ...5521</Text>
             </View>
@@ -162,6 +174,12 @@ export default function ExchangeAccountsList() {
             <View style={styles.accountDetails}>
               <View style={styles.accountNameRow}>
                 <Text style={styles.accountName}>Coinbase</Text>
+                <View style={styles.tag}>
+                  <Text style={styles.tagText}>合约</Text>
+                </View>
+                <View style={[styles.tag, { backgroundColor: 'rgba(46, 189, 133, 0.15)' }]}>
+                  <Text style={[styles.tagText, { color: COLORS.success }]}>真实</Text>
+                </View>
               </View>
               <Text style={styles.accountSubtext}>备用 • API ...9982</Text>
             </View>
