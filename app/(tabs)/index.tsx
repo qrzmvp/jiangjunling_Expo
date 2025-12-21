@@ -43,6 +43,8 @@ class ChartErrorBoundary extends React.Component<{children: React.ReactNode}, {h
 
 // 排行榜列表项组件
 const LeaderboardItem = ({ rank, name, roi, avatar, isTop = false }: { rank: number, name: string, roi: string, avatar: string, isTop?: boolean }) => {
+  const [isSubscribed, setIsSubscribed] = React.useState(false);
+
   return (
     <View style={[styles.leaderboardItem, isTop && styles.topLeaderboardItem]}>
       {isTop && (
@@ -85,8 +87,11 @@ const LeaderboardItem = ({ rank, name, roi, avatar, isTop = false }: { rank: num
         </View>
       </View>
 
-      <TouchableOpacity style={styles.copyButton}>
-        <Text style={styles.copyButtonText}>Copy</Text>
+      <TouchableOpacity 
+        style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
+        onPress={() => setIsSubscribed(!isSubscribed)}
+      >
+        <Text style={styles.copyButtonText}>{isSubscribed ? '已copy' : 'Copy'}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -122,6 +127,8 @@ const TraderCard = ({
   statusColor?: string,
   onPress?: () => void
 }) => {
+  const [isSubscribed, setIsSubscribed] = React.useState(false);
+
   return (
     <TouchableOpacity style={styles.traderCard} onPress={onPress} activeOpacity={0.9}>
       {/* Header */}
@@ -145,8 +152,11 @@ const TraderCard = ({
           <TouchableOpacity style={styles.starBtn}>
             <MaterialIcons name="star-border" size={20} color={COLORS.textMuted} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.cardCopyBtn}>
-            <Text style={styles.cardCopyBtnText}>Copy</Text>
+          <TouchableOpacity 
+            style={[styles.cardCopyBtn, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
+            onPress={() => setIsSubscribed(!isSubscribed)}
+          >
+            <Text style={styles.cardCopyBtnText}>{isSubscribed ? '已copy' : 'Copy'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1071,10 +1081,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   copyButton: {
-    backgroundColor: 'white',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
+  },
+  copyButtonUnsubscribed: {
+    backgroundColor: 'white',
+  },
+  copyButtonSubscribed: {
+    backgroundColor: COLORS.yellow,
   },
   copyButtonOutline: {
     // Deprecated, keeping for safety but unused
@@ -1167,7 +1182,6 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   cardCopyBtn: {
-    backgroundColor: 'white',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,

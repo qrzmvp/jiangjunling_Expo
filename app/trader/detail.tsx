@@ -22,6 +22,7 @@ const COLORS = {
 const TraderDetailScreen = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   // Mock Chart Data
   const chartData = [
@@ -110,8 +111,11 @@ const TraderDetailScreen = () => {
                   <TouchableOpacity style={styles.starButton}>
                     <MaterialIcons name="star-border" size={24} color={COLORS.textSub} />
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.copyButton}>
-                    <Text style={styles.copyButtonText}>Copy</Text>
+                  <TouchableOpacity 
+                    style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
+                    onPress={() => setIsSubscribed(!isSubscribed)}
+                  >
+                    <Text style={styles.copyButtonText}>{isSubscribed ? '已copy' : 'Copy'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -631,10 +635,15 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   copyButton: {
-    backgroundColor: COLORS.white,
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
+  },
+  copyButtonUnsubscribed: {
+    backgroundColor: COLORS.white,
+  },
+  copyButtonSubscribed: {
+    backgroundColor: COLORS.yellow,
   },
   copyButtonText: {
     color: 'black',
