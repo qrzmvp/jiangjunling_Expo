@@ -95,10 +95,10 @@ const MyPage: React.FC = () => {
               <Text style={styles.statNumber}>16</Text>
               <Text style={styles.statLabel}>朋友</Text>
             </TouchableOpacity>
-            <View style={styles.statItem}>
+            <TouchableOpacity style={styles.statItem} onPress={() => router.push('/profile/exchange-accounts')}>
               <Text style={styles.statNumber}>99+</Text>
               <Text style={styles.statLabel}>交易账户</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
