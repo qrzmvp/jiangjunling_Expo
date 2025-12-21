@@ -26,27 +26,36 @@ const TraderDetailScreen = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [timeFilter, setTimeFilter] = useState('近一周');
+  
+  const traderAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg";
 
   // Mock Chart Data
   const rawChartData = [
-    { date: '10-21', value: 20 },
-    { date: '10-22', value: 35 },
-    { date: '10-23', value: 55 },
-    { date: '10-24', value: 50 },
-    { date: '10-25', value: 70 },
-    { date: '10-26', value: 85 },
-    { date: '10-27', value: 90 },
-    { date: '10-28', value: 80 },
-    { date: '10-29', value: 95 },
-    { date: '10-30', value: 85 },
-    { date: '10-31', value: 100 },
+    { date: '10-21', value: 100 },
+    { date: '10-22', value: 115 },
+    { date: '10-23', value: 125 },
+    { date: '10-24', value: 110 },
+    { date: '10-25', value: 90 },
+    { date: '10-26', value: 80 },
+    { date: '10-27', value: 105 },
+    { date: '10-28', value: 95 },
+    { date: '10-29', value: 85 },
+    { date: '10-30', value: 75 },
+    { date: '10-31', value: 65 },
   ];
 
   const chartData = React.useMemo(() => {
+    let data = rawChartData;
     if (timeFilter === '近一周') {
-      return rawChartData.slice(-7);
+      data = rawChartData.slice(-7);
     }
-    return rawChartData;
+    
+    // Normalize data so start is 0%
+    if (data.length > 0) {
+      const startValue = data[0].value;
+      return data.map(d => ({ ...d, value: d.value - startValue }));
+    }
+    return data;
   }, [timeFilter]);
 
   // Calculate Min/Max Y dynamically
@@ -56,42 +65,60 @@ const TraderDetailScreen = () => {
     const dataMin = Math.min(...allValues);
     
     // Add ~10% padding
-    const padding = (dataMax - dataMin) * 0.1 || 10;
+    const range = dataMax - dataMin;
+    const padding = range * 0.1 || 5;
+    
     const max = Math.ceil(dataMax + padding);
-    const min = Math.floor(dataMin - padding);
+    // If dataMin >= 0, start axis at 0. Otherwise add padding at bottom.
+    let min = dataMin >= 0 ? 0 : Math.floor(dataMin - padding);
     
     return { yAxisMax: max, yAxisMin: min, yRange: max - min };
   }, [chartData]);
 
-  const availableWidth = windowWidth - 32; // 16*2 padding (card padding is 0 in detail? No, card has padding)
-  // Actually card padding is not explicitly defined in the snippet I read for 'card', let me check styles.
-  // styles.card has padding: 16? No, let's check.
-  // styles.content has padding: 16. styles.card has no padding?
-  // Let's assume standard padding.
-  
+  const chartAreaWidth = windowWidth - 64 - 40; // 16*2 content padding + 16*2 card padding + 40 yAxis
   const dataLength = chartData.length;
-  const pointWidth = dataLength <= 7 ? (windowWidth - 64) / dataLength : 60; // 64 = 16(content) + 16(card) * 2 sides? 
-  // Let's check styles again. content padding 16. card padding?
-  // I'll assume 32 total horizontal padding for now.
   
-  const chartWidth = Math.max(windowWidth - 64, dataLength * pointWidth);
-  const chartHeight = 256;
-  const xStep = pointWidth;
+  let xStep = 0;
+  let chartWidth = chartAreaWidth;
+  
+  if (dataLength > 1) {
+    if (dataLength <= 7) {
+      // Fit in screen, leave ~40px for avatar at the end
+      xStep = (chartAreaWidth - 40) / (dataLength - 1);
+      chartWidth = chartAreaWidth;
+    } else {
+      // Scrollable
+      xStep = 60;
+      chartWidth = (dataLength - 1) * xStep + 60; // Ensure enough space at end
+    }
+  } else {
+    xStep = 0;
+    chartWidth = chartAreaWidth;
+  }
+
+  const chartHeight = 200;
+  const verticalPadding = 20;
 
   const getY = (val: number) => {
-    const availableHeight = chartHeight - 60; // 30 top, 30 bottom padding
+    const availableHeight = chartHeight - (verticalPadding * 2);
     const normalizedVal = (val - yAxisMin) / (yRange || 1);
-    return chartHeight - 30 - normalizedVal * availableHeight;
+    return chartHeight - verticalPadding - normalizedVal * availableHeight;
   };
+
+  // Calculate intermediate ticks
+  const positiveStep1 = Math.ceil(yAxisMax / 3);
+  const positiveStep2 = Math.ceil(yAxisMax * 2 / 3);
+  const negativeStep1 = yAxisMin < 0 ? Math.floor(yAxisMin / 3) : 0;
+  const negativeStep2 = yAxisMin < 0 ? Math.floor(yAxisMin * 2 / 3) : 0;
 
   // Generate Smooth Path
   const generatePath = (data: any[]) => {
     return data.reduce((acc, point, i) => {
-      const x = i * xStep + pointWidth / 2; // Center points
+      const x = i * xStep; // Start at 0
       const y = getY(point.value);
       if (i === 0) return `M ${x} ${y}`;
       const prev = data[i - 1];
-      const prevX = (i - 1) * xStep + pointWidth / 2;
+      const prevX = (i - 1) * xStep;
       const prevY = getY(prev.value);
       const cp1x = prevX + xStep / 2;
       const cp1y = prevY;
@@ -126,7 +153,7 @@ const TraderDetailScreen = () => {
           <View style={styles.traderHeader}>
             <View style={styles.avatarContainer}>
               <Image 
-                source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg" }}
+                source={{ uri: traderAvatar }}
                 style={styles.avatar}
               />
               <View style={styles.verifiedBadge}>
@@ -251,10 +278,46 @@ const TraderDetailScreen = () => {
 
           <View style={styles.chartContainer}>
             <View style={styles.yAxis}>
-              <Text style={styles.axisText}>{yAxisMax}%</Text>
-              <Text style={styles.axisText}>{Math.round(yAxisMax - yRange / 3)}%</Text>
-              <Text style={styles.axisText}>{Math.round(yAxisMax - 2 * yRange / 3)}%</Text>
-              <Text style={styles.axisText}>{yAxisMin}%</Text>
+              {/* Max Label */}
+              <Text style={[styles.axisText, { position: 'absolute', top: getY(yAxisMax) - 6 }]}>
+                {yAxisMax}%
+              </Text>
+
+              {/* Positive Intermediate Labels */}
+              {yAxisMax > 0 && (
+                <>
+                  <Text style={[styles.axisText, { position: 'absolute', top: getY(positiveStep2) - 6 }]}>
+                    {positiveStep2}%
+                  </Text>
+                  <Text style={[styles.axisText, { position: 'absolute', top: getY(positiveStep1) - 6 }]}>
+                    {positiveStep1}%
+                  </Text>
+                </>
+              )}
+              
+              {/* Zero Label */}
+              {yAxisMin < 0 && yAxisMax > 0 && (
+                <Text style={[styles.axisText, { position: 'absolute', top: getY(0) - 6, color: COLORS.textMain }]}>
+                  0%
+                </Text>
+              )}
+
+              {/* Negative Intermediate Labels */}
+              {yAxisMin < 0 && (
+                <>
+                  <Text style={[styles.axisText, { position: 'absolute', top: getY(negativeStep1) - 6 }]}>
+                    {negativeStep1}%
+                  </Text>
+                  <Text style={[styles.axisText, { position: 'absolute', top: getY(negativeStep2) - 6 }]}>
+                    {negativeStep2}%
+                  </Text>
+                </>
+              )}
+
+              {/* Min Label */}
+              <Text style={[styles.axisText, { position: 'absolute', top: getY(yAxisMin) - 6 }]}>
+                {yAxisMin}%
+              </Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chartContent}>
               {/* SVG Chart */}
@@ -266,6 +329,17 @@ const TraderDetailScreen = () => {
                       <Stop offset="100%" stopColor={COLORS.primary} stopOpacity="0" />
                     </LinearGradient>
                   </Defs>
+
+                  {/* Zero Line */}
+                  {yAxisMin < 0 && (
+                    <Path
+                      d={`M 0 ${getY(0)} L ${chartWidth} ${getY(0)}`}
+                      stroke={COLORS.textSub}
+                      strokeWidth="1"
+                      strokeDasharray="5, 5"
+                      opacity="0.3"
+                    />
+                  )}
 
                   {/* Line */}
                   <Path 
@@ -282,7 +356,7 @@ const TraderDetailScreen = () => {
                     if (chartData.length === 0) return null;
                     const lastPoint = chartData[chartData.length - 1];
                     const i = chartData.length - 1;
-                    const x = i * xStep + pointWidth / 2;
+                    const x = i * xStep;
                     const y = getY(lastPoint.value);
                     
                     return (
@@ -308,7 +382,7 @@ const TraderDetailScreen = () => {
                           y={y - 12}
                           width={24}
                           height={24}
-                          href={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg" }}
+                          href={{ uri: traderAvatar }}
                           clipPath="url(#clip-trader-detail)"
                           preserveAspectRatio="xMidYMid slice"
                         />
@@ -320,11 +394,11 @@ const TraderDetailScreen = () => {
                   {chartData.map((point, i) => (
                     <SvgText
                       key={`label-${i}`}
-                      x={i * xStep + pointWidth / 2}
+                      x={i * xStep}
                       y={chartHeight - 5}
                       fill={COLORS.textSub}
                       fontSize="10"
-                      textAnchor="middle"
+                      textAnchor={i === 0 ? "start" : i === chartData.length - 1 ? "end" : "middle"}
                     >
                       {point.date}
                     </SvgText>
@@ -816,20 +890,19 @@ const styles = StyleSheet.create({
   },
   chartContainer: {
     flexDirection: 'row',
-    height: 192,
+    height: 200,
     width: '100%',
     marginBottom: 8,
   },
   yAxis: {
-    justifyContent: 'space-between',
-    paddingRight: 8,
-    paddingBottom: 24,
+    position: 'relative',
     width: 40,
+    height: '100%',
   },
   axisText: {
-    color: 'rgba(136, 136, 136, 0.6)',
+    color: COLORS.textSub,
     fontSize: 10,
-    fontFamily: 'Menlo',
+    fontWeight: '500',
   },
   chartContent: {
     flex: 1,
