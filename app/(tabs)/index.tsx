@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient, Stop, Rect, Circle, G, Image as SvgImage, Text as SvgText, ClipPath } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 
@@ -205,7 +205,50 @@ const TraderCard = ({
   );
 };
 
-const OverviewTabContent = () => (
+const OverviewTabContent = () => {
+  // Mock Chart Data
+  const chartData = [
+    { date: '10-21', value: 20, bar: 30 },
+    { date: '10-22', value: 35, bar: 50 },
+    { date: '10-23', value: 55, bar: 40, avatar: 'https://randomuser.me/api/portraits/men/32.jpg', label: '+12.5%' },
+    { date: '10-24', value: 50, bar: 25 },
+    { date: '10-25', value: 70, bar: 60, avatar: 'https://randomuser.me/api/portraits/men/44.jpg', label: '+45.2%' },
+    { date: '10-26', value: 85, bar: 45 },
+    { date: '10-27', value: 90, bar: 70, avatar: 'https://randomuser.me/api/portraits/men/85.jpg', label: '+107.7%', isTop: true },
+    { date: '10-28', value: 80, bar: 55 },
+    { date: '10-29', value: 95, bar: 80 },
+    { date: '10-30', value: 85, bar: 60 },
+    { date: '10-31', value: 100, bar: 90 },
+  ];
+
+  const pointWidth = 60;
+  const chartWidth = Math.max(300, chartData.length * pointWidth); // Dynamic width
+  const chartHeight = 180;
+  const xStep = pointWidth;
+  const maxY = 100;
+
+  const getY = (val: number) => chartHeight - (val / maxY) * (chartHeight * 0.6) - 30;
+  const getBarHeight = (val: number) => (val / maxY) * (chartHeight * 0.4);
+
+  // Generate Smooth Path
+  const linePath = chartData.reduce((acc, point, i) => {
+    const x = i * xStep + pointWidth / 2; // Center points
+    const y = getY(point.value);
+    if (i === 0) return `M ${x} ${y}`;
+    const prev = chartData[i - 1];
+    const prevX = (i - 1) * xStep + pointWidth / 2;
+    const prevY = getY(prev.value);
+    const cp1x = prevX + xStep / 2;
+    const cp1y = prevY;
+    const cp2x = x - xStep / 2;
+    const cp2y = y;
+    return `${acc} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
+  }, '');
+
+  // Generate Area Path (closed)
+  const areaPath = `${linePath} L ${chartData.length * pointWidth - pointWidth / 2} ${chartHeight} L ${pointWidth / 2} ${chartHeight} Z`;
+
+  return (
   <>
     {/* Profit Trend Section */}
     <View style={styles.card}>
@@ -244,78 +287,131 @@ const OverviewTabContent = () => (
         
         <ChartErrorBoundary>
           <View style={styles.chartArea}>
-            {/* Grid Lines */}
-            <View style={styles.gridLine} />
-            <View style={styles.gridLine} />
-            <View style={styles.gridLine} />
-            <View style={styles.gridLineTransparent} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flex: 1 }}>
+              <View style={{ width: chartWidth, height: chartHeight }}>
+                <Svg height="100%" width="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+                  <Defs>
+                    <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                      <Stop offset="0%" stopColor={COLORS.yellow} stopOpacity="0.6" />
+                      <Stop offset="100%" stopColor={COLORS.yellow} stopOpacity="0.1" />
+                    </LinearGradient>
+                    <LinearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                      <Stop offset="0%" stopColor={COLORS.primary} stopOpacity="0.3" />
+                      <Stop offset="100%" stopColor={COLORS.primary} stopOpacity="0" />
+                    </LinearGradient>
+                  </Defs>
 
-            {/* SVG Chart */}
-            <View style={styles.svgContainer}>
-              <Svg height="100%" width="100%" viewBox="0 0 300 100" preserveAspectRatio="none">
-                <Defs>
-                  <LinearGradient id="chartGradientNew" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <Stop offset="0%" stopColor="#2ebd85" stopOpacity="0.2" />
-                    <Stop offset="100%" stopColor="#2ebd85" stopOpacity="0" />
-                  </LinearGradient>
-                </Defs>
-                <Path 
-                  d="M0,80 C40,75 60,60 90,40 S160,50 200,20 S260,30 300,10" 
-                  fill="none" 
-                  stroke="#2ebd85" 
-                  strokeWidth="2.5" 
-                  strokeLinecap="round"
-                />
-                <Path 
-                  d="M0,80 C40,75 60,60 90,40 S160,50 200,20 S260,30 300,10 V100 H0 Z" 
-                  fill="url(#chartGradientNew)" 
-                  opacity="0.6"
-                />
-              </Svg>
-            </View>
+                  {/* Area Fill */}
+                  <Path 
+                    d={areaPath} 
+                    fill="url(#areaGradient)" 
+                    stroke="none"
+                  />
 
-            {/* Chart Points (Absolute) */}
-            <View style={[styles.chartPoint, { left: '28%', top: '35%' }]}>
-              <Image 
-                source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuCA6jm-quFFL4rGgnuqOTX6aa7ja62sdDdo3axzhQrnFedupfbhBgf-e6uQk2UJW6Fw_P6j3rE-Chdj1ROGQUydNYpLFiDKTnaRkds9OmErntL2HdtacO_UqSoB5ba2135lFtLoHiQHxZEScqx0miCEfAjnfV5_KSl5QyMd8yLi2gw_PLYz0wZiLCXKt2wdodUjdjvSKNgWzPDtwupJElJqhtE9RKBIQ9kS_wrdn6X3Mco8KWrf3EmG7376RFVDEW_ffsBfco13qw" }}
-                style={styles.pointAvatar}
-              />
-              <View style={styles.pointTooltip}>
-                <Text style={styles.pointTooltipText}>+12.5%</Text>
-              </View>
-            </View>
+                  {/* Bars */}
+                  {chartData.map((point, i) => (
+                    <Rect
+                      key={`bar-${i}`}
+                      x={i * xStep + pointWidth / 2 - 10}
+                      y={chartHeight - getBarHeight(point.bar)}
+                      width={20}
+                      height={getBarHeight(point.bar)}
+                      fill="url(#barGradient)"
+                      rx={4}
+                    />
+                  ))}
 
-            <View style={[styles.chartPoint, { left: '58%', top: '30%' }]}>
-              <Image 
-                source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBzZa78G7eCvQ3Qfir53Hh3en0nyDyqTSQLbXpOwuGfgmNT5K8kK94gFtLZ9c4QsAjTMvLKoJG-ZohYppqv5hWBKiP8tms6JOyEYTUPB-D0glDcbsQTF4Ba9k1opWJScsAodRQkxc1KcoUOmvSt6CsC8FvXUvDGJruHwegzMFzTaFLM_eF5JWZK8HPtqhNbHRWnliPvTu693N4wpz-ZmEZFfhYTq1BUb9135nVBVxM59E0nYYPndbBJBhQkWX9zheGiN9QcioZyIg" }}
-                style={[styles.pointAvatar, { width: 32, height: 32 }]}
-              />
-              <View style={styles.pointTooltip}>
-                <Text style={styles.pointTooltipText}>+45.2%</Text>
-              </View>
-            </View>
+                  {/* Line */}
+                  <Path 
+                    d={linePath} 
+                    fill="none" 
+                    stroke={COLORS.primary}
+                    strokeWidth="4" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  />
 
-            <View style={[styles.chartPoint, { right: '0%', top: '10%' }]}>
-              <View style={styles.crownIcon}>
-                <MaterialIcons name="emoji-events" size={10} color={COLORS.yellow} />
+                  {/* Avatars and Labels */}
+                  {chartData.map((point, i) => {
+                    if (!point.avatar) return null;
+                    const x = i * xStep + pointWidth / 2;
+                    const y = getY(point.value);
+                    
+                    return (
+                      <G key={`avatar-${i}`}>
+                        {/* Label Background */}
+                        <Rect
+                          x={x - 30}
+                          y={y - 45}
+                          width={60}
+                          height={24}
+                          rx={6}
+                          fill="white"
+                        />
+                        {/* Label Text */}
+                        <SvgText
+                          x={x}
+                          y={y - 29}
+                          fill="black"
+                          fontSize="11"
+                          fontWeight="bold"
+                          textAnchor="middle"
+                        >
+                          {point.label}
+                        </SvgText>
+                        
+                        {/* Avatar Border */}
+                        <Circle
+                          cx={x}
+                          cy={y}
+                          r={14}
+                          fill={COLORS.surface}
+                          stroke={point.isTop ? COLORS.yellow : COLORS.primary}
+                          strokeWidth={2}
+                        />
+                        
+                        {/* Avatar Image with ClipPath */}
+                        <Defs>
+                          <ClipPath id={`clip-${i}`}>
+                            <Circle cx={x} cy={y} r={12} />
+                          </ClipPath>
+                        </Defs>
+                        <SvgImage
+                          x={x - 12}
+                          y={y - 12}
+                          width={24}
+                          height={24}
+                          href={{ uri: point.avatar }}
+                          clipPath={`url(#clip-${i})`}
+                          preserveAspectRatio="xMidYMid slice"
+                        />
+                        
+                        {/* Trophy for Top */}
+                        {point.isTop && (
+                           <SvgText x={x+8} y={y-8} fontSize="12">🏆</SvgText>
+                        )}
+                      </G>
+                    );
+                  })}
+                  
+                  {/* X Axis Labels inside ScrollView */}
+                  {chartData.map((point, i) => (
+                    <SvgText
+                      key={`label-${i}`}
+                      x={i * xStep + pointWidth / 2}
+                      y={chartHeight - 5}
+                      fill={COLORS.textMuted}
+                      fontSize="10"
+                      textAnchor="middle"
+                    >
+                      {point.date}
+                    </SvgText>
+                  ))}
+                </Svg>
               </View>
-              <Image 
-                source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuB_YJoFtmSgqjEYM2tsRwwH6OcbxEzQ0rOaBPiJTZ4kKmIvaq0Whpfn4QNXrDoxYbqYTbsxrudPSci0vqyxrfvX5NmUtQlekhCyT7-wQDutN-2ZxMOpAvUeEwTkwiZt1NsTnXYQeiDjq55arRKjL8FCa3t0cxXr0bvH7NV1Wo8KBsbV8ddGD1USqDJU2_1BtHf6qmsHmXN0_TGvvZFwElGBKxyPrp7TnUPf9H6emqbfpZBteQl9GvFy3Hm8KvITkQ6I01WLW7MLXQ" }}
-                style={[styles.pointAvatar, { width: 36, height: 36, borderWidth: 2 }]}
-              />
-              <View style={[styles.pointTooltip, { backgroundColor: COLORS.primary }]}>
-                <Text style={[styles.pointTooltipText, { color: 'white' }]}>+107.7%</Text>
-              </View>
-            </View>
+            </ScrollView>
           </View>
         </ChartErrorBoundary>
-      </View>
-      
-      <View style={styles.xAxis}>
-        <Text style={styles.axisText}>10-21</Text>
-        <Text style={styles.axisText}>10-23</Text>
-        <Text style={styles.axisText}>10-25</Text>
-        <Text style={styles.axisText}>10-27</Text>
       </View>
     </View>
 
@@ -368,7 +464,8 @@ const OverviewTabContent = () => (
       </View>
     </View>
   </>
-);
+  );
+};
 
 const CopyTabContent = () => {
   const router = useRouter();

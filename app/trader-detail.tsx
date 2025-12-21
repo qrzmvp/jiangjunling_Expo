@@ -32,11 +32,16 @@ const TraderDetailScreen = () => {
     { date: '10-25', value: 70, bar: 60, avatar: 'https://randomuser.me/api/portraits/men/44.jpg', label: '+45.2%' },
     { date: '10-26', value: 85, bar: 45 },
     { date: '10-27', value: 90, bar: 70, avatar: 'https://randomuser.me/api/portraits/men/85.jpg', label: '+107.7%', isTop: true },
+    { date: '10-28', value: 80, bar: 55 },
+    { date: '10-29', value: 95, bar: 80 },
+    { date: '10-30', value: 85, bar: 60 },
+    { date: '10-31', value: 100, bar: 90 },
   ];
 
-  const chartWidth = 300; // ViewBox width
+  const pointWidth = 60;
+  const chartWidth = Math.max(300, chartData.length * pointWidth); // Dynamic width
   const chartHeight = 180;
-  const xStep = chartWidth / (chartData.length - 1);
+  const xStep = pointWidth;
   const maxY = 100;
 
   const getY = (val: number) => chartHeight - (val / maxY) * (chartHeight * 0.6) - 30;
@@ -44,11 +49,11 @@ const TraderDetailScreen = () => {
 
   // Generate Smooth Path
   const linePath = chartData.reduce((acc, point, i) => {
-    const x = i * xStep;
+    const x = i * xStep + pointWidth / 2; // Center points
     const y = getY(point.value);
     if (i === 0) return `M ${x} ${y}`;
     const prev = chartData[i - 1];
-    const prevX = (i - 1) * xStep;
+    const prevX = (i - 1) * xStep + pointWidth / 2;
     const prevY = getY(prev.value);
     const cp1x = prevX + xStep / 2;
     const cp1y = prevY;
@@ -56,6 +61,9 @@ const TraderDetailScreen = () => {
     const cp2y = y;
     return `${acc} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
   }, '');
+
+  // Generate Area Path (closed)
+  const areaPath = `${linePath} L ${chartData.length * pointWidth - pointWidth / 2} ${chartHeight} L ${pointWidth / 2} ${chartHeight} Z`;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -209,26 +217,33 @@ const TraderDetailScreen = () => {
               <Text style={styles.axisText}>0%</Text>
               <Text style={styles.axisText}>-50%</Text>
             </View>
-            <View style={styles.chartContent}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chartContent}>
               {/* SVG Chart */}
-              <View style={StyleSheet.absoluteFill}>
+              <View style={{ width: chartWidth, height: chartHeight }}>
                 <Svg height="100%" width="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
                   <Defs>
                     <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0%" stopColor={COLORS.primary} stopOpacity="0.3" />
-                      <Stop offset="100%" stopColor={COLORS.primary} stopOpacity="0.05" />
+                      <Stop offset="0%" stopColor={COLORS.yellow} stopOpacity="0.6" />
+                      <Stop offset="100%" stopColor={COLORS.yellow} stopOpacity="0.1" />
                     </LinearGradient>
-                    <LinearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                      <Stop offset="0%" stopColor={COLORS.primary} />
-                      <Stop offset="100%" stopColor="#4ade80" />
+                    <LinearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                      <Stop offset="0%" stopColor={COLORS.primary} stopOpacity="0.3" />
+                      <Stop offset="100%" stopColor={COLORS.primary} stopOpacity="0" />
                     </LinearGradient>
                   </Defs>
+
+                  {/* Area Fill */}
+                  <Path 
+                    d={areaPath} 
+                    fill="url(#areaGradient)" 
+                    stroke="none"
+                  />
 
                   {/* Bars */}
                   {chartData.map((point, i) => (
                     <Rect
                       key={`bar-${i}`}
-                      x={i * xStep - 10}
+                      x={i * xStep + pointWidth / 2 - 10}
                       y={chartHeight - getBarHeight(point.bar)}
                       width={20}
                       height={getBarHeight(point.bar)}
@@ -241,8 +256,8 @@ const TraderDetailScreen = () => {
                   <Path 
                     d={linePath} 
                     fill="none" 
-                    stroke="url(#lineGradient)" 
-                    strokeWidth="3" 
+                    stroke={COLORS.primary}
+                    strokeWidth="4" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
                   />
@@ -250,7 +265,7 @@ const TraderDetailScreen = () => {
                   {/* Avatars and Labels */}
                   {chartData.map((point, i) => {
                     if (!point.avatar) return null;
-                    const x = i * xStep;
+                    const x = i * xStep + pointWidth / 2;
                     const y = getY(point.value);
                     
                     return (
@@ -309,16 +324,25 @@ const TraderDetailScreen = () => {
                       </G>
                     );
                   })}
+                  
+                  {/* X Axis Labels inside ScrollView */}
+                  {chartData.map((point, i) => (
+                    <SvgText
+                      key={`label-${i}`}
+                      x={i * xStep + pointWidth / 2}
+                      y={chartHeight - 5}
+                      fill={COLORS.textSub}
+                      fontSize="10"
+                      textAnchor="middle"
+                    >
+                      {point.date}
+                    </SvgText>
+                  ))}
                 </Svg>
               </View>
-            </View>
+            </ScrollView>
           </View>
-          <View style={styles.xAxis}>
-            <Text style={styles.axisText}>05-01</Text>
-            <Text style={styles.axisText}>06-01</Text>
-            <Text style={styles.axisText}>07-01</Text>
-            <Text style={styles.axisText}>08-01</Text>
-          </View>
+          {/* Removed external xAxis view since labels are now inside SVG */}
         </View>
 
         {/* Positions/Orders Section */}
