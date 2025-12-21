@@ -83,14 +83,20 @@ const MyPage: React.FC = () => {
         {/* Stats Section */}
         <View style={styles.statsCard}>
           <View style={styles.statsRow}>
-            <View style={styles.statItem}>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => router.push('/(tabs)?tab=copy&filter=已订阅')}
+            >
               <Text style={styles.statNumber}>36</Text>
               <Text style={styles.statLabel}>订阅</Text>
-            </View>
-            <View style={styles.statItem}>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.statItem}
+              onPress={() => router.push('/(tabs)?tab=copy&filter=已关注')}
+            >
               <Text style={styles.statNumber}>5</Text>
               <Text style={styles.statLabel}>关注</Text>
-            </View>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.statItem} onPress={() => router.push('/invite-friends')}>
               <Text style={styles.statNumber}>16</Text>
               <Text style={styles.statLabel}>朋友</Text>

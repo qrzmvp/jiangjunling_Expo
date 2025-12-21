@@ -511,8 +511,11 @@ export default function HomePage() {
   React.useEffect(() => {
     if (params.tab === 'copy') {
       handleTabPress('copy');
+      if (params.filter) {
+        setActiveFilters([params.filter as string]);
+      }
     }
-  }, [params.tab]);
+  }, [params.tab, params.filter]);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
