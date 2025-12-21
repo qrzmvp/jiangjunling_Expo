@@ -143,7 +143,7 @@ const TradePage: React.FC = () => {
           <Text style={styles.accountName}>我的账户(1001)</Text>
           <Ionicons name="chevron-down" size={18} color="#8A919E" style={{ marginLeft: 4 }} />
         </TouchableOpacity>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/profile/exchange-accounts/edit')}>
           <Ionicons name="add" size={28} color="#EAEBEF" />
         </TouchableOpacity>
       </View>

@@ -171,15 +171,10 @@ const MyPage: React.FC = () => {
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
           <View style={styles.menuDivider} />
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuLeft}>
-              <Ionicons name="happy-outline" size={22} color="#8A919E" />
-              <Text style={styles.menuText}>产品反馈</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
-          </TouchableOpacity>
-          <View style={styles.menuDivider} />
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/qrcode')}
+          >
             <View style={styles.menuLeft}>
               <Ionicons name="call-outline" size={22} color="#8A919E" />
               <Text style={styles.menuText}>联系客服</Text>

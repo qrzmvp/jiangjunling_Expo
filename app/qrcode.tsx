@@ -100,6 +100,11 @@ export default function QRCodePage() {
             </View>
 
             <Text style={styles.scanText}>扫码上方二维码，好友加我</Text>
+            
+            <View style={styles.telegramContainer}>
+              <MaterialCommunityIcons name="telegram" size={20} color="#2AABEE" />
+              <Text style={styles.telegramText}>@JiangJunLing_Support</Text>
+            </View>
           </View>
         </View>
 
@@ -313,5 +318,16 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  telegramContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    gap: 6,
+  },
+  telegramText: {
+    color: COLORS.textSub,
+    fontSize: 14,
   },
 });
