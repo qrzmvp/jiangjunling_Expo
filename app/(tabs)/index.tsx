@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Defs, LinearGradient, Stop, Rect, Circle, G, Image as SvgImage, Text as SvgText, ClipPath } from 'react-native-svg';
+import { AddToHomeScreen } from '../../components/AddToHomeScreen';
 
 const { width } = Dimensions.get('window');
 
@@ -585,6 +586,7 @@ export default function HomePage() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <AddToHomeScreen />
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}

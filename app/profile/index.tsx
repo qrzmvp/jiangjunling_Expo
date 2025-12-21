@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaVi
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import ImageCropper from './components/ImageCropper';
+import ImageCropper from './_components/ImageCropper';
 
 const COLORS = {
   backgroundDark: "#000000",
