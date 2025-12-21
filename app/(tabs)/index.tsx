@@ -643,6 +643,8 @@ export default function HomePage() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
+        directionalLockEnabled={true}
+        automaticallyAdjustContentInsets={false}
       >
         {/* Header Top */}
         <View style={styles.headerTopContainer}>
@@ -703,6 +705,7 @@ export default function HomePage() {
             showsHorizontalScrollIndicator={false}
             onScroll={handleScroll}
             scrollEventThrottle={16}
+            nestedScrollEnabled={true}
             style={{ height: heights[activeTab] || undefined }}
             contentOffset={{ x: activeTab === 'overview' ? 0 : containerWidth, y: 0 }}
           >
