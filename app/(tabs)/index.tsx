@@ -203,6 +203,24 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
         { date: '10-30', value: 65 },
         { date: '10-31', value: 75 },
       ]
+    },
+    {
+      name: 'Trader E',
+      color: '#ec4899', // pink-500
+      avatar: 'https://randomuser.me/api/portraits/men/12.jpg',
+      data: [
+        { date: '10-21', value: 25 },
+        { date: '10-22', value: 30 },
+        { date: '10-23', value: 45 },
+        { date: '10-24', value: 40 },
+        { date: '10-25', value: 55 },
+        { date: '10-26', value: 65 },
+        { date: '10-27', value: 70 },
+        { date: '10-28', value: 60 },
+        { date: '10-29', value: 75 },
+        { date: '10-30', value: 85 },
+        { date: '10-31', value: 95 },
+      ]
     }
   ];
 

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import Svg, { Path, Defs, LinearGradient, Stop, Rect, Circle, G, Image as SvgImage, Text as SvgText, ClipPath } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient, Stop, Circle, G, Image as SvgImage, Text as SvgText, ClipPath } from 'react-native-svg';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -21,51 +21,85 @@ const COLORS = {
 
 const TraderDetailScreen = () => {
   const router = useRouter();
+  const { width: windowWidth } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [timeFilter, setTimeFilter] = useState('近一周');
 
   // Mock Chart Data
-  const chartData = [
-    { date: '10-21', value: 20, bar: 30 },
-    { date: '10-22', value: 35, bar: 50 },
-    { date: '10-23', value: 55, bar: 40, avatar: 'https://randomuser.me/api/portraits/men/32.jpg', label: '+12.5%' },
-    { date: '10-24', value: 50, bar: 25 },
-    { date: '10-25', value: 70, bar: 60, avatar: 'https://randomuser.me/api/portraits/men/44.jpg', label: '+45.2%' },
-    { date: '10-26', value: 85, bar: 45 },
-    { date: '10-27', value: 90, bar: 70, avatar: 'https://randomuser.me/api/portraits/men/85.jpg', label: '+107.7%', isTop: true },
-    { date: '10-28', value: 80, bar: 55 },
-    { date: '10-29', value: 95, bar: 80 },
-    { date: '10-30', value: 85, bar: 60 },
-    { date: '10-31', value: 100, bar: 90 },
+  const rawChartData = [
+    { date: '10-21', value: 20 },
+    { date: '10-22', value: 35 },
+    { date: '10-23', value: 55 },
+    { date: '10-24', value: 50 },
+    { date: '10-25', value: 70 },
+    { date: '10-26', value: 85 },
+    { date: '10-27', value: 90 },
+    { date: '10-28', value: 80 },
+    { date: '10-29', value: 95 },
+    { date: '10-30', value: 85 },
+    { date: '10-31', value: 100 },
   ];
 
-  const pointWidth = 60;
-  const chartWidth = Math.max(300, chartData.length * pointWidth); // Dynamic width
-  const chartHeight = 180;
-  const xStep = pointWidth;
-  const maxY = 100;
+  const chartData = React.useMemo(() => {
+    if (timeFilter === '近一周') {
+      return rawChartData.slice(-7);
+    }
+    return rawChartData;
+  }, [timeFilter]);
 
-  const getY = (val: number) => chartHeight - (val / maxY) * (chartHeight * 0.6) - 30;
-  const getBarHeight = (val: number) => (val / maxY) * (chartHeight * 0.4);
+  // Calculate Min/Max Y dynamically
+  const { yAxisMax, yAxisMin, yRange } = React.useMemo(() => {
+    const allValues = chartData.map(d => d.value);
+    const dataMax = Math.max(...allValues);
+    const dataMin = Math.min(...allValues);
+    
+    // Add ~10% padding
+    const padding = (dataMax - dataMin) * 0.1 || 10;
+    const max = Math.ceil(dataMax + padding);
+    const min = Math.floor(dataMin - padding);
+    
+    return { yAxisMax: max, yAxisMin: min, yRange: max - min };
+  }, [chartData]);
+
+  const availableWidth = windowWidth - 32; // 16*2 padding (card padding is 0 in detail? No, card has padding)
+  // Actually card padding is not explicitly defined in the snippet I read for 'card', let me check styles.
+  // styles.card has padding: 16? No, let's check.
+  // styles.content has padding: 16. styles.card has no padding?
+  // Let's assume standard padding.
+  
+  const dataLength = chartData.length;
+  const pointWidth = dataLength <= 7 ? (windowWidth - 64) / dataLength : 60; // 64 = 16(content) + 16(card) * 2 sides? 
+  // Let's check styles again. content padding 16. card padding?
+  // I'll assume 32 total horizontal padding for now.
+  
+  const chartWidth = Math.max(windowWidth - 64, dataLength * pointWidth);
+  const chartHeight = 256;
+  const xStep = pointWidth;
+
+  const getY = (val: number) => {
+    const availableHeight = chartHeight - 60; // 30 top, 30 bottom padding
+    const normalizedVal = (val - yAxisMin) / (yRange || 1);
+    return chartHeight - 30 - normalizedVal * availableHeight;
+  };
 
   // Generate Smooth Path
-  const linePath = chartData.reduce((acc, point, i) => {
-    const x = i * xStep + pointWidth / 2; // Center points
-    const y = getY(point.value);
-    if (i === 0) return `M ${x} ${y}`;
-    const prev = chartData[i - 1];
-    const prevX = (i - 1) * xStep + pointWidth / 2;
-    const prevY = getY(prev.value);
-    const cp1x = prevX + xStep / 2;
-    const cp1y = prevY;
-    const cp2x = x - xStep / 2;
-    const cp2y = y;
-    return `${acc} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
-  }, '');
-
-  // Generate Area Path (closed)
-  const areaPath = `${linePath} L ${chartData.length * pointWidth - pointWidth / 2} ${chartHeight} L ${pointWidth / 2} ${chartHeight} Z`;
+  const generatePath = (data: any[]) => {
+    return data.reduce((acc, point, i) => {
+      const x = i * xStep + pointWidth / 2; // Center points
+      const y = getY(point.value);
+      if (i === 0) return `M ${x} ${y}`;
+      const prev = data[i - 1];
+      const prevX = (i - 1) * xStep + pointWidth / 2;
+      const prevY = getY(prev.value);
+      const cp1x = prevX + xStep / 2;
+      const cp1y = prevY;
+      const cp2x = x - xStep / 2;
+      const cp2y = y;
+      return `${acc} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
+    }, '');
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -190,129 +224,82 @@ const TraderDetailScreen = () => {
 
         {/* Profit Trend Section */}
         <View style={styles.card}>
-          <View style={styles.chartHeader}>
-            <Text style={styles.sectionTitle}>收益走勢</Text>
-            <View style={styles.legendContainer}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: COLORS.yellow }]} />
-                <Text style={styles.legendText}>本组合</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: COLORS.purple }]} />
-                <Text style={styles.legendText}>基准</Text>
-              </View>
+          <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>收益走势</Text>
+          
+          <View style={styles.timeFilterContainer}>
+            {['近一周', '近一月', '近三月', '全部'].map((filter) => (
+              <TouchableOpacity 
+                key={filter}
+                style={timeFilter === filter ? styles.timeFilterBtnActive : styles.timeFilterBtn}
+                onPress={() => setTimeFilter(filter)}
+              >
+                <Text style={timeFilter === filter ? styles.timeFilterTextActive : styles.timeFilterText}>{filter}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 12, marginBottom: 12 }}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
+              <Text style={styles.legendText}>本组合</Text>
             </View>
           </View>
 
-          <View style={styles.timeFilterContainer}>
-            <TouchableOpacity style={styles.timeFilterBtnActive}>
-              <Text style={styles.timeFilterTextActive}>近一周</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.timeFilterBtn}>
-              <Text style={styles.timeFilterText}>近一月</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.timeFilterBtn}>
-              <Text style={styles.timeFilterText}>近三月</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.timeFilterBtn}>
-              <Text style={styles.timeFilterText}>全部</Text>
-            </TouchableOpacity>
+          <View style={styles.chartHeader}>
+            <Text style={styles.chartLabel}>累计收益率(%)</Text>
           </View>
 
           <View style={styles.chartContainer}>
             <View style={styles.yAxis}>
-              <Text style={styles.axisText}>+100%</Text>
-              <Text style={styles.axisText}>+50%</Text>
-              <Text style={styles.axisText}>0%</Text>
-              <Text style={styles.axisText}>-50%</Text>
+              <Text style={styles.axisText}>{yAxisMax}%</Text>
+              <Text style={styles.axisText}>{Math.round(yAxisMax - yRange / 3)}%</Text>
+              <Text style={styles.axisText}>{Math.round(yAxisMax - 2 * yRange / 3)}%</Text>
+              <Text style={styles.axisText}>{yAxisMin}%</Text>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chartContent}>
               {/* SVG Chart */}
               <View style={{ width: chartWidth, height: chartHeight }}>
                 <Svg height="100%" width="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
                   <Defs>
-                    <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0%" stopColor={COLORS.yellow} stopOpacity="0.6" />
-                      <Stop offset="100%" stopColor={COLORS.yellow} stopOpacity="0.1" />
-                    </LinearGradient>
                     <LinearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                       <Stop offset="0%" stopColor={COLORS.primary} stopOpacity="0.3" />
                       <Stop offset="100%" stopColor={COLORS.primary} stopOpacity="0" />
                     </LinearGradient>
                   </Defs>
 
-                  {/* Area Fill */}
-                  <Path 
-                    d={areaPath} 
-                    fill="url(#areaGradient)" 
-                    stroke="none"
-                  />
-
-                  {/* Bars */}
-                  {chartData.map((point, i) => (
-                    <Rect
-                      key={`bar-${i}`}
-                      x={i * xStep + pointWidth / 2 - 10}
-                      y={chartHeight - getBarHeight(point.bar)}
-                      width={20}
-                      height={getBarHeight(point.bar)}
-                      fill="url(#barGradient)"
-                      rx={4}
-                    />
-                  ))}
-
                   {/* Line */}
                   <Path 
-                    d={linePath} 
+                    d={generatePath(chartData)} 
                     fill="none" 
                     stroke={COLORS.primary}
-                    strokeWidth="4" 
+                    strokeWidth="3" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
                   />
 
-                  {/* Avatars and Labels */}
-                  {chartData.map((point, i) => {
-                    if (!point.avatar) return null;
+                  {/* Avatar at the end */}
+                  {(() => {
+                    if (chartData.length === 0) return null;
+                    const lastPoint = chartData[chartData.length - 1];
+                    const i = chartData.length - 1;
                     const x = i * xStep + pointWidth / 2;
-                    const y = getY(point.value);
+                    const y = getY(lastPoint.value);
                     
                     return (
-                      <G key={`avatar-${i}`}>
-                        {/* Label Background */}
-                        <Rect
-                          x={x - 30}
-                          y={y - 45}
-                          width={60}
-                          height={24}
-                          rx={6}
-                          fill="white"
-                        />
-                        {/* Label Text */}
-                        <SvgText
-                          x={x}
-                          y={y - 29}
-                          fill="black"
-                          fontSize="11"
-                          fontWeight="bold"
-                          textAnchor="middle"
-                        >
-                          {point.label}
-                        </SvgText>
-                        
+                      <G>
                         {/* Avatar Border */}
                         <Circle
                           cx={x}
                           cy={y}
                           r={14}
                           fill={COLORS.surface}
-                          stroke={point.isTop ? COLORS.yellow : COLORS.primary}
+                          stroke={COLORS.primary}
                           strokeWidth={2}
                         />
                         
                         {/* Avatar Image with ClipPath */}
                         <Defs>
-                          <ClipPath id={`clip-${i}`}>
+                          <ClipPath id="clip-trader-detail">
                             <Circle cx={x} cy={y} r={12} />
                           </ClipPath>
                         </Defs>
@@ -321,19 +308,14 @@ const TraderDetailScreen = () => {
                           y={y - 12}
                           width={24}
                           height={24}
-                          href={{ uri: point.avatar }}
-                          clipPath={`url(#clip-${i})`}
+                          href={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg" }}
+                          clipPath="url(#clip-trader-detail)"
                           preserveAspectRatio="xMidYMid slice"
                         />
-                        
-                        {/* Trophy for Top */}
-                        {point.isTop && (
-                           <SvgText x={x+8} y={y-8} fontSize="12">🏆</SvgText>
-                        )}
                       </G>
                     );
-                  })}
-                  
+                  })()}
+
                   {/* X Axis Labels inside ScrollView */}
                   {chartData.map((point, i) => (
                     <SvgText
@@ -769,6 +751,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  chartLabel: {
+    color: COLORS.textSub,
+    fontSize: 12,
   },
   sectionTitle: {
     color: COLORS.textMain,
