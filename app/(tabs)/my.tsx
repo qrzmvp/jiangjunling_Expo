@@ -136,12 +136,30 @@ const MyPage: React.FC = () => {
           </View>
         </View> */}
 
+        {/* VIP Card */}
+        <TouchableOpacity 
+          style={styles.vipCard}
+          onPress={() => router.push('/vip-purchase')}
+          activeOpacity={0.9}
+        >
+          <View style={styles.vipContent}>
+            <View style={styles.vipTitleRow}>
+              <Ionicons name="diamond" size={20} color="#ffffff" />
+              <Text style={styles.vipTitle}>VIP 会员中心</Text>
+            </View>
+            <Text style={styles.vipSubtitle}>尊享更低手续费与专属客服服务</Text>
+          </View>
+          <View style={styles.vipButton}>
+            <Text style={styles.vipButtonText}>立即开通 {'>'}</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* Menu List 1 */}
         <View style={styles.menuCard}>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
-              <Ionicons name="trending-up" size={22} color="#8A919E" />
-              <Text style={styles.menuText}>高级行情</Text>
+              <Ionicons name="receipt-outline" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>购买记录</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
@@ -418,6 +436,48 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 12,
     marginLeft: 4,
+  },
+  vipCard: {
+    backgroundColor: '#1c1c1e',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#333',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  vipContent: {
+    flex: 1,
+  },
+  vipTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  vipTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  vipSubtitle: {
+    color: '#9ca3af',
+    fontSize: 12,
+  },
+  vipButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#ffffff',
+  },
+  vipButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 
