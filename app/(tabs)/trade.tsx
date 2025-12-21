@@ -142,7 +142,7 @@ const TradePage: React.FC = () => {
           <Ionicons name="chevron-down" size={18} color="#8A919E" style={{ marginLeft: 4 }} />
         </View>
         <TouchableOpacity>
-          <Ionicons name="search" size={24} color="#EAEBEF" />
+          <Ionicons name="add" size={28} color="#EAEBEF" />
         </TouchableOpacity>
       </View>
 
@@ -158,9 +158,6 @@ const TradePage: React.FC = () => {
           </TouchableOpacity>
           <TouchableOpacity style={styles.navItem}>
             <Text style={styles.navText}>历史</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navText}>更多</Text>
           </TouchableOpacity>
         </View>
 
