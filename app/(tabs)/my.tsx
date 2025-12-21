@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { UserInfo, Stats } from '../../types';
 
 const COLORS = {
@@ -17,6 +18,7 @@ const COLORS = {
 };
 
 const MyPage: React.FC = () => {
+  const router = useRouter();
   // 使用类型定义的数据
   const userInfo: UserInfo = {
     username: 'VGro6220',
@@ -47,7 +49,11 @@ const MyPage: React.FC = () => {
 
       <ScrollView style={styles.myScrollView}>
         {/* Profile Section */}
-        <View style={styles.profileSection}>
+        <TouchableOpacity 
+          style={styles.profileSection}
+          onPress={() => router.push('/personal-info')}
+          activeOpacity={0.8}
+        >
           <View style={styles.profileInfo}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
@@ -69,7 +75,7 @@ const MyPage: React.FC = () => {
             <Ionicons name="qr-code-outline" size={24} color="#8A919E" />
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Stats Section */}
         <View style={styles.statsCard}>
