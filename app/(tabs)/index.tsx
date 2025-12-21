@@ -100,47 +100,162 @@ const LeaderboardItem = ({ rank, name, roi, avatar, isTop = false }: { rank: num
 };
 
 const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
+  const [timeFilter, setTimeFilter] = React.useState('近一周');
+  const [hiddenTraders, setHiddenTraders] = React.useState<string[]>([]);
+
+  const toggleTrader = (name: string) => {
+    setHiddenTraders(prev => 
+      prev.includes(name) 
+        ? prev.filter(n => n !== name)
+        : [...prev, name]
+    );
+  };
+
   // Mock Chart Data
-  const chartData = [
-    { date: '10-21', value: 20, bar: 30 },
-    { date: '10-22', value: 35, bar: 50 },
-    { date: '10-23', value: 55, bar: 40, avatar: 'https://randomuser.me/api/portraits/men/32.jpg', label: '+12.5%' },
-    { date: '10-24', value: 50, bar: 25 },
-    { date: '10-25', value: 70, bar: 60, avatar: 'https://randomuser.me/api/portraits/men/44.jpg', label: '+45.2%' },
-    { date: '10-26', value: 85, bar: 45 },
-    { date: '10-27', value: 90, bar: 70, avatar: 'https://randomuser.me/api/portraits/men/85.jpg', label: '+107.7%', isTop: true },
-    { date: '10-28', value: 80, bar: 55 },
-    { date: '10-29', value: 95, bar: 80 },
-    { date: '10-30', value: 85, bar: 60 },
-    { date: '10-31', value: 100, bar: 90 },
+  const rawTraders = [
+    {
+      name: '本组合',
+      color: COLORS.primary,
+      avatar: 'https://randomuser.me/api/portraits/men/85.jpg',
+      data: [
+        { date: '10-21', value: 20 },
+        { date: '10-22', value: 35 },
+        { date: '10-23', value: 55 },
+        { date: '10-24', value: 50 },
+        { date: '10-25', value: 70 },
+        { date: '10-26', value: 85 },
+        { date: '10-27', value: 90 },
+        { date: '10-28', value: 80 },
+        { date: '10-29', value: 95 },
+        { date: '10-30', value: 85 },
+        { date: '10-31', value: 100 },
+      ]
+    },
+    {
+      name: 'Trader A',
+      color: '#3b82f6',
+      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+      data: [
+        { date: '10-21', value: 10 },
+        { date: '10-22', value: 25 },
+        { date: '10-23', value: 40 },
+        { date: '10-24', value: 35 },
+        { date: '10-25', value: 60 },
+        { date: '10-26', value: 75 },
+        { date: '10-27', value: 60 },
+        { date: '10-28', value: 70 },
+        { date: '10-29', value: 85 },
+        { date: '10-30', value: 75 },
+        { date: '10-31', value: 90 },
+      ]
+    },
+    {
+      name: 'Trader B',
+      color: COLORS.yellow,
+      avatar: 'https://randomuser.me/api/portraits/men/44.jpg',
+      data: [
+        { date: '10-21', value: 30 },
+        { date: '10-22', value: 45 },
+        { date: '10-23', value: 35 },
+        { date: '10-24', value: 55 },
+        { date: '10-25', value: 40 },
+        { date: '10-26', value: 65 },
+        { date: '10-27', value: 50 },
+        { date: '10-28', value: 60 },
+        { date: '10-29', value: 55 },
+        { date: '10-30', value: 70 },
+        { date: '10-31', value: 80 },
+      ]
+    },
+    {
+      name: 'Trader C',
+      color: '#f97316', // orange-500
+      avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
+      data: [
+        { date: '10-21', value: 15 },
+        { date: '10-22', value: 20 },
+        { date: '10-23', value: 30 },
+        { date: '10-24', value: 45 },
+        { date: '10-25', value: 50 },
+        { date: '10-26', value: 60 },
+        { date: '10-27', value: 55 },
+        { date: '10-28', value: 65 },
+        { date: '10-29', value: 70 },
+        { date: '10-30', value: 80 },
+        { date: '10-31', value: 85 },
+      ]
+    },
+    {
+      name: 'Trader D',
+      color: '#8b5cf6', // violet-500
+      avatar: 'https://randomuser.me/api/portraits/women/65.jpg',
+      data: [
+        { date: '10-21', value: 5 },
+        { date: '10-22', value: 15 },
+        { date: '10-23', value: 25 },
+        { date: '10-24', value: 20 },
+        { date: '10-25', value: 35 },
+        { date: '10-26', value: 45 },
+        { date: '10-27', value: 40 },
+        { date: '10-28', value: 50 },
+        { date: '10-29', value: 60 },
+        { date: '10-30', value: 65 },
+        { date: '10-31', value: 75 },
+      ]
+    }
   ];
 
-  const pointWidth = 60;
-  const chartWidth = Math.max(300, chartData.length * pointWidth); // Dynamic width
-  const chartHeight = 180;
-  const xStep = pointWidth;
-  const maxY = 100;
+  const traders = React.useMemo(() => {
+    if (timeFilter === '近一周') {
+      return rawTraders.map(t => ({
+        ...t,
+        data: t.data.slice(-7)
+      }));
+    }
+    return rawTraders;
+  }, [timeFilter]);
 
-  const getY = (val: number) => chartHeight - (val / maxY) * (chartHeight * 0.6) - 30;
-  const getBarHeight = (val: number) => (val / maxY) * (chartHeight * 0.4);
+  // Calculate Min/Max Y dynamically
+  const { yAxisMax, yAxisMin, yRange } = React.useMemo(() => {
+    const allValues = traders.flatMap(t => t.data.map(d => d.value));
+    const dataMax = Math.max(...allValues);
+    const dataMin = Math.min(...allValues);
+    
+    // Add ~10% padding
+    const padding = (dataMax - dataMin) * 0.1 || 10;
+    const max = Math.ceil(dataMax + padding);
+    const min = Math.floor(dataMin - padding);
+    
+    return { yAxisMax: max, yAxisMin: min, yRange: max - min };
+  }, [traders]);
+
+  const pointWidth = 60;
+  const chartWidth = Math.max(300, traders[0].data.length * pointWidth); // Dynamic width
+  const chartHeight = 256;
+  const xStep = pointWidth;
+
+  const getY = (val: number) => {
+    const availableHeight = chartHeight - 60; // 30 top, 30 bottom padding
+    const normalizedVal = (val - yAxisMin) / (yRange || 1);
+    return chartHeight - 30 - normalizedVal * availableHeight;
+  };
 
   // Generate Smooth Path
-  const linePath = chartData.reduce((acc, point, i) => {
-    const x = i * xStep + pointWidth / 2; // Center points
-    const y = getY(point.value);
-    if (i === 0) return `M ${x} ${y}`;
-    const prev = chartData[i - 1];
-    const prevX = (i - 1) * xStep + pointWidth / 2;
-    const prevY = getY(prev.value);
-    const cp1x = prevX + xStep / 2;
-    const cp1y = prevY;
-    const cp2x = x - xStep / 2;
-    const cp2y = y;
-    return `${acc} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
-  }, '');
-
-  // Generate Area Path (closed)
-  const areaPath = `${linePath} L ${chartData.length * pointWidth - pointWidth / 2} ${chartHeight} L ${pointWidth / 2} ${chartHeight} Z`;
+  const generatePath = (data: any[]) => {
+    return data.reduce((acc, point, i) => {
+      const x = i * xStep + pointWidth / 2; // Center points
+      const y = getY(point.value);
+      if (i === 0) return `M ${x} ${y}`;
+      const prev = data[i - 1];
+      const prevX = (i - 1) * xStep + pointWidth / 2;
+      const prevY = getY(prev.value);
+      const cp1x = prevX + xStep / 2;
+      const cp1y = prevY;
+      const cp2x = x - xStep / 2;
+      const cp2y = y;
+      return `${acc} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${x} ${y}`;
+    }, '');
+  };
 
   return (
   <>
@@ -149,34 +264,43 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
       <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>收益走势</Text>
       
       <View style={styles.timeFilter}>
-        <TouchableOpacity style={styles.timeBtnActive}>
-          <Text style={styles.timeBtnTextActive}>近一周</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.timeBtn}>
-          <Text style={styles.timeBtnText}>近一月</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.timeBtn}>
-          <Text style={styles.timeBtnText}>近三月</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.timeBtn}>
-          <Text style={styles.timeBtnText}>创建至今</Text>
-        </TouchableOpacity>
+        {['近一周', '近一月', '近三月', '创建至今'].map((filter) => (
+          <TouchableOpacity 
+            key={filter}
+            style={timeFilter === filter ? styles.timeBtnActive : styles.timeBtn}
+            onPress={() => setTimeFilter(filter)}
+          >
+            <Text style={timeFilter === filter ? styles.timeBtnTextActive : styles.timeBtnText}>{filter}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 12, marginBottom: 12 }}>
+        {traders.map((trader, index) => {
+          const isHidden = hiddenTraders.includes(trader.name);
+          return (
+            <TouchableOpacity 
+              key={index} 
+              style={[styles.chartLegend, { opacity: isHidden ? 0.5 : 1 }]}
+              onPress={() => toggleTrader(trader.name)}
+            >
+              <View style={[styles.legendColor, { backgroundColor: trader.color }]} />
+              <Text style={styles.legendText}>{trader.name}</Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <View style={styles.chartHeader}>
         <Text style={styles.chartLabel}>累计收益率(%)</Text>
-        <View style={styles.chartLegend}>
-          <View style={styles.legendColor} />
-          <Text style={styles.legendText}>本组合</Text>
-        </View>
       </View>
 
       <View style={styles.chartContainer}>
         <View style={styles.yAxis}>
-          <Text style={styles.axisText}>100%</Text>
-          <Text style={styles.axisText}>50%</Text>
-          <Text style={styles.axisText}>0%</Text>
-          <Text style={styles.axisText}>-50%</Text>
+          <Text style={styles.axisText}>{yAxisMax}%</Text>
+          <Text style={styles.axisText}>{Math.round(yAxisMax - yRange / 3)}%</Text>
+          <Text style={styles.axisText}>{Math.round(yAxisMax - 2 * yRange / 3)}%</Text>
+          <Text style={styles.axisText}>{yAxisMin}%</Text>
         </View>
         
         <ChartErrorBoundary>
@@ -185,88 +309,51 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
               <View style={{ width: chartWidth, height: chartHeight }}>
                 <Svg height="100%" width="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
                   <Defs>
-                    <LinearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0%" stopColor={COLORS.yellow} stopOpacity="0.6" />
-                      <Stop offset="100%" stopColor={COLORS.yellow} stopOpacity="0.1" />
-                    </LinearGradient>
                     <LinearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                       <Stop offset="0%" stopColor={COLORS.primary} stopOpacity="0.3" />
                       <Stop offset="100%" stopColor={COLORS.primary} stopOpacity="0" />
                     </LinearGradient>
                   </Defs>
 
-                  {/* Area Fill */}
-                  <Path 
-                    d={areaPath} 
-                    fill="url(#areaGradient)" 
-                    stroke="none"
-                  />
+                  {/* Lines */}
+                  {traders.map((trader, index) => {
+                    if (hiddenTraders.includes(trader.name)) return null;
+                    return (
+                      <Path 
+                        key={`line-${index}`}
+                        d={generatePath(trader.data)} 
+                        fill="none" 
+                        stroke={trader.color}
+                        strokeWidth="3" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      />
+                    );
+                  })}
 
-                  {/* Bars */}
-                  {chartData.map((point, i) => (
-                    <Rect
-                      key={`bar-${i}`}
-                      x={i * xStep + pointWidth / 2 - 10}
-                      y={chartHeight - getBarHeight(point.bar)}
-                      width={20}
-                      height={getBarHeight(point.bar)}
-                      fill="url(#barGradient)"
-                      rx={4}
-                    />
-                  ))}
-
-                  {/* Line */}
-                  <Path 
-                    d={linePath} 
-                    fill="none" 
-                    stroke={COLORS.primary}
-                    strokeWidth="4" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
-
-                  {/* Avatars and Labels */}
-                  {chartData.map((point, i) => {
-                    if (!point.avatar) return null;
+                  {/* Avatars at the end of each line */}
+                  {traders.map((trader, index) => {
+                    if (hiddenTraders.includes(trader.name)) return null;
+                    const lastPoint = trader.data[trader.data.length - 1];
+                    const i = trader.data.length - 1;
                     const x = i * xStep + pointWidth / 2;
-                    const y = getY(point.value);
+                    const y = getY(lastPoint.value);
                     
                     return (
-                      <G key={`avatar-${i}`}>
-                        {/* Label Background */}
-                        <Rect
-                          x={x - 30}
-                          y={y - 45}
-                          width={60}
-                          height={24}
-                          rx={6}
-                          fill="white"
-                        />
-                        {/* Label Text */}
-                        <SvgText
-                          x={x}
-                          y={y - 29}
-                          fill="black"
-                          fontSize="11"
-                          fontWeight="bold"
-                          textAnchor="middle"
-                        >
-                          {point.label}
-                        </SvgText>
-                        
+                      <G key={`avatar-${index}`}>
                         {/* Avatar Border */}
                         <Circle
                           cx={x}
                           cy={y}
                           r={14}
                           fill={COLORS.surface}
-                          stroke={point.isTop ? COLORS.yellow : COLORS.primary}
+                          stroke={trader.color}
                           strokeWidth={2}
                         />
                         
                         {/* Avatar Image with ClipPath */}
                         <Defs>
-                          <ClipPath id={`clip-${i}`}>
+                          <ClipPath id={`clip-trader-${index}`}>
                             <Circle cx={x} cy={y} r={12} />
                           </ClipPath>
                         </Defs>
@@ -275,21 +362,16 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
                           y={y - 12}
                           width={24}
                           height={24}
-                          href={{ uri: point.avatar }}
-                          clipPath={`url(#clip-${i})`}
+                          href={{ uri: trader.avatar }}
+                          clipPath={`url(#clip-trader-${index})`}
                           preserveAspectRatio="xMidYMid slice"
                         />
-                        
-                        {/* Trophy for Top */}
-                        {point.isTop && (
-                           <SvgText x={x+8} y={y-8} fontSize="12">🏆</SvgText>
-                        )}
                       </G>
                     );
                   })}
                   
                   {/* X Axis Labels inside ScrollView */}
-                  {chartData.map((point, i) => (
+                  {traders[0].data.map((point, i) => (
                     <SvgText
                       key={`label-${i}`}
                       x={i * xStep + pointWidth / 2}
