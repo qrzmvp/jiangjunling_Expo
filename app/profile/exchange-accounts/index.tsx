@@ -10,7 +10,7 @@ const COLORS = {
   text: "#ffffff",
   textSecondary: "#9ca3af",
   border: "#27272a",
-  primary: "#3B82F6", // Blue for actions
+  primary: "#ffffff", // Changed to white
   success: "#2ebd85", // Green
   danger: "#f6465d", // Red
   warning: "#eab308", // Yellow
@@ -34,7 +34,10 @@ export default function ExchangeAccountsList() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>交易所账户管理</Text>
           <TouchableOpacity 
-            onPress={() => router.push('/profile/exchange-accounts/edit')}
+            onPress={() => {
+              console.log('Navigating to edit page');
+              router.push('/profile/exchange-accounts/edit');
+            }}
             style={styles.iconButton}
           >
             <Text style={styles.headerAction}>添加</Text>

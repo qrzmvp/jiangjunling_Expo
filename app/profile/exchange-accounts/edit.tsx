@@ -10,11 +10,11 @@ const COLORS = {
   text: "#ffffff",
   textSecondary: "#9ca3af",
   border: "#27272a",
-  primary: "#3B82F6", // Blue for actions
+  primary: "#ffffff", // Changed to white
   success: "#2ebd85", // Green
   danger: "#f6465d", // Red
-  warning: "#eab308", // Yellow
-  warningBg: "rgba(234, 179, 8, 0.1)",
+  warning: "#ffffff", // Changed to white
+  warningBg: "rgba(255, 255, 255, 0.1)", // Changed to white tint
   inputPlaceholder: "#6B7280",
 };
 
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 32,
     backgroundColor: COLORS.warningBg,
-    borderColor: 'rgba(234, 179, 8, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   warningContent: {
     flex: 1,
@@ -328,6 +328,6 @@ const styles = StyleSheet.create({
   warningText: {
     fontSize: 12,
     lineHeight: 18,
-    color: 'rgba(253, 230, 138, 0.8)',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
 });
