@@ -150,8 +150,8 @@ const MyPage: React.FC = () => {
         <View style={styles.menuCard}>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
-              <Ionicons name="help-circle-outline" size={22} color="#8A919E" />
-              <Text style={styles.menuText}>常见问题</Text>
+              <Ionicons name="person-add-outline" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>邀请好友</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
