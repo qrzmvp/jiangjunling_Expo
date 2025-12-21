@@ -706,6 +706,7 @@ export default function HomePage() {
             onScroll={handleScroll}
             scrollEventThrottle={16}
             nestedScrollEnabled={true}
+            directionalLockEnabled={true}
             style={{ height: heights[activeTab] || undefined }}
             contentOffset={{ x: activeTab === 'overview' ? 0 : containerWidth, y: 0 }}
           >
