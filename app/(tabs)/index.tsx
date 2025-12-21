@@ -537,7 +537,6 @@ export default function HomePage() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[1]}
       >
         {/* Header Top */}
         <View style={styles.headerTopContainer}>
