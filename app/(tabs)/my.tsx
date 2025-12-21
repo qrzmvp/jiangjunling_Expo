@@ -156,7 +156,10 @@ const MyPage: React.FC = () => {
 
         {/* Menu List 1 */}
         <View style={styles.menuCard}>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/purchase-history')}
+          >
             <View style={styles.menuLeft}>
               <Ionicons name="receipt-outline" size={22} color="#8A919E" />
               <Text style={styles.menuText}>购买记录</Text>
