@@ -203,7 +203,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.dividerContainer}>
+          {/* <View style={styles.dividerContainer}>
             <View style={[styles.divider, { backgroundColor: theme.inputBorder }]} />
             <Text style={styles.dividerText}>其他方式登录</Text>
             <View style={[styles.divider, { backgroundColor: theme.inputBorder }]} />
@@ -239,17 +239,17 @@ export default function LoginScreen() {
               </Svg>
               <Text style={[styles.socialButtonText, { color: theme.text }]}>Google</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </ScrollView>
 
-        <View style={styles.footer}>
+        {/* <View style={styles.footer}>
           <Text style={styles.footerText}>
             继续即代表您同意
             <Text style={styles.linkText}>《服务协议》</Text>
             和
             <Text style={styles.linkText}>《隐私政策》</Text>
           </Text>
-        </View>
+        </View> */}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
