@@ -735,20 +735,25 @@ export default function HomePage() {
 
         {/* Sticky Nav Tabs */}
         <View style={styles.stickyNavTabs}>
-          <View style={styles.navTabs}>
-            <TouchableOpacity 
-              style={styles.tabItem} 
-              onPress={() => handleTabPress('overview')}
-            >
-              <Text style={activeTab === 'overview' ? styles.tabTextActive : styles.tabText}>Overview</Text>
-              {activeTab === 'overview' && <View style={styles.tabIndicator} />}
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.tabItem}
-              onPress={() => handleTabPress('copy')}
-            >
-              <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>Traders</Text>
-              {activeTab === 'copy' && <View style={styles.tabIndicator} />}
+          <View style={styles.navBarContent}>
+            <View style={styles.navTabs}>
+              <TouchableOpacity 
+                style={styles.tabItem} 
+                onPress={() => handleTabPress('overview')}
+              >
+                <Text style={activeTab === 'overview' ? styles.tabTextActive : styles.tabText}>Overview</Text>
+                {activeTab === 'overview' && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.tabItem}
+                onPress={() => handleTabPress('copy')}
+              >
+                <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>Traders</Text>
+                {activeTab === 'copy' && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.searchBtn} onPress={() => router.push('/search')}>
+              <MaterialIcons name="search" size={28} color={COLORS.textMain} />
             </TouchableOpacity>
           </View>
         </View>
@@ -801,6 +806,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     zIndex: 100,
     marginBottom: 16,
+    paddingTop: 16,
   },
   headerTop: {
     flexDirection: 'row',
@@ -878,11 +884,20 @@ const styles = StyleSheet.create({
   iconBtn: {
     padding: 4,
   },
+  navBarContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingRight: 16,
+  },
   navTabs: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 32,
     alignItems: 'flex-end',
+  },
+  searchBtn: {
+    padding: 4,
   },
   tabItem: {
     paddingBottom: 12,
