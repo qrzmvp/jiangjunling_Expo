@@ -731,36 +731,7 @@ export default function HomePage() {
         directionalLockEnabled={true}
         automaticallyAdjustContentInsets={false}
       >
-        {/* Header Top */}
-        <View style={styles.headerTopContainer}>
-          <View style={styles.headerTop}>
-            <TouchableOpacity style={styles.userInfo} onPress={() => router.push('/(tabs)/my')}>
-              <View style={styles.userAvatarContainer}>
-                <Image 
-                  source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAd41aAXypJ-KoThdlQwaGvekk668Wn24nqPwjwrYnBoIOw9pU3-LQYE9Fsl8_qQILrWGjvZyQITeAQOBevDrIemfVF3QzYQpYfK1w5ZOOhnFMSx6XdJI_f4eLVb5Pd4PZyDEhf5-VCRsq-Oqx2lYS1BPhzGVQWlahH0z-uyOAo3QeC4LaKCSbr-e5l55Ch6YEltOtm-mWr9rnLtfioCWZP9g0iH6wA-kJ2MSoJl36o4IVmy332j2yZ3eD-iy5BIINUrxaacF_rUA" }} 
-                  style={styles.userAvatar} 
-                />
-                <View style={styles.onlineIndicator} />
-              </View>
-              <View style={styles.userDetails}>
-                <View style={styles.userNameBtn}>
-                  <Text style={styles.userName}>Alex_Trader</Text>
-                </View>
-                <View style={styles.userBadges}>
-                  <View style={styles.vipBadge}>
-                    <Text style={styles.vipText}>VIP 3</Text>
-                  </View>
-                  <Text style={styles.uidText}>UID: 82910</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-            <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.iconBtn}>
-                <MaterialIcons name="ios-share" size={24} color={COLORS.textMuted} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        {/* Header Top Removed */}
 
         {/* Sticky Nav Tabs */}
         <View style={styles.stickyNavTabs}>
@@ -828,9 +799,8 @@ const styles = StyleSheet.create({
   },
   stickyNavTabs: {
     backgroundColor: COLORS.background,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(39, 39, 42, 0.5)',
     zIndex: 100,
+    marginBottom: 16,
   },
   headerTop: {
     flexDirection: 'row',
@@ -912,6 +882,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 32,
+    alignItems: 'flex-end',
   },
   tabItem: {
     paddingBottom: 12,
@@ -920,12 +891,12 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: COLORS.textMain,
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 20,
   },
   tabText: {
     color: COLORS.textMuted,
     fontWeight: '500',
-    fontSize: 14,
+    fontSize: 16,
   },
   tabIndicator: {
     position: 'absolute',
