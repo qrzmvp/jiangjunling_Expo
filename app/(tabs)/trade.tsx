@@ -65,7 +65,7 @@ const NumberTicker = ({ value, style, duration = 1000 }: { value: string, style?
 
 const TradePage: React.FC = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'position' | 'order'>('position');
+  const [activeTab, setActiveTab] = useState<'position' | 'order' | 'history'>('position');
 
   // 模拟持仓数据
   const positionData = [
@@ -132,6 +132,45 @@ const TradePage: React.FC = () => {
     },
   ];
 
+  // 模拟历史数据
+  const historyData = [
+    {
+      id: 1,
+      symbol: 'BTC/USD',
+      name: 'Bitcoin',
+      type: 'buy',
+      orderType: '限价单',
+      shares: 0.1,
+      orderPrice: 95000.00,
+      avgPrice: 95000.00,
+      status: '已成交',
+      time: '2025-12-14 14:20',
+    },
+    {
+      id: 2,
+      symbol: 'ETH/USD',
+      name: 'Ethereum',
+      type: 'sell',
+      orderType: '限价单',
+      shares: 2,
+      orderPrice: 3800.00,
+      avgPrice: 3800.00,
+      status: '已成交',
+      time: '2025-12-13 09:15',
+    },
+    {
+      id: 3,
+      symbol: 'SOL/USD',
+      name: 'Solana',
+      type: 'buy',
+      orderType: '限价单',
+      shares: 10,
+      orderPrice: 140.00,
+      status: '已撤单',
+      time: '2025-12-12 16:45',
+    },
+  ];
+
   return (
     <View style={styles.container}>
       {/* Header with Account Selector */}
@@ -156,10 +195,7 @@ const TradePage: React.FC = () => {
             <Text style={styles.navTextActive}>资产</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navText}>资产分析</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Text style={styles.navText}>历史</Text>
+            <Text style={styles.navText}>分析</Text>
           </TouchableOpacity>
         </View>
 
@@ -234,6 +270,12 @@ const TradePage: React.FC = () => {
             onPress={() => setActiveTab('order')}
           >
             <Text style={activeTab === 'order' ? styles.navTextActive : styles.navText}>挂单(3)</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={activeTab === 'history' ? styles.navItemActive : styles.navItem}
+            onPress={() => setActiveTab('history')}
+          >
+            <Text style={activeTab === 'history' ? styles.navTextActive : styles.navText}>历史</Text>
           </TouchableOpacity>
         </View>
 
@@ -339,6 +381,53 @@ const TradePage: React.FC = () => {
             <TouchableOpacity style={styles.cancelButton}>
               <Text style={styles.cancelButtonText}>撤单</Text>
             </TouchableOpacity>
+          </View>
+        ))}
+
+        {/* 历史列表 */}
+        {activeTab === 'history' && historyData.map((history) => (
+          <View key={history.id} style={styles.orderCard}>
+            <View style={styles.cardTitleRow}>
+              <Text style={styles.symbolTitle}>
+                {history.symbol} <Text style={styles.symbolSubtitle}>{history.name}</Text>
+              </Text>
+              <View style={styles.orderTypeBadge}>
+                <Text style={[styles.orderTypeText, history.type === 'buy' ? styles.greenText : styles.redText]}>
+                  {history.type === 'buy' ? '买入' : '卖出'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.dividerLine} />
+
+            <View style={styles.positionMetrics}>
+              <View style={styles.metricRowContainer}>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>委托价格</Text>
+                  <Text style={styles.metricValue}>{history.orderPrice ? history.orderPrice.toFixed(2) : '市价'}</Text>
+                </View>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>委托数量</Text>
+                  <Text style={styles.metricValue}>{history.shares}</Text>
+                </View>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>状态</Text>
+                  <Text style={styles.metricValue}>{history.status}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.metricRowContainer}>
+                 <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>成交均价</Text>
+                  <Text style={styles.metricValue}>{history.avgPrice ? history.avgPrice.toFixed(2) : '-'}</Text>
+                </View>
+                <View style={styles.metricCol}>
+                  <Text style={styles.metricLabel}>时间</Text>
+                  <Text style={styles.metricValue}>{history.time}</Text>
+                </View>
+                 <View style={styles.metricCol} />
+              </View>
+            </View>
           </View>
         ))}
 
