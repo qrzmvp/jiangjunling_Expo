@@ -832,7 +832,7 @@ export default function HomePage() {
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / containerWidth);
-    const newTab = index === 0 ? 'overview' : index === 1 ? 'copy' : 'signal';
+    const newTab = index === 0 ? 'overview' : index === 1 ? 'signal' : 'copy';
     if (newTab !== activeTab) {
       setActiveTab(newTab);
     }
@@ -841,8 +841,8 @@ export default function HomePage() {
   const handleTabPress = (tab: 'overview' | 'copy' | 'signal') => {
     setActiveTab(tab);
     let x = 0;
-    if (tab === 'copy') x = containerWidth;
-    if (tab === 'signal') x = containerWidth * 2;
+    if (tab === 'signal') x = containerWidth;
+    if (tab === 'copy') x = containerWidth * 2;
 
     scrollViewRef.current?.scrollTo({
       x,
@@ -874,17 +874,17 @@ export default function HomePage() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.tabItem}
+                onPress={() => handleTabPress('signal')}
+              >
+                <Text style={activeTab === 'signal' ? styles.tabTextActive : styles.tabText}>Signals</Text>
+                {activeTab === 'signal' && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.tabItem}
                 onPress={() => handleTabPress('copy')}
               >
                 <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>Traders</Text>
                 {activeTab === 'copy' && <View style={styles.tabIndicator} />}
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.tabItem}
-                onPress={() => handleTabPress('signal')}
-              >
-                <Text style={activeTab === 'signal' ? styles.tabTextActive : styles.tabText}>Signal</Text>
-                {activeTab === 'signal' && <View style={styles.tabIndicator} />}
               </TouchableOpacity>
             </View>
           </View>
@@ -901,7 +901,7 @@ export default function HomePage() {
             nestedScrollEnabled={true}
             directionalLockEnabled={true}
             style={{ height: heights[activeTab] || undefined }}
-            contentOffset={{ x: activeTab === 'overview' ? 0 : activeTab === 'copy' ? containerWidth : containerWidth * 2, y: 0 }}
+            contentOffset={{ x: activeTab === 'overview' ? 0 : activeTab === 'signal' ? containerWidth : containerWidth * 2, y: 0 }}
           >
             <View style={{ width: containerWidth }} onLayout={(e) => {
               const height = e.nativeEvent.layout.height;
@@ -911,15 +911,15 @@ export default function HomePage() {
             </View>
             <View style={{ width: containerWidth }} onLayout={(e) => {
               const height = e.nativeEvent.layout.height;
-              setHeights(h => ({ ...h, copy: height }));
-            }}>
-              <CopyTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
-            </View>
-            <View style={{ width: containerWidth }} onLayout={(e) => {
-              const height = e.nativeEvent.layout.height;
               setHeights(h => ({ ...h, signal: height }));
             }}>
               <SignalTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
+            </View>
+            <View style={{ width: containerWidth }} onLayout={(e) => {
+              const height = e.nativeEvent.layout.height;
+              setHeights(h => ({ ...h, copy: height }));
+            }}>
+              <CopyTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
             </View>
           </ScrollView>
         </View>
