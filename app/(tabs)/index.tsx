@@ -681,14 +681,146 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
   );
 };
 
+const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps) => {
+  const router = useRouter();
+  const filters = ['综合', '近一周收益', '近一月收益', '已订阅', '已关注'];
+
+  const handleFilterPress = (filter: string) => {
+    if (filter === '综合') {
+      setActiveFilters(['综合']);
+      return;
+    }
+
+    let newFilters = [...activeFilters];
+    if (newFilters.includes('综合')) {
+      newFilters = newFilters.filter(f => f !== '综合');
+    }
+
+    if (newFilters.includes(filter)) {
+      newFilters = newFilters.filter(f => f !== filter);
+    } else {
+      newFilters.push(filter);
+    }
+
+    if (newFilters.length === 0) {
+      setActiveFilters(['综合']);
+    } else {
+      setActiveFilters(newFilters);
+    }
+  };
+
+  const getRoiLabel = () => {
+    if (activeFilters.includes('近一周收益')) return 'Lead trader 7D PnL';
+    if (activeFilters.includes('近一月收益')) return 'Lead trader 30D PnL';
+    return 'Lead trader 90D PnL';
+  };
+  
+  return (
+  <View style={[styles.copyTabContainer, { paddingHorizontal: 16, paddingTop: 16 }]}>
+
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flex: 1 }}>
+        {filters.map((filter) => {
+          const isActive = activeFilters.includes(filter);
+          return (
+          <TouchableOpacity 
+            key={filter} 
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+              backgroundColor: isActive ? COLORS.surfaceLight : 'transparent',
+              borderWidth: 1,
+              borderColor: isActive ? COLORS.primary : COLORS.border,
+            }}
+            onPress={() => handleFilterPress(filter)}
+          >
+            <Text style={{
+              color: isActive ? COLORS.primary : COLORS.textMuted,
+              fontSize: 12,
+              fontWeight: isActive ? 'bold' : 'normal',
+            }}>{filter}</Text>
+          </TouchableOpacity>
+        )})}
+      </ScrollView>
+      <TouchableOpacity style={{ padding: 4 }} onPress={() => router.push('/search')}>
+        <MaterialIcons name="search" size={24} color={COLORS.textMuted} />
+      </TouchableOpacity>
+    </View>
+
+    <View style={styles.traderList}>
+      <TraderCard 
+        roiLabel={getRoiLabel()} 
+        name="zh138"
+        avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuCA6jm-quFFL4rGgnuqOTX6aa7ja62sdDdo3axzhQrnFedupfbhBgf-e6uQk2UJW6Fw_P6j3rE-Chdj1ROGQUydNYpLFiDKTnaRkds9OmErntL2HdtacO_UqSoB5ba2135lFtLoHiQHxZEScqx0miCEfAjnfV5_KSl5QyMd8yLi2gw_PLYz0wZiLCXKt2wdodUjdjvSKNgWzPDtwupJElJqhtE9RKBIQ9kS_wrdn6X3Mco8KWrf3EmG7376RFVDEW_ffsBfco13qw"
+        followers={46}
+        maxFollowers={100}
+        roi="+7.56%"
+        pnl="+$1,968.88"
+        winRate="63.10%"
+        aum="$7,029.75"
+        days={290}
+        coins={[
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuATVNwivtQOZ2npc_w1PrcrX_4y17f4sOiNkn0PcY8zqp0YLkQ3QuxIkuDHNbTjM1ZyrnwY3GKd7UVSYfoETg68d3DNq3yliS1uwFDzri7UqYgzB5fN2Ju5KYY8plwkhuhEWVym03IBsLlyKhgTloiJKTujcHXIe_z-lpDvnkbxcYGocB5nfG-PQGKRLQ1b7pknYTUavPCwz1iU0-cRBaTMqb597A3OgbOCuT2YYwBSVl3V5yGQaMdwr6lBh9K9vzREuJyuOGn7Tg",
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuBqVLgtNIEpUr5EnOPS_CgkITlq0vVjaigO9jnxDPyQnAokTkWkEOTGXrlpCYF9sNvRwze7xjCTLCxaNfb3DiTbcvBgZhA5rJt4lyW5zxbfuPyai7ANHCgpXluqDnWr9ATykGdJ9X5sTLPyJND5T5bvWN7ciyMIvkT-OAUvZG8khWTSrhiGjPrSs-AL0ZpdNIzo2pRweRiGqFRbsmXXfg4024-qe1haFHvijyQhWvK--a2M_RHLjsnDeVusKni_aeEZwEa9cuvmxA",
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuAEcAV67993OCt0DPtM2p8O2VOufk16pTKp8rXdxYzZU8G7G59l0CDW4oL01HveVAtNT8Kh31Z9GKhffkuQDVAasrQHuE6ebVN23WctH5f7nUebYYIynGAqCZBHm1obLP8vwJwmcWrJZWa6EMfh2j2DJYl9_nwAh14I6lW2R3ZM_WibvUnRtI2a_v96J6JPW2yEh_yFxhIxz-NjuG02m8tjKWN6rti6CP0T5pyv_yhFsEtAHivwBNN7IhN3qg66P95nZngpHi5fcQ"
+        ]}
+        chartPath="M0,35 Q10,32 20,30 T40,20 T60,25 T80,10 L100,20"
+        statusColor={COLORS.yellow}
+        onPress={() => {}}
+      />
+      <TraderCard 
+        roiLabel={getRoiLabel()}
+        name="BeyondHJJ"
+        avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuBzZa78G7eCvQ3Qfir53Hh3en0nyDyqTSQLbXpOwuGfgmNT5K8kK94gFtLZ9c4QsAjTMvLKoJG-ZohYppqv5hWBKiP8tms6JOyEYTUPB-D0glDcbsQTF4Ba9k1opWJScsAodRQkxc1KcoUOmvSt6CsC8FvXUvDGJruHwegzMFzTaFLM_eF5JWZK8HPtqhNbHRWnliPvTu693N4wpz-ZmEZFfhYTq1BUb9135nVBVxM59E0nYYPndbBJBhQkWX9zheGiN9QcioZyIg"
+        followers={15}
+        maxFollowers={100}
+        roi="+32.26%"
+        pnl="+$9,567.86"
+        winRate="57.50%"
+        aum="$3,432.94"
+        days={397}
+        coins={[
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuB5BEa1eJ7RTyut5QDtbRnbcjJ5-mr3UyskhB1e5NMl50E8qS7We3bsUKyEIMd9uUgS6IzSdSYh38DU1f-CM1mrSVjDtKcr12vjB1N11w_IRwwb_qSeI7L7Au615sx-FmgHAe4pGkm5QGehKViamzP5_gH42rlQLtmbXs_KrVpfLkT_t4WSltoJsxFY8cPVAoSTwB2hjJW6pB5oiGWvNilSYsbx7hilCTwU9sm18uqe-77YRHFJXuW650Dsih0mOx40On2uZoG_mQ",
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuDzQvuheaDEXO_pAahI2DC6OOoQh-GT4prgsNS4pMaa6kQ4GMH73HAbe3u1TlhasjEGVWIsF2UU8fuYTyv8R8dzueZC7CV4duhY2IdCp2JPldm1JhcnlB3TpdOL0C8DJsfs7YumHYJdDJxwKN6UsQpCwWksP6SYJDG1TK5jgvFMP2R8bPBy5PCiidhBsV66AOGKidRcrIknZBDi4bly-ZFhdSivj0pgi5Mu7paYKW66riciXUrk_eS6IRo0v3Cu7zsYrkMezFfjfQ",
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuBehiWHC50o_Y1I-9WK0ZLzs8_cE6ScQ3TJ1E5JRRZdnO80jNAB8sfhY_z4oBej5b7eciccGxm2UJ2wFkO4dI6lhot4C2P9FkdufN-NY_1TSQpxu96I4DZH7zlss4qPS2MCoYrUR9EFcaQHdeOo3EovWDe664NAuYPyyfVI_PsCd83nZGblwen4iHNSU3QyI6GtaFdOzYEIjlTmFaiBrNqwe8ykvFxsUVHfZT3bN-3IC1w9wdCpyrbohukhiWLvlsp2bveDEVvSpA"
+        ]}
+        chartPath="M0,30 Q15,32 25,25 T45,28 T65,15 T85,25 L100,18"
+        statusColor={COLORS.yellow}
+        onPress={() => {}}
+      />
+      <TraderCard 
+        name="Average-Moon-Cypress"
+        avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuB_YJoFtmSgqjEYM2tsRwwH6OcbxEzQ0rOaBPiJTZ4kKmIvaq0Whpfn4QNXrDoxYbqYTbsxrudPSci0vqyxrfvX5NmUtQlekhCyT7-wQDutN-2ZxMOpAvUeEwTkwiZt1NsTnXYQeiDjq55arRKjL8FCa3t0cxXr0bvH7NV1Wo8KBsbV8ddGD1USqDJU2_1BtHf6qmsHmXN0_TGvvZFwElGBKxyPrp7TnUPf9H6emqbfpZBteQl9GvFy3Hm8KvITkQ6I01WLW7MLXQ"
+        followers={1102}
+        maxFollowers={1200}
+        roi="+107.70%"
+        pnl="+$205,283.56"
+        winRate="82.40%"
+        aum="$1,234,029.75"
+        days={120}
+        coins={[
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuDVXm3a-fpXh5zQN3sNH5-qNsQXC7nIZEIBDBl5DS-_f8dCCU7lM0nnHc9NopUGzSoFU82lsG915VOGMfQ5OqF_w12XEnoc66ZsMChKilE-8sn7rt5TSjarqbfC_-RnU6WIarPlvl6UQOjBUhsWZVRewlBxOyqDifftOdQ7nbs-SYQf8ueAclFocUQNE1f3s3iPwU89cVXi5pVvpkb4UrIO9BvmlgYP5vECM0CfXkb_DG9zLwr140WUke8skQb38aPzkxGic2604A",
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuChG2uLZ1MGBu_JRnsIhReRPPHSGAWTi7TRNPzW89GNTfSDJHzQCj5YF8CEbcvYGQAJcKFVuKWXTwvNOuWYgsHeb81R3G3mvkRN9qhax5qRcsSEx-D7XrfphssVslqZ_ATs93L10qAIHIaalReVoPZ5r8e4BhdBeQU4fhaJIIHQ_QVUERg1SAXP-wiUbUt5rKMcEod6NUnJSy3WvohDdC8BwYZ6ppsr3ifIxubBxcpIZLg2I46Ub8yPmUxgza3gZ4YyRvkgRVoC6w",
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuA8CM29v6kMcf4CybMdBJUcjXNwIIiJ7OsBMwdeW7sf5AavuaMAaAsNJQHgemKu15oAlO9ejkGtdRHfxYaVJrEGGWZlGDm0BT6iSkzZPEeaboaXN5cWf7lYpBxkGEJUeQLUx_NXe9vWMr6AJa6Hso6Tt2zW-YO7DcsKhJHv3uEE1PZy2SHs9ZJOfhPhMgP5PV-EMSg7GhF62CMB3uGgFpIs9GnQC9EAT9dFVEPTW8Ggl-rZV8Pd7l-RxU-rlMsaJEh0iw4fA7PbeQ"
+        ]}
+        chartPath="M0,38 Q20,35 30,28 T50,20 T70,10 L100,5"
+        statusColor="#3b82f6" // blue-500
+        onPress={() => {}}
+      />
+    </View>
+  </View>
+  );
+};
+
 export default function HomePage() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { width: windowWidth } = useWindowDimensions();
   const [containerWidth, setContainerWidth] = React.useState(windowWidth);
-  const [activeTab, setActiveTab] = React.useState<'overview' | 'copy'>('overview');
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'copy' | 'signal'>('overview');
   const scrollViewRef = React.useRef<ScrollView>(null);
-  const [heights, setHeights] = React.useState({ overview: 0, copy: 0 });
+  const [heights, setHeights] = React.useState({ overview: 0, copy: 0, signal: 0 });
   const [activeFilters, setActiveFilters] = React.useState<string[]>(['综合']);
 
   const handleMorePress = () => {
@@ -708,16 +840,20 @@ export default function HomePage() {
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / containerWidth);
-    const newTab = index === 0 ? 'overview' : 'copy';
+    const newTab = index === 0 ? 'overview' : index === 1 ? 'copy' : 'signal';
     if (newTab !== activeTab) {
       setActiveTab(newTab);
     }
   };
 
-  const handleTabPress = (tab: 'overview' | 'copy') => {
+  const handleTabPress = (tab: 'overview' | 'copy' | 'signal') => {
     setActiveTab(tab);
+    let x = 0;
+    if (tab === 'copy') x = containerWidth;
+    if (tab === 'signal') x = containerWidth * 2;
+
     scrollViewRef.current?.scrollTo({
-      x: tab === 'overview' ? 0 : containerWidth,
+      x,
       animated: true,
     });
   };
@@ -751,6 +887,13 @@ export default function HomePage() {
                 <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>Traders</Text>
                 {activeTab === 'copy' && <View style={styles.tabIndicator} />}
               </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.tabItem}
+                onPress={() => handleTabPress('signal')}
+              >
+                <Text style={activeTab === 'signal' ? styles.tabTextActive : styles.tabText}>Signal</Text>
+                {activeTab === 'signal' && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.searchBtn} onPress={() => router.push('/search')}>
               <MaterialIcons name="search" size={28} color={COLORS.textMain} />
@@ -769,7 +912,7 @@ export default function HomePage() {
             nestedScrollEnabled={true}
             directionalLockEnabled={true}
             style={{ height: heights[activeTab] || undefined }}
-            contentOffset={{ x: activeTab === 'overview' ? 0 : containerWidth, y: 0 }}
+            contentOffset={{ x: activeTab === 'overview' ? 0 : activeTab === 'copy' ? containerWidth : containerWidth * 2, y: 0 }}
           >
             <View style={{ width: containerWidth }} onLayout={(e) => {
               const height = e.nativeEvent.layout.height;
@@ -782,6 +925,12 @@ export default function HomePage() {
               setHeights(h => ({ ...h, copy: height }));
             }}>
               <CopyTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
+            </View>
+            <View style={{ width: containerWidth }} onLayout={(e) => {
+              const height = e.nativeEvent.layout.height;
+              setHeights(h => ({ ...h, signal: height }));
+            }}>
+              <SignalTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
             </View>
           </ScrollView>
         </View>
