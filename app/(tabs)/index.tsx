@@ -319,6 +319,22 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
 
   return (
   <>
+    {/* Statistics Section */}
+    <View style={styles.statsContainer}>
+      <View style={styles.statItem}>
+        <Text style={styles.statValue}>36</Text>
+        <Text style={styles.statLabel}>今日信号</Text>
+      </View>
+      <View style={styles.statItem}>
+        <Text style={styles.statValue}>5</Text>
+        <Text style={styles.statLabel}>活跃博主</Text>
+      </View>
+      <View style={styles.statItem}>
+        <Text style={styles.statValue}>16</Text>
+        <Text style={styles.statLabel}>交易币种</Text>
+      </View>
+    </View>
+
     {/* Profit Trend Section */}
     <View style={styles.card}>
       <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>收益走势</Text>
@@ -1072,6 +1088,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
+    marginHorizontal: 16,
   },
   sectionTitle: {
     color: COLORS.textMain,
@@ -1554,5 +1571,27 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 8,
     fontWeight: 'bold',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: COLORS.surfaceLight,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    paddingVertical: 20,
+    borderRadius: 12,
+  },
+  statItem: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  statValue: {
+    color: COLORS.textMain,
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    color: COLORS.textMuted,
+    fontSize: 11,
   },
 });
