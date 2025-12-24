@@ -49,6 +49,8 @@ export const SignalCard = ({
   const isLong = direction === 'long';
   const directionText = isLong ? '多单' : '空单';
   const directionColor = isLong ? COLORS.primary : COLORS.danger;
+  const [isSubscribed, setIsSubscribed] = React.useState(false);
+  const [isFavorite, setIsFavorite] = React.useState(false);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
@@ -63,6 +65,21 @@ export const SignalCard = ({
             </View>
             <Text style={styles.description}>{description}</Text>
           </View>
+        </View>
+        <View style={styles.cardActions}>
+          <TouchableOpacity style={styles.starBtn} onPress={() => setIsFavorite(!isFavorite)}>
+            <MaterialIcons 
+              name={isFavorite ? "star" : "star-border"} 
+              size={20} 
+              color={isFavorite ? COLORS.yellow : COLORS.textMuted} 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.cardCopyBtn, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
+            onPress={() => setIsSubscribed(!isSubscribed)}
+          >
+            <Text style={styles.cardCopyBtnText}>{isSubscribed ? '已订阅' : '订阅'}</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -132,6 +149,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  starBtn: {
+    padding: 4,
+  },
+  cardCopyBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  cardCopyBtnText: {
+    color: 'black',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  copyButtonUnsubscribed: {
+    backgroundColor: 'white',
+  },
+  copyButtonSubscribed: {
+    backgroundColor: COLORS.yellow,
   },
   userInfo: {
     flexDirection: 'row',
