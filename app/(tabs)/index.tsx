@@ -917,7 +917,6 @@ export default function HomePage() {
             nestedScrollEnabled={true}
             directionalLockEnabled={true}
             style={{ height: heights[activeTab] || undefined }}
-            contentOffset={{ x: activeTab === 'overview' ? 0 : activeTab === 'signal' ? containerWidth : containerWidth * 2, y: 0 }}
           >
             <View style={{ width: containerWidth }} onLayout={(e) => {
               const height = e.nativeEvent.layout.height;
