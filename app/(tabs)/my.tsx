@@ -200,6 +200,17 @@ const MyPage: React.FC = () => {
           <View style={styles.menuDivider} />
           <TouchableOpacity 
             style={styles.menuItem}
+            onPress={() => router.push('/profile/redemption-history')}
+          >
+            <View style={styles.menuLeft}>
+              <Ionicons name="gift-outline" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>兑换记录</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity 
+            style={styles.menuItem}
             onPress={() => router.push('/qrcode')}
           >
             <View style={styles.menuLeft}>

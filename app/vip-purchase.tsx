@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -23,6 +23,17 @@ const PACKAGES = [
 export default function VipPurchasePage() {
   const router = useRouter();
   const [selectedPackage, setSelectedPackage] = useState('yearly');
+  const [redemptionCode, setRedemptionCode] = useState('');
+
+  const handleRedeem = () => {
+    if (!redemptionCode.trim()) {
+      Alert.alert('提示', '请输入兑换码');
+      return;
+    }
+    // Mock redemption logic
+    Alert.alert('提示', '兑换成功！');
+    setRedemptionCode('');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -125,6 +136,23 @@ export default function VipPurchasePage() {
               <Text style={styles.originalPrice}>{pkg.originalPrice} USDT</Text>
             </TouchableOpacity>
           ))}
+        </View>
+
+        <View style={styles.redemptionContainer}>
+          <Text style={styles.sectionTitle}>兑换码</Text>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="请输入兑换码"
+              placeholderTextColor={COLORS.textMuted}
+              value={redemptionCode}
+              onChangeText={setRedemptionCode}
+              autoCapitalize="characters"
+            />
+            <TouchableOpacity style={styles.redeemButton} onPress={handleRedeem}>
+              <Text style={styles.redeemButtonText}>兑换</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.description}>
@@ -315,5 +343,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
+  },
+  redemptionContainer: {
+    marginBottom: 20,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  input: {
+    flex: 1,
+    height: 44,
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    color: COLORS.textMain,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  redeemButton: {
+    height: 44,
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.surface,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.gold,
+  },
+  redeemButtonText: {
+    color: COLORS.gold,
+    fontWeight: '600',
   },
 });
