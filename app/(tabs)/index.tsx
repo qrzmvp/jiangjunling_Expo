@@ -887,9 +887,6 @@ export default function HomePage() {
                 {activeTab === 'signal' && <View style={styles.tabIndicator} />}
               </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.searchBtn} onPress={() => router.push('/search')}>
-              <MaterialIcons name="search" size={28} color={COLORS.textMain} />
-            </TouchableOpacity>
           </View>
         </View>
 
