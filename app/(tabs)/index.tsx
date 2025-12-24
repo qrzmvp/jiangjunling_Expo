@@ -684,17 +684,17 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
 
 const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps) => {
   const router = useRouter();
-  const filters = ['综合', '近一周收益', '近一月收益', '已订阅', '已关注'];
+  const filters = ['全部', '做多', '做空', '已订阅', '已关注'];
 
   const handleFilterPress = (filter: string) => {
-    if (filter === '综合') {
-      setActiveFilters(['综合']);
+    if (filter === '全部') {
+      setActiveFilters(['全部']);
       return;
     }
 
     let newFilters = [...activeFilters];
-    if (newFilters.includes('综合')) {
-      newFilters = newFilters.filter(f => f !== '综合');
+    if (newFilters.includes('全部')) {
+      newFilters = newFilters.filter(f => f !== '全部');
     }
 
     if (newFilters.includes(filter)) {
@@ -704,7 +704,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
     }
 
     if (newFilters.length === 0) {
-      setActiveFilters(['综合']);
+      setActiveFilters(['全部']);
     } else {
       setActiveFilters(newFilters);
     }
@@ -811,6 +811,14 @@ export default function HomePage() {
     handleTabPress('copy');
     setActiveFilters(['近一周收益']);
   };
+
+  React.useEffect(() => {
+    if (activeTab === 'signal') {
+      setActiveFilters(['全部']);
+    } else if (activeTab === 'copy') {
+      setActiveFilters(['综合']);
+    }
+  }, [activeTab]);
 
   React.useEffect(() => {
     if (params.tab === 'copy') {
