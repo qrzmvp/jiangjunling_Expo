@@ -42,7 +42,14 @@ export default function VipPurchasePage() {
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>开通会员</Text>
-        <View style={{ width: 24 }} />
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={() => router.push('/purchase-history')} style={styles.headerIcon}>
+            <Ionicons name="receipt-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/profile/redemption-history')} style={styles.headerIcon}>
+            <Ionicons name="gift-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
@@ -193,6 +200,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.textMain,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  headerIcon: {
+    padding: 4,
   },
   content: {
     flex: 1,
