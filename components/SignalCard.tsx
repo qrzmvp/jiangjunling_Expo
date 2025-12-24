@@ -64,15 +64,17 @@ export const SignalCard = ({
             <Text style={styles.description}>{description}</Text>
           </View>
         </View>
-        <View style={[styles.directionBadge, { backgroundColor: 'rgba(246, 70, 93, 0.1)' }]}>
-          <MaterialIcons name={isLong ? "arrow-upward" : "arrow-downward"} size={12} color={directionColor} />
-          <Text style={[styles.directionText, { color: directionColor }]}>做{isLong ? '多' : '空'}</Text>
-        </View>
       </View>
 
       {/* Signal Box */}
       <View style={styles.signalBox}>
-        <Text style={styles.signalTitle}>【交易信号】</Text>
+        <View style={styles.signalHeader}>
+          <Text style={styles.signalTitle}>【交易信号】</Text>
+          <View style={[styles.directionBadge, { backgroundColor: isLong ? 'rgba(46, 189, 133, 0.1)' : 'rgba(246, 70, 93, 0.1)' }]}>
+            <MaterialIcons name={isLong ? "arrow-upward" : "arrow-downward"} size={12} color={directionColor} />
+            <Text style={[styles.directionText, { color: directionColor }]}>做{isLong ? '多' : '空'}</Text>
+          </View>
+        </View>
         <View style={styles.signalRow}>
           <Text style={styles.signalLabel}>币种：</Text>
           <Text style={styles.signalValue}>{currency}</Text>
@@ -98,7 +100,7 @@ export const SignalCard = ({
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.timeText}>{time}</Text>
-        <View style={styles.footerActions}>
+        {/* <View style={styles.footerActions}>
           <View style={styles.signalCountBadge}>
             <Text style={styles.signalCountText}>{signalCount}条信号</Text>
           </View>
@@ -110,7 +112,7 @@ export const SignalCard = ({
             <Text style={styles.detailText}>查看详情</Text>
             <MaterialIcons name="chevron-right" size={16} color="#fff" />
           </TouchableOpacity>
-        </View>
+        </View> */}
       </View>
     </TouchableOpacity>
   );
@@ -185,11 +187,16 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
+  signalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   signalTitle: {
     color: COLORS.textMain,
     fontSize: 14,
     fontWeight: 'bold',
-    marginBottom: 8,
   },
   signalRow: {
     flexDirection: 'row',
