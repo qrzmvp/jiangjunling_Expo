@@ -112,25 +112,15 @@ export const SignalCard = ({
           <Text style={styles.signalLabel}>止盈：</Text>
           <Text style={styles.signalValue}>{takeProfit}</Text>
         </View>
+        <View style={styles.signalTimeContainer}>
+          <Text style={styles.timeText}>{time}</Text>
+        </View>
       </View>
 
-      {/* Footer */}
-      <View style={styles.footer}>
+      {/* Footer - Removed as time is moved */}
+      {/* <View style={styles.footer}>
         <Text style={styles.timeText}>{time}</Text>
-        {/* <View style={styles.footerActions}>
-          <View style={styles.signalCountBadge}>
-            <Text style={styles.signalCountText}>{signalCount}条信号</Text>
-          </View>
-          <TouchableOpacity style={styles.subscribeBtn} onPress={onSubscribe}>
-            <Ionicons name="star" size={12} color="#fff" style={{ marginRight: 4 }} />
-            <Text style={styles.subscribeText}>订阅</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.detailBtn} onPress={onPress}>
-            <Text style={styles.detailText}>查看详情</Text>
-            <MaterialIcons name="chevron-right" size={16} color="#fff" />
-          </TouchableOpacity>
-        </View> */}
-      </View>
+      </View> */}
     </TouchableOpacity>
   );
 };
@@ -242,6 +232,12 @@ const styles = StyleSheet.create({
   signalRow: {
     flexDirection: 'row',
     marginBottom: 4,
+  },
+  signalTimeContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   signalLabel: {
     color: COLORS.textMuted,

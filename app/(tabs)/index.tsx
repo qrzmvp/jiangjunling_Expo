@@ -759,7 +759,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
         direction="short"
         stopLoss="3040"
         takeProfit="2867"
-        time="04:10"
+        time="2025-12-21 15:00:00"
         signalCount={5}
         onPress={() => router.push('/trader/detail')}
         onSubscribe={() => {}}
@@ -773,7 +773,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
         direction="long"
         stopLoss="64000"
         takeProfit="68000"
-        time="03:45"
+        time="2025-12-21 14:45:00"
         signalCount={3}
         onPress={() => router.push('/trader/detail')}
         onSubscribe={() => {}}
@@ -787,7 +787,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
         direction="long"
         stopLoss="140"
         takeProfit="160"
-        time="02:20"
+        time="2025-12-21 13:20:00"
         signalCount={8}
         onPress={() => router.push('/trader/detail')}
         onSubscribe={() => {}}
