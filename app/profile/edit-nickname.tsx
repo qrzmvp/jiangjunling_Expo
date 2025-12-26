@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, StatusBar, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 
 const COLORS = {
   backgroundDark: "#000000",
@@ -17,11 +19,45 @@ const COLORS = {
 export default function EditNicknamePage() {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
-  const [nickname, setNickname] = useState("西柚一点甜");
+  const { user, profile, refreshProfile } = useAuth();
+  const [nickname, setNickname] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleSave = () => {
-    // TODO: Implement save logic
-    router.back();
+  useEffect(() => {
+    if (profile?.username) {
+      setNickname(profile.username);
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    if (!user) return;
+    if (!nickname.trim()) {
+      Alert.alert('错误', '账户名称不能为空');
+      return;
+    }
+    if (nickname.length < 2 || nickname.length > 20) {
+      Alert.alert('错误', '账户名称长度需在2-20个字符之间');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ username: nickname.trim() })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      await refreshProfile();
+      Alert.alert('成功', '账户名称已更新', [
+        { text: '确定', onPress: () => router.back() }
+      ]);
+    } catch (error: any) {
+      Alert.alert('错误', '更新失败: ' + error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const clearNickname = () => {
@@ -41,9 +77,15 @@ export default function EditNicknamePage() {
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.textSubDark} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>我的昵称</Text>
-        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>保存</Text>
+        <Text style={styles.headerTitle}>修改账户名称</Text>
+        <TouchableOpacity 
+          onPress={handleSave} 
+          style={styles.saveButton}
+          disabled={saving}
+        >
+          <Text style={[styles.saveButtonText, saving && { opacity: 0.5 }]}>
+            {saving ? '保存中...' : '保存'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -53,9 +95,10 @@ export default function EditNicknamePage() {
             style={styles.input}
             value={nickname}
             onChangeText={setNickname}
-            placeholder="请输入昵称"
+            placeholder="请输入账户名称"
             placeholderTextColor="rgba(136, 136, 136, 0.5)"
             selectionColor={COLORS.accentOrange}
+            autoFocus
           />
           {nickname.length > 0 && (
             <TouchableOpacity onPress={clearNickname} style={styles.clearButton}>
@@ -65,8 +108,8 @@ export default function EditNicknamePage() {
         </View>
 
         <View style={styles.helperTextContainer}>
-          <Text style={styles.helperText}>昵称支持中英文、数字，长度限制2-20个字符。</Text>
-          <Text style={styles.helperText}>昵称不能包含敏感词汇、侮辱性语言或违反法律法规的内容。</Text>
+          <Text style={styles.helperText}>账户名称支持中英文、数字，长度限制2-20个字符。</Text>
+          <Text style={styles.helperText}>账户名称不能包含敏感词汇、侮辱性语言或违反法律法规的内容。</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -99,28 +142,26 @@ const styles = StyleSheet.create({
     color: COLORS.textMainDark,
   },
   saveButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   saveButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.accentOrange,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 24,
+    padding: 16,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.cardDark,
-    borderWidth: 1,
-    borderColor: COLORS.borderDark,
     borderRadius: 12,
     paddingHorizontal: 16,
-    height: 50,
+    height: 56,
+    marginBottom: 16,
   },
   input: {
     flex: 1,
@@ -132,13 +173,12 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   helperTextContainer: {
-    marginTop: 12,
     paddingHorizontal: 4,
   },
   helperText: {
-    fontSize: 12,
     color: COLORS.textSubDark,
-    lineHeight: 18,
-    marginBottom: 4,
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 8,
   },
 });
