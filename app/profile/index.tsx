@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Modal } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Modal, Alert } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import ImageCropper from './_components/ImageCropper';
+import { useAuth } from '../../contexts/AuthContext';
+import * as Clipboard from 'expo-clipboard';
 
 const COLORS = {
   backgroundDark: "#000000",
@@ -16,10 +18,41 @@ const COLORS = {
 };
 
 export default function PersonalInfoPage() {
-  const [avatarUri, setAvatarUri] = useState("https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg");
+  const { user, profile, signOut } = useAuth();
+  const router = useRouter();
+
+  // Data from profile or fallback to user object
+  const avatarUri = profile?.avatar_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg";
+  const nickname = profile?.username || user?.email?.split('@')[0] || 'User';
+  const accountId = profile?.account_id || (user?.id ? user.id.substring(0, 8).toUpperCase() : 'UNKNOWN');
+  const email = user?.email || '';
+
   const [modalVisible, setModalVisible] = useState(false);
   const [cropperVisible, setCropperVisible] = useState(false);
   const [tempImageUri, setTempImageUri] = useState<string | null>(null);
+
+  const handleCopy = async (text: string) => {
+    await Clipboard.setStringAsync(text);
+    Alert.alert('成功', '已复制到剪贴板');
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      '退出登录',
+      '确定要退出登录吗？',
+      [
+        { text: '取消', style: 'cancel' },
+        { 
+          text: '确定', 
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+            router.replace('/login');
+          }
+        }
+      ]
+    );
+  };
 
   const pickImage = async () => {
     setModalVisible(false);
@@ -57,11 +90,12 @@ export default function PersonalInfoPage() {
   };
 
   const handleCropComplete = (uri: string) => {
-    setAvatarUri(uri);
+    // TODO: Upload image to Supabase Storage and update profile
+    // setAvatarUri(uri); 
     setCropperVisible(false);
     setTempImageUri(null);
+    Alert.alert('提示', '头像上传功能暂未实现');
   };
-  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -109,7 +143,7 @@ export default function PersonalInfoPage() {
           >
             <Text style={styles.label}>昵称</Text>
             <View style={styles.rowRight}>
-              <Text style={styles.valueText}>西柚一点甜</Text>
+              <Text style={styles.valueText}>{nickname}</Text>
               <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
             </View>
           </TouchableOpacity>
@@ -120,8 +154,11 @@ export default function PersonalInfoPage() {
           <View style={styles.row}>
             <Text style={styles.label}>账号</Text>
             <View style={styles.rowRight}>
-              <Text style={styles.valueText}>21356208</Text>
-              <TouchableOpacity style={styles.copyButton}>
+              <Text style={styles.valueText}>{accountId}</Text>
+              <TouchableOpacity 
+                style={styles.copyButton}
+                onPress={() => handleCopy(accountId)}
+              >
                 <Text style={styles.copyButtonText}>复制</Text>
               </TouchableOpacity>
             </View>
@@ -129,11 +166,11 @@ export default function PersonalInfoPage() {
 
           <View style={styles.divider} />
 
-          {/* Phone Row */}
+          {/* Email Row */}
           <View style={styles.row}>
-            <Text style={styles.label}>手机号</Text>
+            <Text style={styles.label}>邮箱</Text>
             <View style={styles.rowRight}>
-              <Text style={styles.valueText}>185****6733</Text>
+              <Text style={styles.valueText}>{email}</Text>
             </View>
           </View>
 
@@ -148,27 +185,13 @@ export default function PersonalInfoPage() {
             </View>
           </TouchableOpacity>
 
-          <View style={styles.divider} />
-
-          {/* Bio Row */}
-          <TouchableOpacity style={styles.row}>
-            <Text style={styles.label}>个人简介</Text>
-            <View style={styles.rowRight}>
-              <Text style={styles.bioText} numberOfLines={1}>投资是一种艺术，而不是科学</Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
-            </View>
-          </TouchableOpacity>
-
         </View>
 
         {/* Logout Button */}
         <TouchableOpacity 
           style={styles.logoutButton}
           activeOpacity={0.7}
-          onPress={() => {
-            console.log('Logout pressed');
-            // router.replace('/login'); // Uncomment when login page exists
-          }}
+          onPress={handleLogout}
         >
           <Text style={styles.logoutText}>退出登录</Text>
         </TouchableOpacity>

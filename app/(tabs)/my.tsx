@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { UserInfo, Stats } from '../../types';
@@ -25,7 +25,7 @@ const MyPage: React.FC = () => {
   // Generate default info from user object or profile
   const defaultNickname = profile?.username || user?.email?.split('@')[0] || 'User';
   const accountId = profile?.account_id || (user?.id ? user.id.substring(0, 8).toUpperCase() : 'UNKNOWN');
-  const avatarLetter = defaultNickname[0]?.toUpperCase() || 'U';
+  const avatarUri = profile?.avatar_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg";
   const isVerified = profile?.is_verified || false;
 
   // 使用类型定义的数据
@@ -65,9 +65,10 @@ const MyPage: React.FC = () => {
         >
           <View style={styles.profileInfo}>
             <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{avatarLetter}</Text>
-              </View>
+              <Image 
+                source={{ uri: avatarUri }} 
+                style={styles.avatar}
+              />
               {isVerified && (
                 <View style={styles.verifiedBadge}>
                   <Ionicons name="checkmark" size={12} color="#FFFFFF" />
