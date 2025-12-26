@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 
 const COLORS = {
   background: "#000000",
@@ -38,6 +39,7 @@ const MOCK_DATA: RedemptionRecord[] = [
 ];
 
 export default function RedemptionHistoryPage() {
+  useProtectedRoute(); // 保护路由
   const router = useRouter();
 
   const renderItem = ({ item }: { item: RedemptionRecord }) => (

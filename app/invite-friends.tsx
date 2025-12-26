@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import { useProtectedRoute } from '../hooks/useProtectedRoute';
 
 const COLORS = {
   background: "#000000",
@@ -41,6 +42,7 @@ const GradientAvatar = ({ colors, initials }: { colors: string[], initials: stri
 );
 
 export default function InviteFriendsPage() {
+  useProtectedRoute(); // 保护路由
   const router = useRouter();
 
   return (

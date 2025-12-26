@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
+import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 
 const COLORS = {
   backgroundDark: "#000000",
@@ -14,6 +15,7 @@ const COLORS = {
 };
 
 export default function EditNicknamePage() {
+  useProtectedRoute(); // 保护路由
   const router = useRouter();
   const [nickname, setNickname] = useState("西柚一点甜");
 

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
+import { useProtectedRoute } from '../hooks/useProtectedRoute';
 
 const { width } = Dimensions.get('window');
 
@@ -20,6 +21,7 @@ const COLORS = {
 };
 
 export default function QRCodePage() {
+  useProtectedRoute(); // 保护路由
   const router = useRouter();
 
   return (

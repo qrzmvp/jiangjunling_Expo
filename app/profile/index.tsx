@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Modal, Alert, Platform } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import ImageCropper from './_components/ImageCropper';
 import { useAuth } from '../../contexts/AuthContext';
 import * as Clipboard from 'expo-clipboard';
+import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 
 const COLORS = {
   backgroundDark: "#000000",
@@ -18,6 +19,7 @@ const COLORS = {
 };
 
 export default function PersonalInfoPage() {
+  useProtectedRoute(); // 保护路由
   const { user, profile, signOut } = useAuth();
   const router = useRouter();
 
@@ -30,28 +32,43 @@ export default function PersonalInfoPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [cropperVisible, setCropperVisible] = useState(false);
   const [tempImageUri, setTempImageUri] = useState<string | null>(null);
+  
+  // Logout Modal & Toast State
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const handleCopy = async (text: string) => {
     await Clipboard.setStringAsync(text);
     Alert.alert('成功', '已复制到剪贴板');
   };
 
-  const handleLogout = async () => {
-    Alert.alert(
-      '退出登录',
-      '确定要退出登录吗？',
-      [
-        { text: '取消', style: 'cancel' },
-        { 
-          text: '确定', 
-          style: 'destructive',
-          onPress: async () => {
-            await signOut();
-            router.replace('/login');
-          }
-        }
-      ]
-    );
+  const handleLogout = () => {
+    setLogoutModalVisible(true);
+  };
+
+  const confirmLogout = () => {
+    // 1. Close modal immediately
+    setLogoutModalVisible(false);
+    
+    // 2. Perform logout logic after a short delay to ensure modal closes first
+    setTimeout(async () => {
+      try {
+        // Attempt sign out with a timeout to prevent hanging
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000));
+        await Promise.race([signOut(), timeout]);
+      } catch (e) {
+        console.error('Logout error or timeout:', e);
+      } finally {
+        // 3. Show success toast and redirect regardless of outcome
+        setShowToast(true);
+        
+        // 4. Redirect after toast
+        setTimeout(() => {
+          setShowToast(false);
+          router.replace('/login');
+        }, 1500);
+      }
+    }, 300);
   };
 
   const pickImage = async () => {
@@ -196,6 +213,53 @@ export default function PersonalInfoPage() {
           <Text style={styles.logoutText}>退出登录</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Logout Confirmation Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={logoutModalVisible}
+        onRequestClose={() => setLogoutModalVisible(false)}
+      >
+        <View style={styles.logoutModalOverlay}>
+          <View style={styles.logoutModalContent}>
+            <Text style={styles.logoutModalTitle}>提示</Text>
+            <Text style={styles.logoutModalMessage}>确定要退出登录吗？</Text>
+            <View style={styles.logoutModalButtons}>
+              <TouchableOpacity 
+                style={[styles.logoutModalButton, styles.logoutCancelButton]} 
+                activeOpacity={0.7}
+                onPress={() => {
+                  console.log('Cancel pressed');
+                  setLogoutModalVisible(false);
+                }}
+              >
+                <Text style={styles.logoutCancelButtonText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.logoutModalButton, styles.logoutConfirmButton]} 
+                activeOpacity={0.7}
+                onPress={() => {
+                  console.log('Confirm pressed');
+                  confirmLogout();
+                }}
+              >
+                <Text style={styles.logoutConfirmButtonText}>确定</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Success Toast */}
+      {showToast && (
+        <View style={styles.toastContainer}>
+          <View style={styles.toastContent}>
+            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+            <Text style={styles.toastText}>退出登录成功</Text>
+          </View>
+        </View>
+      )}
 
       <Modal
         animationType="fade"
@@ -395,5 +459,88 @@ const styles = StyleSheet.create({
     color: '#FF4D4F',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Logout Modal Styles
+  logoutModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoutModalContent: {
+    width: '80%',
+    backgroundColor: '#1E1E1E',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  logoutModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 10,
+  },
+  logoutModalMessage: {
+    fontSize: 16,
+    color: '#AAAAAA',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  logoutModalButtons: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+  },
+  logoutModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  logoutCancelButton: {
+    backgroundColor: '#2C2C2C',
+  },
+  logoutConfirmButton: {
+    backgroundColor: '#D32F2F',
+  },
+  logoutCancelButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  logoutConfirmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Toast Styles
+  toastContainer: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  toastContent: {
+    backgroundColor: '#333333',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontSize: 14,
   },
 });

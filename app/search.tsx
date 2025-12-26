@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TraderCard } from '../components/TraderCard';
+import { useProtectedRoute } from '../hooks/useProtectedRoute';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -64,6 +65,7 @@ const MOCK_TRADERS = [
 ];
 
 export default function SearchScreen() {
+  useProtectedRoute(); // 保护路由
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<string[]>(['zh138', 'BeyondHJJ', 'Bitcoin']);

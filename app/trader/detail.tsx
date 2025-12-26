@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import Svg, { Path, Defs, LinearGradient, Stop, Circle, G, Image as SvgImage, Text as SvgText, ClipPath } from 'react-native-svg';
+import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -20,6 +21,7 @@ const COLORS = {
 };
 
 const TraderDetailScreen = () => {
+  useProtectedRoute(); // 保护路由
   const router = useRouter();
   const { width: windowWidth } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');

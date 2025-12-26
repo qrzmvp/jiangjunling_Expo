@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useProtectedRoute } from '../hooks/useProtectedRoute';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -21,6 +22,7 @@ const PACKAGES = [
 ];
 
 export default function VipPurchasePage() {
+  useProtectedRoute(); // 保护路由
   const router = useRouter();
   const [selectedPackage, setSelectedPackage] = useState('yearly');
   const [redemptionCode, setRedemptionCode] = useState('');

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Swit
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useProtectedRoute } from '../../../hooks/useProtectedRoute';
 
 const COLORS = {
   background: "#000000",
@@ -19,6 +20,7 @@ const COLORS = {
 };
 
 export default function EditExchangeAccount() {
+  useProtectedRoute(); // 保护路由
   const router = useRouter();
   const [isEnabled, setIsEnabled] = useState(true);
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);

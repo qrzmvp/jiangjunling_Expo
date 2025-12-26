@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, StyleSheet, Pla
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { useProtectedRoute } from '../../../hooks/useProtectedRoute';
 
 const COLORS = {
   background: "#000000",
@@ -18,6 +19,7 @@ const COLORS = {
 };
 
 export default function ExchangeAccountsList() {
+  useProtectedRoute(); // 保护路由
   const router = useRouter();
 
   return (
