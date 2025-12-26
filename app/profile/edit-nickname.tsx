@@ -24,10 +24,10 @@ export default function EditNicknamePage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (profile?.username) {
-      setNickname(profile.username);
-    }
-  }, [profile]);
+    // 使用与个人信息页面相同的逻辑获取昵称
+    const currentNickname = profile?.username || user?.email?.split('@')[0] || '';
+    setNickname(currentNickname);
+  }, [profile, user]);
 
   const handleSave = async () => {
     if (!user) return;
