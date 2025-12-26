@@ -122,7 +122,7 @@ export default function PersonalInfoPage() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => router.back()}
+          onPress={() => router.push('/(tabs)/my')}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.textSubDark} />

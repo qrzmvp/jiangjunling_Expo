@@ -72,7 +72,13 @@ export default function EditNicknamePage() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.push('/profile');
+            }
+          }}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.textSubDark} />
