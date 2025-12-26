@@ -52,11 +52,7 @@ export default function EditNicknamePage() {
 
   const handleNicknameChange = (value: string) => {
     setNickname(value);
-    if (value.length > 0) {
-      validateNickname(value);
-    } else {
-      setErrorMsg("");
-    }
+    validateNickname(value);
   };
 
   const handleSave = async () => {
@@ -89,6 +85,7 @@ export default function EditNicknamePage() {
 
   const clearNickname = () => {
     setNickname("");
+    setErrorMsg("账户名称不能为空");
   };
 
   return (
