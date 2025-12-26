@@ -22,6 +22,7 @@ export default function EditNicknamePage() {
   const { user, profile, refreshProfile } = useAuth();
   const [nickname, setNickname] = useState("");
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     // 使用与个人信息页面相同的逻辑获取昵称
@@ -29,14 +30,40 @@ export default function EditNicknamePage() {
     setNickname(currentNickname);
   }, [profile, user]);
 
+  // 实时校验昵称
+  const validateNickname = (value: string) => {
+    if (!value.trim()) {
+      setErrorMsg("账户名称不能为空");
+      return false;
+    }
+    if (value.length < 2 || value.length > 20) {
+      setErrorMsg("账户名称长度需在2-20个字符之间");
+      return false;
+    }
+    // 检查是否只包含中文、英文和数字
+    const validPattern = /^[\u4e00-\u9fa5a-zA-Z0-9]+$/;
+    if (!validPattern.test(value)) {
+      setErrorMsg("账户名称只支持中英文、数字");
+      return false;
+    }
+    setErrorMsg("");
+    return true;
+  };
+
+  const handleNicknameChange = (value: string) => {
+    setNickname(value);
+    if (value.length > 0) {
+      validateNickname(value);
+    } else {
+      setErrorMsg("");
+    }
+  };
+
   const handleSave = async () => {
     if (!user) return;
-    if (!nickname.trim()) {
-      Alert.alert('错误', '账户名称不能为空');
-      return;
-    }
-    if (nickname.length < 2 || nickname.length > 20) {
-      Alert.alert('错误', '账户名称长度需在2-20个字符之间');
+    
+    // 保存前再次校验
+    if (!validateNickname(nickname)) {
       return;
     }
 
@@ -100,7 +127,7 @@ export default function EditNicknamePage() {
           <TextInput
             style={styles.input}
             value={nickname}
-            onChangeText={setNickname}
+            onChangeText={handleNicknameChange}
             placeholder="请输入账户名称"
             placeholderTextColor="rgba(136, 136, 136, 0.5)"
             selectionColor={COLORS.accentOrange}
@@ -113,9 +140,16 @@ export default function EditNicknamePage() {
           )}
         </View>
 
+        {/* 错误提示 */}
+        {errorMsg ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={16} color="#FF4444" />
+            <Text style={styles.errorText}>{errorMsg}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.helperTextContainer}>
           <Text style={styles.helperText}>账户名称支持中英文、数字，长度限制2-20个字符。</Text>
-          <Text style={styles.helperText}>账户名称不能包含敏感词汇、侮辱性语言或违反法律法规的内容。</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -167,7 +201,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 56,
-    marginBottom: 16,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.cardDark,
   },
@@ -180,6 +214,18 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: 4,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    marginBottom: 12,
+    gap: 6,
+  },
+  errorText: {
+    color: '#FF4444',
+    fontSize: 13,
+    lineHeight: 18,
   },
   helperTextContainer: {
     paddingHorizontal: 4,
