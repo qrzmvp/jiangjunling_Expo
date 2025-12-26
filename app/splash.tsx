@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Text, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
 
 // 将军令 Logo 图标 - 盾牌形状
 const ShieldLogo = () => {
@@ -70,14 +71,21 @@ const JiangJunLingLogo = () => {
 
 export default function SplashScreen() {
   const router = useRouter();
+  const { session, loading } = useAuth();
 
   useEffect(() => {
+    if (loading) return;
+
     const timer = setTimeout(() => {
-      router.replace('/(tabs)');
-    }, 3000);
+      if (session) {
+        router.replace('/(tabs)');
+      } else {
+        router.replace('/login');
+      }
+    }, 2000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [loading, session]);
 
   return (
     <View style={styles.container}>

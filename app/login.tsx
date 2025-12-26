@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,13 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import { useAuth } from '../contexts/AuthContext';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -31,6 +34,7 @@ const COLORS = {
 export default function LoginScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
+  const { signInWithOtp, verifyOtp, signInWithPassword } = useAuth();
   // Force dark mode as requested
   const isDark = true; 
   
@@ -39,6 +43,66 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [isPasswordLogin, setIsPasswordLogin] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [countdown]);
+
+  const handleSendCode = async () => {
+    if (!email) {
+      Alert.alert('错误', '请输入邮箱');
+      return;
+    }
+    setLoading(true);
+    const { error } = await signInWithOtp(email);
+    setLoading(false);
+    if (error) {
+      Alert.alert('错误', error.message);
+    } else {
+      Alert.alert('成功', '验证码已发送');
+      setCountdown(60);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (!email) {
+      Alert.alert('错误', '请输入邮箱');
+      return;
+    }
+    setLoading(true);
+    let result;
+    if (isPasswordLogin) {
+      if (!password) {
+        Alert.alert('错误', '请输入密码');
+        setLoading(false);
+        return;
+      }
+      result = await signInWithPassword(email, password);
+    } else {
+      if (!code) {
+        Alert.alert('错误', '请输入验证码');
+        setLoading(false);
+        return;
+      }
+      result = await verifyOtp(email, code);
+    }
+    setLoading(false);
+
+    if (result.error) {
+      Alert.alert('错误', result.error.message);
+    } else {
+      // Success, navigate to home
+      router.replace('/(tabs)');
+    }
+  };
 
   const theme = {
     background: COLORS.background,
@@ -164,8 +228,14 @@ export default function LoginScreen() {
                   />
                 )}
                 {!isPasswordLogin && (
-                  <TouchableOpacity style={styles.getCodeButton}>
-                    <Text style={styles.getCodeText}>获取验证码</Text>
+                  <TouchableOpacity 
+                    style={[styles.getCodeButton, countdown > 0 && { opacity: 0.5 }]}
+                    onPress={handleSendCode}
+                    disabled={countdown > 0 || loading}
+                  >
+                    <Text style={styles.getCodeText}>
+                      {countdown > 0 ? `${countdown}s` : '获取验证码'}
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -196,10 +266,16 @@ export default function LoginScreen() {
           <View style={styles.actionContainer}>
             <TouchableOpacity
               style={[styles.mainButton, { backgroundColor: theme.mainButtonBg }]}
+              onPress={handleLogin}
+              disabled={loading}
             >
-              <Text style={[styles.mainButtonText, { color: theme.mainButtonText }]}>
-                登录/注册
-              </Text>
+              {loading ? (
+                <ActivityIndicator color={theme.mainButtonText} />
+              ) : (
+                <Text style={[styles.mainButtonText, { color: theme.mainButtonText }]}>
+                  登录/注册
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
 

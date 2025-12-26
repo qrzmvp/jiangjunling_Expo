@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from '
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { UserInfo, Stats } from '../../types';
+import { useAuth } from '../../contexts/AuthContext';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -19,18 +20,26 @@ const COLORS = {
 
 const MyPage: React.FC = () => {
   const router = useRouter();
+  const { user, profile } = useAuth();
+
+  // Generate default info from user object or profile
+  const defaultNickname = profile?.username || user?.email?.split('@')[0] || 'User';
+  const accountId = profile?.account_id || (user?.id ? user.id.substring(0, 8).toUpperCase() : 'UNKNOWN');
+  const avatarLetter = defaultNickname[0]?.toUpperCase() || 'U';
+  const isVerified = profile?.is_verified || false;
+
   // 使用类型定义的数据
   const userInfo: UserInfo = {
-    username: 'VGro6220',
-    accountId: '5886220',
-    verified: true,
+    username: defaultNickname,
+    accountId: accountId,
+    verified: isVerified,
   };
 
   const stats: Stats = {
-    subscriptions: 36,
-    following: 5,
-    friends: 16,
-    favorites: 99,
+    subscriptions: profile?.subscription_count || 0,
+    following: profile?.following_count || 0,
+    friends: profile?.friends_count || 0,
+    favorites: profile?.favorites_count || 0,
   };
   return (
     <View style={styles.container}>
@@ -57,16 +66,18 @@ const MyPage: React.FC = () => {
           <View style={styles.profileInfo}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>V</Text>
+                <Text style={styles.avatarText}>{avatarLetter}</Text>
               </View>
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-              </View>
+              {isVerified && (
+                <View style={styles.verifiedBadge}>
+                  <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                </View>
+              )}
             </View>
             <View style={styles.userInfo}>
-              <Text style={styles.username}>VGro6220</Text>
+              <Text style={styles.username}>{userInfo.username}</Text>
               <View style={styles.accountRow}>
-                <Text style={styles.accountId}>账号:5886220</Text>
+                <Text style={styles.accountId}>账号:{userInfo.accountId}</Text>
                 <Ionicons name="copy-outline" size={16} color="#8A919E" style={{ marginLeft: 4 }} />
               </View>
             </View>
