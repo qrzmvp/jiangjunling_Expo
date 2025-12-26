@@ -1,8 +1,36 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Animated, Pressable } from 'react-native';
+import { useRef, useEffect } from 'react';
+import { usePathname } from 'expo-router';
 
 export default function TabLayout() {
+  const pathname = usePathname();
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (pathname === '/trade') {
+      // 切换到交易页，旋转90度并保持
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // 切换到其他页面，返回原状
+      Animated.timing(rotateAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [pathname]);
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '90deg'],
+  });
+
   return (
     <Tabs
       screenOptions={{
@@ -46,11 +74,13 @@ export default function TabLayout() {
           title: '交易',
           tabBarIcon: ({ focused }) => (
             <View style={styles.tradeButton}>
-              <Ionicons
-                name="swap-horizontal"
-                size={28}
-                color="#000000"
-              />
+              <Animated.View style={{ transform: [{ rotate }] }}>
+                <Ionicons
+                  name="swap-horizontal"
+                  size={28}
+                  color="#000000"
+                />
+              </Animated.View>
             </View>
           ),
         }}
