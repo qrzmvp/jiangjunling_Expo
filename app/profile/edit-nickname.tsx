@@ -162,12 +162,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 56,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.cardDark,
   },
   input: {
     flex: 1,
     color: COLORS.textMainDark,
     fontSize: 16,
     height: '100%',
+    outlineStyle: 'none',
   },
   clearButton: {
     padding: 4,
