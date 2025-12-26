@@ -822,6 +822,7 @@ export default function HomePage() {
   const scrollViewRef = React.useRef<ScrollView>(null);
   const [heights, setHeights] = React.useState({ overview: 0, copy: 0, signal: 0 });
   const [activeFilters, setActiveFilters] = React.useState<string[]>(['综合']);
+  const isScrollingRef = React.useRef(false); // 用于标记是否正在滚动
 
   const handleMorePress = () => {
     handleTabPress('copy');
@@ -845,8 +846,12 @@ export default function HomePage() {
     }
   }, [params.tab, params.filter]);
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
+  const updateTabFromScroll = (offsetX: number) => {
+    // 如果是手动触发的滚动动画，不更新状态
+    if (isScrollingRef.current) {
+      return;
+    }
+
     const index = Math.round(offsetX / containerWidth);
     const newTab = index === 0 ? 'overview' : index === 1 ? 'signal' : 'copy';
     if (newTab !== activeTab) {
@@ -854,8 +859,20 @@ export default function HomePage() {
     }
   };
 
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    updateTabFromScroll(offsetX);
+  };
+
+  const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    updateTabFromScroll(offsetX);
+  };
+
   const handleTabPress = (tab: 'overview' | 'copy' | 'signal') => {
     setActiveTab(tab);
+    isScrollingRef.current = true; // 标记正在滚动
+    
     let x = 0;
     if (tab === 'signal') x = containerWidth;
     if (tab === 'copy') x = containerWidth * 2;
@@ -864,6 +881,11 @@ export default function HomePage() {
       x,
       animated: true,
     });
+
+    // 滚动动画完成后重置标记（适配不同平台）
+    setTimeout(() => {
+      isScrollingRef.current = false;
+    }, 350);
   };
 
   return (
@@ -913,7 +935,9 @@ export default function HomePage() {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onScroll={handleScroll}
-            scrollEventThrottle={16}
+            scrollEventThrottle={400}
+            onMomentumScrollEnd={handleScrollEnd}
+            onScrollEndDrag={handleScrollEnd}
             nestedScrollEnabled={true}
             directionalLockEnabled={true}
             style={{ height: heights[activeTab] || undefined }}
