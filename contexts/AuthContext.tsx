@@ -23,8 +23,9 @@ type AuthContextType = {
   profile: UserProfile | null;
   loading: boolean;
   signInWithOtp: (email: string) => Promise<{ error: any }>;
-  verifyOtp: (email: string, token: string) => Promise<{ error: any; session?: Session | null }>;
-  signInWithPassword: (email: string, password: string) => Promise<{ error: any }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error: any; data?: any }>;
+  signInWithPassword: (email: string, password: string) => Promise<{ error: any; data?: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -37,11 +38,37 @@ const AuthContext = createContext<AuthContextType>({
   signInWithOtp: async () => ({ error: null }),
   verifyOtp: async () => ({ error: null }),
   signInWithPassword: async () => ({ error: null }),
+  updatePassword: async () => ({ error: null }),
   signOut: async () => {},
   refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
+
+// 将 Supabase 错误信息翻译为中文
+const translateAuthError = (errorMessage: string): string => {
+  const errorMap: { [key: string]: string } = {
+    'Token has expired or is invalid': '验证码已过期或无效，请重新获取',
+    'Invalid login credentials': '邮箱或密码错误',
+    'Email not confirmed': '邮箱未确认',
+    'User already registered': '该邮箱已注册',
+    'Invalid email': '邮箱格式不正确',
+    'Password should be at least 6 characters': '密码至少需要6个字符',
+    'Unable to validate email address: invalid format': '邮箱格式不正确',
+    'Signup requires a valid password': '请输入有效的密码',
+    'Email rate limit exceeded': '发送验证码过于频繁，请稍后再试',
+  };
+
+  // 检查是否有匹配的翻译
+  for (const [enMsg, zhMsg] of Object.entries(errorMap)) {
+    if (errorMessage.includes(enMsg)) {
+      return zhMsg;
+    }
+  }
+
+  // 如果没有匹配，返回原始错误信息
+  return errorMessage;
+};
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -131,7 +158,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
     });
-    return { error };
+    
+    if (error) {
+      // 转换为中文错误信息
+      const errorMessage = translateAuthError(error.message);
+      return { error: { ...error, message: errorMessage } };
+    }
+    
+    return { error: null };
   };
 
   const verifyOtp = async (email: string, token: string) => {
@@ -140,40 +174,98 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       token,
       type: 'email',
     });
-    return { data, error };
+    
+    if (error) {
+      // 转换为中文错误信息
+      const errorMessage = translateAuthError(error.message);
+      return { data, error: { ...error, message: errorMessage } };
+    }
+    
+    return { data, error: null };
   };
 
   const signInWithPassword = async (email: string, password: string) => {
-    // Strategy: Try to Sign Up first (Login is Registration)
-    // If user exists, try to Sign In
+    console.log('signInWithPassword 开始:', email);
     
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    // 1. 先尝试用密码登录
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (signUpError) {
-      // If user already exists, try to sign in
-      if (signUpError.message.includes('already registered') || signUpError.status === 400) { // 400 is often used for validation or existing user
-         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        return { data: signInData, error: signInError };
+    // 如果登录成功，直接返回
+    if (!signInError && signInData.session) {
+      console.log('✅ 密码登录成功');
+      return { data: signInData, error: null };
+    }
+
+    // 2. 登录失败，尝试注册
+    if (signInError) {
+      console.log('❌ 登录失败:', signInError.message, 'Status:', signInError.status);
+      
+      // 尝试注册新用户
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      // 注册成功
+      if (!signUpError && signUpData.user) {
+        if (signUpData.session) {
+          console.log('✅ 注册成功并自动登录');
+          return { data: signUpData, error: null };
+        } else {
+          console.log('⚠️ 注册成功但需要邮箱确认');
+          return { 
+            data: null, 
+            error: { message: '请检查您的邮箱以确认账户' } 
+          };
+        }
       }
-      return { error: signUpError };
+
+      // 注册失败
+      if (signUpError) {
+        console.log('❌ 注册失败:', signUpError.message);
+        
+        // 用户已存在（说明是密码错误，或者是验证码注册的用户没有密码）
+        if (signUpError.message.includes('already registered') || 
+            signUpError.message.includes('User already registered')) {
+          console.log('ℹ️ 用户已存在，建议使用验证码登录');
+          return { 
+            data: null, 
+            error: { message: '该邮箱已注册，请先使用验证码登录后进入个人资料页面设置密码' } 
+          };
+        }
+        
+        return { data: null, error: { message: signUpError.message } };
+      }
     }
 
-    // If signUp successful but no session (email confirmation required), 
-    // we might need to handle that. But per requirements, we expect direct login.
-    // If session is null here, it means email confirmation is enabled.
-    if (signUpData.user && !signUpData.session) {
-        // Try to sign in immediately just in case (unlikely to work if confirmation needed)
-        // Or return a specific error/message
-        return { error: { message: "Please check your email to confirm your account." } };
-    }
+    // 其他情况
+    console.log('❌ 未知错误');
+    return { 
+      data: null, 
+      error: { message: '登录失败，请重试' } 
+    };
+  };
 
-    return { data: signUpData, error: null };
+  const updatePassword = async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) {
+        console.error('更新密码失败:', error);
+        return { error };
+      }
+      
+      console.log('密码更新成功');
+      return { error: null };
+    } catch (error) {
+      console.error('更新密码异常:', error);
+      return { error };
+    }
   };
 
   const signOut = async () => {
@@ -182,7 +274,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signInWithOtp, verifyOtp, signInWithPassword, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, signInWithOtp, verifyOtp, signInWithPassword, updatePassword, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

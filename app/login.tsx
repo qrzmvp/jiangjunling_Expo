@@ -45,6 +45,7 @@ export default function LoginScreen() {
   const [isPasswordLogin, setIsPasswordLogin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -58,37 +59,38 @@ export default function LoginScreen() {
 
   const handleSendCode = async () => {
     if (!email) {
-      Alert.alert('错误', '请输入邮箱');
+      setErrorMessage('请输入邮箱');
       return;
     }
+    setErrorMessage('');
     setLoading(true);
     const { error } = await signInWithOtp(email);
     setLoading(false);
     if (error) {
-      Alert.alert('错误', error.message);
+      setErrorMessage(error.message);
     } else {
-      Alert.alert('成功', '验证码已发送');
       setCountdown(60);
     }
   };
 
   const handleLogin = async () => {
     if (!email) {
-      Alert.alert('错误', '请输入邮箱');
+      setErrorMessage('请输入邮箱');
       return;
     }
+    setErrorMessage('');
     setLoading(true);
     let result;
     if (isPasswordLogin) {
       if (!password) {
-        Alert.alert('错误', '请输入密码');
+        setErrorMessage('请输入密码');
         setLoading(false);
         return;
       }
       result = await signInWithPassword(email, password);
     } else {
       if (!code) {
-        Alert.alert('错误', '请输入验证码');
+        setErrorMessage('请输入验证码');
         setLoading(false);
         return;
       }
@@ -97,7 +99,7 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (result.error) {
-      Alert.alert('错误', result.error.message);
+      setErrorMessage(result.error.message || '登录失败，请重试');
     } else {
       // Success, navigate to home
       router.replace('/(tabs)');
@@ -126,14 +128,7 @@ export default function LoginScreen() {
         style={{ flex: 1 }}
       >
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={[styles.backButton, isDark && styles.backButtonDark]}
-          >
-            <MaterialIcons name="arrow-back-ios" size={20} color={theme.text} />
-          </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.text }]}>登录/注册</Text>
-          <View style={{ width: 40 }} /> 
         </View>
 
         <ScrollView
@@ -263,6 +258,14 @@ export default function LoginScreen() {
             </View>
           </View>
 
+          {/* 错误提示 */}
+          {errorMessage ? (
+            <View style={styles.errorContainer}>
+              <MaterialIcons name="error-outline" size={20} color={COLORS.danger} />
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          ) : null}
+
           <View style={styles.actionContainer}>
             <TouchableOpacity
               style={[styles.mainButton, { backgroundColor: theme.mainButtonBg }]}
@@ -338,7 +341,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
@@ -420,6 +423,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: COLORS.textMuted,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(246, 70, 93, 0.1)',
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.danger,
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
+    gap: 8,
+  },
+  errorText: {
+    flex: 1,
+    color: COLORS.danger,
+    fontSize: 14,
+    lineHeight: 20,
   },
   actionContainer: {
     marginTop: 32,
