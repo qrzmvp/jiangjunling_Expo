@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import * as Clipboard from 'expo-clipboard';
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 import { updateAvatarComplete } from '../../lib/avatarService';
+import { isVipActive } from '../../lib/redemptionService';
 
 const COLORS = {
   backgroundDark: "#000000",
@@ -29,6 +30,7 @@ export default function PersonalInfoPage() {
   const nickname = profile?.username || user?.email?.split('@')[0] || 'User';
   const accountId = profile?.account_id || (user?.id ? user.id.substring(0, 8).toUpperCase() : 'UNKNOWN');
   const email = user?.email || '';
+  const vipActive = isVipActive(profile?.vip_expires_at || null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [cropperVisible, setCropperVisible] = useState(false);
@@ -228,11 +230,21 @@ export default function PersonalInfoPage() {
           >
             <Text style={styles.label}>头像</Text>
             <View style={styles.rowRight}>
-              <View style={styles.avatarContainer}>
+              <View style={styles.avatarImageContainer}>
                 <Image 
                   source={{ uri: avatarUri }} 
                   style={styles.avatar}
                 />
+                {/* VIP Badge - Bottom Right */}
+                {vipActive ? (
+                  <View style={styles.vipBadge}>
+                    <Ionicons name="diamond" size={12} color="#FFD700" />
+                  </View>
+                ) : (
+                  <View style={styles.freeBadge}>
+                    <Text style={styles.freeBadgeText}>免费</Text>
+                  </View>
+                )}
                 {uploadingAvatar && (
                   <View style={styles.avatarLoadingOverlay}>
                     <ActivityIndicator color={COLORS.white} size="small" />
@@ -539,6 +551,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSubDark,
   },
+  avatarImageContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.cardHighlight,
+    overflow: 'visible',
+    borderWidth: 1,
+    borderColor: 'rgba(37, 37, 37, 0.5)',
+    position: 'relative',
+  },
   avatarContainer: {
     width: 40,
     height: 40,
@@ -552,6 +574,35 @@ const styles = StyleSheet.create({
   avatar: {
     width: '100%',
     height: '100%',
+  },
+  vipBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    backgroundColor: '#1a1a1a',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.backgroundDark,
+  },
+  freeBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    backgroundColor: COLORS.textSubDark,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: COLORS.backgroundDark,
+  },
+  freeBadgeText: {
+    color: COLORS.backgroundDark,
+    fontSize: 8,
+    fontWeight: 'bold',
   },
   avatarLoadingOverlay: {
     ...StyleSheet.absoluteFillObject,

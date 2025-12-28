@@ -14,6 +14,7 @@ export type UserProfile = {
   avatar_url: string | null;
   is_verified: boolean;
   vip_status: string;
+  vip_expires_at: string | null;
   invite_code: string | null;
   subscription_count: number;
   following_count: number;

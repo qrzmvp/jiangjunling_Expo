@@ -93,3 +93,41 @@ export interface UpdateExchangeAccountInput {
   is_enabled?: boolean;
   status?: AccountStatus;
 }
+
+// VIP会员类型
+export type VipTier = 'free' | 'monthly' | 'quarterly' | 'yearly';
+
+export interface VipStatus {
+  tier: VipTier;
+  expiresAt: string | null;
+  isActive: boolean;
+}
+
+// 兑换码类型
+export type RedemptionCodeType = 'monthly' | 'quarterly' | 'yearly';
+export type RedemptionCodeStatus = 'active' | 'used' | 'expired';
+
+export interface RedemptionCode {
+  id: string;
+  code: string;
+  type: RedemptionCodeType;
+  duration_days: number;
+  status: RedemptionCodeStatus;
+  used_by?: string | null;
+  used_at?: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+// 兑换记录类型
+export interface RedemptionRecord {
+  id: string;
+  user_id: string;
+  code: string;
+  code_type: RedemptionCodeType;
+  duration_days: number;
+  redeemed_at: string;
+  previous_vip_expires_at?: string | null;
+  new_vip_expires_at: string;
+}
+

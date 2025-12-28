@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { UserInfo, Stats } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import { isVipActive, formatVipExpiresAt } from '../../lib/redemptionService';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -27,6 +28,7 @@ const MyPage: React.FC = () => {
   const accountId = profile?.account_id || (user?.id ? user.id.substring(0, 8).toUpperCase() : 'UNKNOWN');
   const avatarUri = profile?.avatar_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg";
   const isVerified = profile?.is_verified || false;
+  const vipActive = isVipActive(profile?.vip_expires_at || null);
 
   // 使用类型定义的数据
   const userInfo: UserInfo = {
@@ -69,6 +71,17 @@ const MyPage: React.FC = () => {
                 source={{ uri: avatarUri }} 
                 style={styles.avatar}
               />
+              {/* VIP Badge - Bottom Right */}
+              {vipActive ? (
+                <View style={styles.vipBadge}>
+                  <Ionicons name="diamond" size={14} color="#FFD700" />
+                </View>
+              ) : (
+                <View style={styles.freeBadge}>
+                  <Text style={styles.freeBadgeText}>免费</Text>
+                </View>
+              )}
+              {/* Verified Badge - Top Right */}
               {isVerified && (
                 <View style={styles.verifiedBadge}>
                   <Ionicons name="checkmark" size={12} color="#FFFFFF" />
@@ -163,10 +176,19 @@ const MyPage: React.FC = () => {
               <Ionicons name="diamond" size={20} color="#ffffff" />
               <Text style={styles.vipTitle}>VIP 会员中心</Text>
             </View>
-            <Text style={styles.vipSubtitle}>尊享更低手续费与专属客服服务</Text>
+            {!vipActive && (
+              <Text style={styles.vipSubtitle}>尊享更低手续费与专属客服服务</Text>
+            )}
+            {vipActive && (
+              <Text style={styles.vipExpiryText}>
+                到期时间: {formatVipExpiresAt(profile?.vip_expires_at || null)}
+              </Text>
+            )}
           </View>
           <View style={styles.vipButton}>
-            <Text style={styles.vipButtonText}>立即开通 {'>'}</Text>
+            <Text style={styles.vipButtonText}>
+              {vipActive ? '续费会员' : '立即开通'} {'>'}
+            </Text>
           </View>
         </TouchableOpacity>
 
@@ -323,7 +345,7 @@ const styles = StyleSheet.create({
   },
   verifiedBadge: {
     position: 'absolute',
-    bottom: -2,
+    top: -2,
     right: -2,
     backgroundColor: COLORS.yellow,
     width: 20,
@@ -333,6 +355,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: COLORS.background,
+  },
+  vipBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#1a1a1a',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.background,
+  },
+  freeBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: COLORS.textMuted,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: COLORS.background,
+  },
+  freeBadgeText: {
+    color: COLORS.background,
+    fontSize: 9,
+    fontWeight: 'bold',
   },
   userInfo: {
     justifyContent: 'center',
@@ -496,6 +547,11 @@ const styles = StyleSheet.create({
   vipSubtitle: {
     color: '#9ca3af',
     fontSize: 12,
+  },
+  vipExpiryText: {
+    color: '#FFD700',
+    fontSize: 11,
+    marginTop: 4,
   },
   vipButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

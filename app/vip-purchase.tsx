@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useProtectedRoute } from '../hooks/useProtectedRoute';
+import { useAuth } from '../contexts/AuthContext';
+import { redeemCode } from '../lib/redemptionService';
+import Toast from '../components/Toast';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -24,17 +27,57 @@ const PACKAGES = [
 export default function VipPurchasePage() {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
+  const { user, refreshProfile } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState('yearly');
   const [redemptionCode, setRedemptionCode] = useState('');
+  const [redeeming, setRedeeming] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
-  const handleRedeem = () => {
+  const handleRedeem = async () => {
     if (!redemptionCode.trim()) {
-      Alert.alert('提示', '请输入兑换码');
+      setToastType('error');
+      setToastMessage('请输入兑换码');
+      setShowToast(true);
       return;
     }
-    // Mock redemption logic
-    Alert.alert('提示', '兑换成功！');
-    setRedemptionCode('');
+
+    if (!user?.id) {
+      setToastType('error');
+      setToastMessage('用户信息不完整，请重新登录');
+      setShowToast(true);
+      return;
+    }
+
+    setRedeeming(true);
+    
+    try {
+      // 执行兑换
+      await redeemCode(user.id, redemptionCode);
+      
+      // 刷新用户信息
+      await refreshProfile();
+      
+      // 清空输入框
+      setRedemptionCode('');
+      
+      // 显示成功提示
+      setToastType('success');
+      setToastMessage('兑换成功！VIP会员已激活');
+      setShowToast(true);
+      
+      // 延迟跳转到兑换记录页面
+      setTimeout(() => {
+        router.push('/profile/redemption-history');
+      }, 1500);
+    } catch (error: any) {
+      setToastType('error');
+      setToastMessage(error.message || '兑换失败，请重试');
+      setShowToast(true);
+    } finally {
+      setRedeeming(false);
+    }
   };
 
   return (
@@ -157,9 +200,18 @@ export default function VipPurchasePage() {
               value={redemptionCode}
               onChangeText={setRedemptionCode}
               autoCapitalize="characters"
+              editable={!redeeming}
             />
-            <TouchableOpacity style={styles.redeemButton} onPress={handleRedeem}>
-              <Text style={styles.redeemButtonText}>兑换</Text>
+            <TouchableOpacity 
+              style={[styles.redeemButton, redeeming && styles.redeemButtonDisabled]} 
+              onPress={handleRedeem}
+              disabled={redeeming}
+            >
+              {redeeming ? (
+                <ActivityIndicator size="small" color={COLORS.gold} />
+              ) : (
+                <Text style={styles.redeemButtonText}>兑换</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -179,6 +231,14 @@ export default function VipPurchasePage() {
           <Text style={styles.payButtonText}>立即开通</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Toast 提示 */}
+      <Toast
+        visible={showToast}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setShowToast(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -246,9 +306,10 @@ const styles = StyleSheet.create({
   },
   benefitsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
   },
   benefitItem: {
+    flex: 1,
     alignItems: 'center',
   },
   benefitIcon: {
@@ -386,6 +447,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: COLORS.gold,
+    minWidth: 80,
+  },
+  redeemButtonDisabled: {
+    opacity: 0.5,
   },
   redeemButtonText: {
     color: COLORS.gold,
