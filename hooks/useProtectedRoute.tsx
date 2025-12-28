@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -10,6 +10,7 @@ export function useProtectedRoute() {
   const { session, loading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
     if (loading) return;
@@ -17,8 +18,17 @@ export function useProtectedRoute() {
     // 如果没有登录且不在登录页或启动页
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'splash';
     
-    if (!session && !inAuthGroup) {
-      router.replace('/login');
+    if (!session && !inAuthGroup && !hasRedirected.current) {
+      hasRedirected.current = true;
+      // 使用 setTimeout 确保在下一个事件循环中执行，避免与其他导航冲突
+      setTimeout(() => {
+        router.replace('/login');
+      }, 100);
+    }
+    
+    // 重置标志当用户重新登录时
+    if (session) {
+      hasRedirected.current = false;
     }
   }, [session, loading, segments]);
 

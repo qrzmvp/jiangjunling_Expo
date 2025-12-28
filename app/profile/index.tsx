@@ -46,29 +46,24 @@ export default function PersonalInfoPage() {
     setLogoutModalVisible(true);
   };
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
     // 1. Close modal immediately
     setLogoutModalVisible(false);
     
-    // 2. Perform logout logic after a short delay to ensure modal closes first
-    setTimeout(async () => {
-      try {
-        // Attempt sign out with a timeout to prevent hanging
-        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000));
-        await Promise.race([signOut(), timeout]);
-      } catch (e) {
-        console.error('Logout error or timeout:', e);
-      } finally {
-        // 3. Show success toast and redirect regardless of outcome
-        setShowToast(true);
-        
-        // 4. Redirect after toast
-        setTimeout(() => {
-          setShowToast(false);
-          router.replace('/login');
-        }, 1500);
-      }
-    }, 300);
+    // 2. Show success toast first
+    setShowToast(true);
+    
+    try {
+      // 3. Perform logout
+      await signOut();
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+    
+    // 4. Redirect after toast (useProtectedRoute will handle the actual navigation)
+    setTimeout(() => {
+      setShowToast(false);
+    }, 1500);
   };
 
   const pickImage = async () => {
