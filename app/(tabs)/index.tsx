@@ -882,19 +882,16 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
           {hasMore && (
             <TouchableOpacity 
               style={{ 
-                padding: 16, 
-                alignItems: 'center',
-                backgroundColor: COLORS.textMain,
-                borderRadius: 8,
-                marginTop: 16
+                padding: 20, 
+                alignItems: 'center'
               }}
               onPress={handleLoadMore}
               disabled={loadingMore}
             >
               {loadingMore ? (
-                <ActivityIndicator size="small" color={COLORS.background} />
+                <ActivityIndicator size="small" color={COLORS.textMain} />
               ) : (
-                <Text style={{ color: COLORS.background, fontSize: 14, fontWeight: '600' }}>
+                <Text style={{ color: COLORS.textMain, fontSize: 14 }}>
                   加载更多
                 </Text>
               )}
