@@ -1,9 +1,12 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, StyleSheet, Platform, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useProtectedRoute } from '../../../hooks/useProtectedRoute';
+import { ExchangeAccountService } from '../../../lib/exchangeAccountService';
+import { ExchangeAccount } from '../../../types';
+import Toast from '../../../components/Toast';
 
 const COLORS = {
   background: "#000000",
@@ -21,6 +24,137 @@ const COLORS = {
 export default function ExchangeAccountsList() {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
+  const [accounts, setAccounts] = useState<ExchangeAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 0,
+    enabled: 0,
+    normal: 0,
+    expired: 0,
+    suspended: 0,
+  });
+
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
+  useEffect(() => {
+    loadAccounts();
+  }, []);
+
+  const loadAccounts = async () => {
+    try {
+      setLoading(true);
+      // 只调用一个接口获取账户数据
+      const accountsData = await ExchangeAccountService.getExchangeAccounts();
+      setAccounts(accountsData);
+      
+      // 在前端计算统计数据，避免重复查询数据库
+      const calculatedStats = {
+        total: accountsData.length,
+        enabled: accountsData.filter(a => a.is_enabled).length,
+        normal: accountsData.filter(a => a.status === 'normal').length,
+        expired: accountsData.filter(a => a.status === 'expired').length,
+        suspended: accountsData.filter(a => a.status === 'suspended').length,
+      };
+      setStats(calculatedStats);
+    } catch (error) {
+      console.error('加载账户失败:', error);
+      showToast('加载账户信息失败，请重试', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleAccount = async (id: string, currentStatus: boolean) => {
+    try {
+      await ExchangeAccountService.toggleExchangeAccount(id, !currentStatus);
+      await loadAccounts();
+      showToast(`账户已${!currentStatus ? '启用' : '禁用'}`, 'success');
+    } catch (error) {
+      console.error('切换账户状态失败:', error);
+      showToast('操作失败，请重试', 'error');
+    }
+  };
+
+  const handleDeleteAccount = (id: string) => {
+    Alert.alert(
+      '确认删除',
+      '删除后将无法恢复，确定要删除该账户吗？',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '删除',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await ExchangeAccountService.deleteExchangeAccount(id);
+              await loadAccounts();
+              showToast('账户已删除', 'success');
+            } catch (error) {
+              console.error('删除账户失败:', error);
+              showToast('删除失败，请重试', 'error');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const getExchangeLogo = (exchangeName: string) => {
+    const name = exchangeName.toLowerCase();
+    const logos: { [key: string]: { bg: string; color: string; letter: string } } = {
+      'binance': { bg: '#FCD535', color: '#000000', letter: 'B' },
+      'okx': { bg: '#FFFFFF', color: '#000000', letter: 'OKX' },
+      'bybit': { bg: '#F7A600', color: '#000000', letter: 'B' },
+      'coinbase': { bg: '#0052FF', color: '#FFFFFF', letter: 'C' },
+      'kraken': { bg: '#5741D9', color: '#FFFFFF', letter: 'K' },
+      'huobi': { bg: '#2EAEF0', color: '#FFFFFF', letter: 'H' },
+    };
+    return logos[name] || { bg: '#666666', color: '#FFFFFF', letter: exchangeName[0]?.toUpperCase() || 'E' };
+  };
+
+  const getAccountTypeLabel = (type: string) => {
+    const labels: { [key: string]: string } = {
+      'spot': '现货',
+      'futures': '合约',
+      'margin': '杠杆',
+    };
+    return labels[type] || type;
+  };
+
+  const getAccountModeLabel = (mode: string) => {
+    const labels: { [key: string]: string } = {
+      'real': '真实',
+      'demo': '模拟',
+    };
+    return labels[mode] || mode;
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: { [key: string]: string } = {
+      'normal': '正常',
+      'expired': '授权过期',
+      'suspended': '已暂停',
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: { [key: string]: string } = {
+      'normal': COLORS.success,
+      'expired': COLORS.danger,
+      'suspended': COLORS.warning,
+    };
+    return colors[status] || COLORS.textSecondary;
+  };
 
   return (
     <View style={styles.container}>
@@ -29,7 +163,7 @@ export default function ExchangeAccountsList() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity 
-            onPress={() => router.back()}
+            onPress={() => router.push('/(tabs)/my')}
             style={styles.iconButton}
           >
             <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
@@ -47,157 +181,142 @@ export default function ExchangeAccountsList() {
         </View>
       </SafeAreaView>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Stats Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardLabel}>连接总数</Text>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>运行良好</Text>
-            </View>
-          </View>
-          <View style={styles.statsRow}>
-            <Text style={styles.statsNumber}>4</Text>
-            <Text style={styles.statsUnit}>个账户</Text>
-          </View>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
         </View>
+      ) : (
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {/* Stats Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardLabel}>连接总数</Text>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>
+                  {stats.enabled === stats.total ? '运行良好' : '需要关注'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.statsRow}>
+              <Text style={styles.statsNumber}>{stats.total}</Text>
+              <Text style={styles.statsUnit}>个账户</Text>
+            </View>
+          </View>
 
-        <Text style={styles.sectionTitle}>已连接账户</Text>
+          {accounts.length > 0 ? (
+            <>
+              <Text style={styles.sectionTitle}>已连接账户</Text>
 
-        {/* Binance Account */}
-        <TouchableOpacity 
-          style={styles.accountCard}
-          activeOpacity={0.7}
-          onPress={() => router.push('/profile/exchange-accounts/edit')}
-        >
-          <View style={styles.accountInfo}>
-            <View style={[styles.logoContainer, { backgroundColor: '#FCD535' }]}>
-               <Text style={[styles.logoText, { color: '#000000' }]}>B</Text>
-               <View style={styles.statusDotContainer}>
-                 <View style={[styles.statusDot, { backgroundColor: COLORS.success }]} />
-               </View>
+              {accounts.map((account) => {
+                const exchangeName = account.exchanges?.display_name || account.exchanges?.name || 'Unknown';
+                const logo = getExchangeLogo(account.exchanges?.name || '');
+                return (
+                  <TouchableOpacity
+                    key={account.id}
+                    style={styles.accountCard}
+                    activeOpacity={0.7}
+                    onPress={() => router.push(`/profile/exchange-accounts/edit?id=${account.id}`)}
+                  >
+                    <View style={styles.accountInfo}>
+                      <View style={[styles.logoContainer, { backgroundColor: logo.bg }]}>
+                        <Text style={[styles.logoText, { color: logo.color }]}>
+                          {logo.letter}
+                        </Text>
+                        <View style={styles.statusDotContainer}>
+                          <View
+                            style={[
+                              styles.statusDot,
+                              {
+                                backgroundColor: account.is_enabled
+                                  ? COLORS.success
+                                  : COLORS.textSecondary,
+                              },
+                            ]}
+                          />
+                        </View>
+                      </View>
+                      <View style={styles.accountDetails}>
+                        <View style={styles.accountNameRow}>
+                          <Text style={styles.accountName}>{exchangeName}</Text>
+                          <View style={styles.tag}>
+                            <Text style={styles.tagText}>
+                              {getAccountTypeLabel(account.account_type)}
+                            </Text>
+                          </View>
+                          <View
+                            style={[
+                              styles.tag,
+                              {
+                                backgroundColor:
+                                  account.account_mode === 'real'
+                                    ? 'rgba(46, 189, 133, 0.15)'
+                                    : 'rgba(234, 179, 8, 0.15)',
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.tagText,
+                                {
+                                  color:
+                                    account.account_mode === 'real'
+                                      ? COLORS.success
+                                      : COLORS.warning,
+                                },
+                              ]}
+                            >
+                              {getAccountModeLabel(account.account_mode)}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={styles.accountSubtext}>
+                          {account.account_nickname}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.accountAction}>
+                      <Text
+                        style={[
+                          styles.statusLabel,
+                          { color: account.is_enabled ? COLORS.success : COLORS.textSecondary },
+                        ]}
+                      >
+                        {account.is_enabled ? '正常' : '禁用'}
+                      </Text>
+                      <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <MaterialIcons name="account-balance-wallet" size={64} color={COLORS.textSecondary} />
+              <Text style={styles.emptyText}>暂无交易所账户</Text>
+              <Text style={styles.emptySubtext}>点击右上角"添加"按钮添加您的第一个账户</Text>
             </View>
-            <View style={styles.accountDetails}>
-              <View style={styles.accountNameRow}>
-                <Text style={styles.accountName}>Binance</Text>
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>合约</Text>
-                </View>
-                <View style={[styles.tag, { backgroundColor: 'rgba(46, 189, 133, 0.15)' }]}>
-                  <Text style={[styles.tagText, { color: COLORS.success }]}>真实</Text>
-                </View>
-              </View>
-              <Text style={styles.accountSubtext}>主账户 • API ...8392</Text>
-            </View>
-          </View>
-          <View style={styles.accountAction}>
-            <Text style={[styles.statusLabel, { color: COLORS.success }]}>正常</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-          </View>
-        </TouchableOpacity>
+          )}
 
-        {/* OKX Account */}
-        <TouchableOpacity 
-          style={styles.accountCard}
-          activeOpacity={0.7}
-          onPress={() => router.push('/profile/exchange-accounts/edit')}
-        >
-          <View style={styles.accountInfo}>
-            <View style={[styles.logoContainer, { backgroundColor: '#FFFFFF' }]}>
-              <Text style={[styles.logoText, { color: '#000000', fontSize: 12 }]}>OKX</Text>
-              <View style={styles.statusDotContainer}>
-                <View style={[styles.statusDot, { backgroundColor: COLORS.success }]} />
-              </View>
-            </View>
-            <View style={styles.accountDetails}>
-              <View style={styles.accountNameRow}>
-                <Text style={styles.accountName}>OKX</Text>
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>合约</Text>
-                </View>
-                <View style={[styles.tag, { backgroundColor: 'rgba(46, 189, 133, 0.15)' }]}>
-                  <Text style={[styles.tagText, { color: COLORS.success }]}>真实</Text>
-                </View>
-              </View>
-              <Text style={styles.accountSubtext}>交易号 2 • API ...1102</Text>
+          <View style={styles.warningCard}>
+            <MaterialIcons name="security" size={20} color={COLORS.warning} style={{ marginTop: 2 }} />
+            <View style={styles.warningContent}>
+              <Text style={styles.warningText}>
+                为了您的资金安全，请确保API Key仅开启了交易权限，并未开启提现权限。
+              </Text>
             </View>
           </View>
-          <View style={styles.accountAction}>
-            <Text style={[styles.statusLabel, { color: COLORS.success }]}>正常</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-          </View>
-        </TouchableOpacity>
 
-        {/* Bybit Account */}
-        <TouchableOpacity 
-          style={styles.accountCard}
-          activeOpacity={0.7}
-          onPress={() => router.push('/profile/exchange-accounts/edit')}
-        >
-          <View style={styles.accountInfo}>
-            <View style={[styles.logoContainer, { backgroundColor: '#1F2937' }]}>
-              <Text style={[styles.logoText, { color: '#FFFFFF' }]}>B</Text>
-              <View style={styles.statusDotContainer}>
-                <View style={[styles.statusDot, { backgroundColor: COLORS.danger }]} />
-              </View>
-            </View>
-            <View style={styles.accountDetails}>
-              <View style={styles.accountNameRow}>
-                <Text style={styles.accountName}>Bybit</Text>
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>合约</Text>
-                </View>
-                <View style={[styles.tag, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-                  <Text style={[styles.tagText, { color: '#3b82f6' }]}>模拟</Text>
-                </View>
-              </View>
-              <Text style={styles.accountSubtext}>策略组 A • API ...5521</Text>
-            </View>
-          </View>
-          <View style={styles.accountAction}>
-            <Text style={[styles.statusLabel, { color: COLORS.danger }]}>授权过期</Text>
-            <MaterialIcons name="error" size={20} color={COLORS.danger} />
-          </View>
-        </TouchableOpacity>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      )}
 
-        {/* Coinbase Account */}
-        <TouchableOpacity 
-          style={[styles.accountCard, { opacity: 0.6 }]}
-          activeOpacity={0.7}
-          onPress={() => router.push('/profile/exchange-accounts/edit')}
-        >
-          <View style={styles.accountInfo}>
-            <View style={[styles.logoContainer, { backgroundColor: '#2563EB' }]}>
-              <Text style={[styles.logoText, { color: '#FFFFFF', fontSize: 20 }]}>C</Text>
-              <View style={styles.statusDotContainer}>
-                <View style={[styles.statusDot, { backgroundColor: COLORS.warning }]} />
-              </View>
-            </View>
-            <View style={styles.accountDetails}>
-              <View style={styles.accountNameRow}>
-                <Text style={styles.accountName}>Coinbase</Text>
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>合约</Text>
-                </View>
-                <View style={[styles.tag, { backgroundColor: 'rgba(46, 189, 133, 0.15)' }]}>
-                  <Text style={[styles.tagText, { color: COLORS.success }]}>真实</Text>
-                </View>
-              </View>
-              <Text style={styles.accountSubtext}>备用 • API ...9982</Text>
-            </View>
-          </View>
-          <View style={styles.accountAction}>
-            <Text style={[styles.statusLabel, { color: COLORS.warning }]}>已暂停</Text>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-          </View>
-        </TouchableOpacity>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            为了您的资产安全，请确保API Key仅开启了交易权限，并未开启提现权限。
-          </Text>
-        </View>
-      </ScrollView>
+      {/* Toast Notification */}
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
     </View>
   );
 }
@@ -371,6 +490,46 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginRight: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  warningCard: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.warningBg,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  warningContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  warningText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    lineHeight: 18,
   },
   footer: {
     paddingHorizontal: 8,

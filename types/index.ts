@@ -32,3 +32,64 @@ export interface MenuItem {
   onPress?: () => void;
   badge?: number;
 }
+
+// 交易所类型
+export interface Exchange {
+  id: string;
+  name: string;
+  display_name: string;
+  logo_url?: string;
+  supported_account_types: AccountType[];
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// 交易所账户类型
+export type AccountType = 'spot' | 'futures' | 'margin';
+export type AccountMode = 'real' | 'demo';
+export type AccountStatus = 'normal' | 'expired' | 'suspended';
+
+export interface ExchangeAccount {
+  id: string;
+  user_id: string;
+  exchange_id: string;
+  exchange_name?: string; // Deprecated - for backward compatibility
+  account_type: AccountType;
+  account_mode: AccountMode;
+  api_key: string;
+  secret_key: string;
+  passphrase?: string;
+  account_nickname: string; // Now required
+  is_enabled: boolean;
+  status: AccountStatus;
+  last_sync_at?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  exchanges?: Exchange;
+}
+
+export interface CreateExchangeAccountInput {
+  exchange_id: string;
+  account_type: AccountType;
+  account_mode: AccountMode;
+  api_key: string;
+  secret_key: string;
+  passphrase?: string;
+  account_nickname: string; // Now required
+  is_enabled?: boolean;
+}
+
+export interface UpdateExchangeAccountInput {
+  exchange_id?: string;
+  account_type?: AccountType;
+  account_mode?: AccountMode;
+  api_key?: string;
+  secret_key?: string;
+  passphrase?: string;
+  account_nickname?: string;
+  is_enabled?: boolean;
+  status?: AccountStatus;
+}

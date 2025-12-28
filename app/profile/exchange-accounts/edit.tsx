@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Switch, StyleSheet, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Switch, StyleSheet, Platform, Alert, ActivityIndicator, Modal } from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useProtectedRoute } from '../../../hooks/useProtectedRoute';
+import { ExchangeAccountService, ExchangeService } from '../../../lib/exchangeAccountService';
+import { Exchange, AccountType, AccountMode } from '../../../types';
+import Toast from '../../../components/Toast';
 
 const COLORS = {
   background: "#000000",
@@ -19,11 +22,235 @@ const COLORS = {
   inputPlaceholder: "#6B7280",
 };
 
+// Helper to remove focus outline on web
+const removeOutline = Platform.OS === 'web' ? { outline: 'none' } as any : {};
+
 export default function EditExchangeAccount() {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const accountId = params.id as string | undefined;
+
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [exchanges, setExchanges] = useState<Exchange[]>([]);
+  const [showExchangeModal, setShowExchangeModal] = useState(false);
+  
+  // Toast state
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'warning' | 'info'>('info');
+  
+  // Form state
+  const [selectedExchange, setSelectedExchange] = useState<Exchange | null>(null);
+  const [accountType, setAccountType] = useState<AccountType>('futures');
+  const [accountMode, setAccountMode] = useState<AccountMode>('real');
+  const [apiKey, setApiKey] = useState('');
+  const [secretKey, setSecretKey] = useState('');
+  const [passphrase, setPassphrase] = useState('');
+  const [accountNickname, setAccountNickname] = useState('');
   const [isEnabled, setIsEnabled] = useState(true);
+
+  // Password visibility state
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [showSecretKey, setShowSecretKey] = useState(false);
+  const [showPassphrase, setShowPassphrase] = useState(false);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
+  useEffect(() => {
+    loadExchanges();
+    if (accountId) {
+      loadAccount();
+    }
+  }, [accountId]);
+
+  const loadExchanges = async () => {
+    try {
+      const exchangesList = await ExchangeService.getExchanges();
+      setExchanges(exchangesList);
+      if (!accountId && exchangesList.length > 0) {
+        // 默认选择 OKX，如果没有则选第一个
+        const okxExchange = exchangesList.find(ex => ex.name.toLowerCase() === 'okx');
+        setSelectedExchange(okxExchange || exchangesList[0]);
+      }
+    } catch (error) {
+      console.error('加载交易所列表失败:', error);
+    }
+  };
+
+  const handleSelectExchange = (exchange: Exchange) => {
+    setSelectedExchange(exchange);
+    setShowExchangeModal(false);
+  };
+
+  const getExchangeIcon = (name: string) => {
+    const lowerName = name.toLowerCase();
+    const icons: { [key: string]: { icon: string; bg: string; color: string } } = {
+      'binance': { icon: 'B', bg: '#FCD535', color: '#000000' },
+      'okx': { icon: 'O', bg: '#FFFFFF', color: '#000000' },
+      'bybit': { icon: 'B', bg: '#F7A600', color: '#000000' },
+      'coinbase': { icon: 'C', bg: '#0052FF', color: '#FFFFFF' },
+      'kraken': { icon: 'K', bg: '#5741D9', color: '#FFFFFF' },
+      'huobi': { icon: 'H', bg: '#2EAEF0', color: '#FFFFFF' },
+    };
+    return icons[lowerName] || { icon: name[0]?.toUpperCase() || 'E', bg: '#666666', color: '#FFFFFF' };
+  };
+
+  const loadAccount = async () => {
+    try {
+      setLoading(true);
+      const account = await ExchangeAccountService.getExchangeAccountById(accountId!);
+      if (account) {
+        if (account.exchanges) {
+          setSelectedExchange(account.exchanges as Exchange);
+        }
+        setAccountType(account.account_type);
+        setAccountMode(account.account_mode);
+        setApiKey(account.api_key);
+        setSecretKey(account.secret_key);
+        setPassphrase(account.passphrase || '');
+        setAccountNickname(account.account_nickname);
+        setIsEnabled(account.is_enabled);
+      }
+    } catch (error) {
+      console.error('加载账户失败:', error);
+      showToast('加载账户信息失败，请重试', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    // Validation
+    if (!selectedExchange) {
+      showToast('请选择交易所', 'warning');
+      return;
+    }
+    if (!apiKey.trim()) {
+      showToast('请输入 API Key', 'warning');
+      return;
+    }
+    if (!secretKey.trim()) {
+      showToast('请输入 Secret Key', 'warning');
+      return;
+    }
+    if (!accountNickname.trim()) {
+      showToast('请输入账户名称', 'warning');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      if (accountId) {
+        // Update existing account
+        await ExchangeAccountService.updateExchangeAccount(accountId, {
+          exchange_id: selectedExchange.id,
+          account_type: accountType,
+          account_mode: accountMode,
+          api_key: apiKey,
+          secret_key: secretKey,
+          passphrase: passphrase || undefined,
+          account_nickname: accountNickname,
+          is_enabled: isEnabled,
+        });
+        showToast('账户已更新', 'success');
+        setTimeout(() => router.push('/profile/exchange-accounts'), 1500);
+      } else {
+        // Create new account
+        await ExchangeAccountService.createExchangeAccount({
+          exchange_id: selectedExchange.id,
+          account_type: accountType,
+          account_mode: accountMode,
+          api_key: apiKey,
+          secret_key: secretKey,
+          passphrase: passphrase || undefined,
+          account_nickname: accountNickname,
+          is_enabled: isEnabled,
+        });
+        showToast('账户已添加', 'success');
+        setTimeout(() => router.push('/profile/exchange-accounts'), 1500);
+      }
+    } catch (error: any) {
+      console.error('保存账户失败:', error);
+      
+      // 根据错误类型显示友好的错误信息
+      let errorMessage = '保存失败，请重试';
+      
+      if (error.code === '23505') {
+        // 检查错误详情中是否包含唯一约束名称
+        const errorDetail = error.message || '';
+        if (errorDetail.includes('exchange_accounts_user_exchange_type_mode_nickname_unique')) {
+          const modeLabel = accountMode === 'real' ? '真实' : '模拟';
+          const typeLabel = accountType === 'spot' ? '现货' : accountType === 'futures' ? '合约' : '杠杆';
+          errorMessage = `该交易所已存在名为"${accountNickname}"的${modeLabel}${typeLabel}账户，请使用不同的名称`;
+        } else {
+          errorMessage = '该账户已存在';
+        }
+      } else if (error.code === '23502') {
+        errorMessage = '必填字段未填写，请检查表单';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showToast(errorMessage, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = () => {
+    if (!accountId) return;
+    
+    Alert.alert(
+      '确认删除',
+      '删除后将无法恢复，确定要删除该账户吗？',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '删除',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await ExchangeAccountService.deleteExchangeAccount(accountId);
+              Alert.alert('成功', '账户已删除', [
+                { text: '确定', onPress: () => router.push('/profile/exchange-accounts') }
+              ]);
+            } catch (error) {
+              console.error('删除账户失败:', error);
+              Alert.alert('错误', '删除失败，请重试');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <StatusBar style="light" />
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.push('/profile/exchange-accounts')} style={styles.iconButton}>
+              <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>加载中...</Text>
+            <View style={styles.iconButton} />
+          </View>
+        </SafeAreaView>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -32,17 +259,24 @@ export default function EditExchangeAccount() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity 
-            onPress={() => router.back()}
+            onPress={() => router.push('/profile/exchange-accounts')}
             style={styles.iconButton}
           >
             <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>新增交易所账户</Text>
+          <Text style={styles.headerTitle}>
+            {accountId ? '编辑交易所账户' : '新增交易所账户'}
+          </Text>
           <TouchableOpacity 
-            onPress={() => router.back()}
+            onPress={handleSave}
             style={styles.saveButton}
+            disabled={saving}
           >
-            <Text style={styles.saveButtonText}>保存</Text>
+            {saving ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <Text style={styles.saveButtonText}>保存</Text>
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -54,7 +288,10 @@ export default function EditExchangeAccount() {
             交易所信息
           </Text>
           <View style={styles.card}>
-            <TouchableOpacity style={styles.cardRow}>
+            <TouchableOpacity 
+              style={styles.cardRow}
+              onPress={() => setShowExchangeModal(true)}
+            >
               <View style={styles.rowLeft}>
                 <View style={styles.iconContainer}>
                   <MaterialIcons name="account-balance" size={18} color="#9CA3AF" />
@@ -62,7 +299,7 @@ export default function EditExchangeAccount() {
                 <Text style={styles.rowLabel}>选择交易所</Text>
               </View>
               <View style={styles.rowRight}>
-                <Text style={styles.rowValue}>Binance</Text>
+                <Text style={styles.rowValue}>{selectedExchange?.display_name || '请选择'}</Text>
                 <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
               </View>
             </TouchableOpacity>
@@ -79,31 +316,56 @@ export default function EditExchangeAccount() {
             <View style={styles.inputRow}>
               <View style={styles.inputHeader}>
                 <Text style={styles.inputLabel}>API Key</Text>
-                <TouchableOpacity>
-                  <MaterialIcons name="qr-code-scanner" size={20} color={COLORS.primary} />
+              </View>
+              <View style={styles.inputWithIcon}>
+                <TextInput 
+                  style={[styles.inputFlexible, removeOutline]}
+                  placeholder="输入 Access Key"
+                  placeholderTextColor={COLORS.inputPlaceholder}
+                  value={apiKey}
+                  onChangeText={setApiKey}
+                  autoCapitalize="none"
+                  secureTextEntry={!showApiKey}
+                />
+                <TouchableOpacity 
+                  onPress={() => setShowApiKey(!showApiKey)}
+                  style={styles.eyeIcon}
+                >
+                  <Ionicons 
+                    name={showApiKey ? "eye-outline" : "eye-off-outline"} 
+                    size={20} 
+                    color={COLORS.textSecondary} 
+                  />
                 </TouchableOpacity>
               </View>
-              <TextInput 
-                style={styles.input}
-                placeholder="输入 Access Key"
-                placeholderTextColor={COLORS.inputPlaceholder}
-              />
             </View>
 
             {/* Secret Key */}
             <View style={styles.inputRow}>
               <View style={styles.inputHeader}>
                 <Text style={styles.inputLabel}>Secret Key</Text>
-                <TouchableOpacity>
-                  <MaterialIcons name="content-paste" size={20} color={COLORS.textSecondary} />
+              </View>
+              <View style={styles.inputWithIcon}>
+                <TextInput 
+                  style={[styles.inputFlexible, removeOutline]}
+                  placeholder="输入 Secret Key"
+                  placeholderTextColor={COLORS.inputPlaceholder}
+                  secureTextEntry={!showSecretKey}
+                  value={secretKey}
+                  onChangeText={setSecretKey}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity 
+                  onPress={() => setShowSecretKey(!showSecretKey)}
+                  style={styles.eyeIcon}
+                >
+                  <Ionicons 
+                    name={showSecretKey ? "eye-outline" : "eye-off-outline"} 
+                    size={20} 
+                    color={COLORS.textSecondary} 
+                  />
                 </TouchableOpacity>
               </View>
-              <TextInput 
-                style={styles.input}
-                placeholder="输入 Secret Key"
-                placeholderTextColor={COLORS.inputPlaceholder}
-                secureTextEntry
-              />
             </View>
 
             {/* Passphrase */}
@@ -111,12 +373,27 @@ export default function EditExchangeAccount() {
               <Text style={[styles.inputLabel, { marginBottom: 8 }]}>
                 Passphrase <Text style={styles.optionalText}>(选填)</Text>
               </Text>
-              <TextInput 
-                style={styles.input}
-                placeholder="输入口令 (部分交易所需要)"
-                placeholderTextColor={COLORS.inputPlaceholder}
-                secureTextEntry
-              />
+              <View style={styles.inputWithIcon}>
+                <TextInput 
+                  style={[styles.inputFlexible, removeOutline]}
+                  placeholder="输入口令 (部分交易所需要)"
+                  placeholderTextColor={COLORS.inputPlaceholder}
+                  secureTextEntry={!showPassphrase}
+                  value={passphrase}
+                  onChangeText={setPassphrase}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity 
+                  onPress={() => setShowPassphrase(!showPassphrase)}
+                  style={styles.eyeIcon}
+                >
+                  <Ionicons 
+                    name={showPassphrase ? "eye-outline" : "eye-off-outline"} 
+                    size={20} 
+                    color={COLORS.textSecondary} 
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </View>
@@ -128,21 +405,115 @@ export default function EditExchangeAccount() {
           </Text>
           <View style={styles.card}>
             <View style={[styles.cardRow, { borderBottomWidth: 1, borderBottomColor: COLORS.border }]}>
-              <Text style={styles.rowLabel}>账户备注</Text>
+              <Text style={styles.rowLabel}>账户名称</Text>
               <TextInput 
-                style={styles.inputRight}
+                style={[styles.inputRight, removeOutline]}
                 placeholder="例如: 币安主账户"
                 placeholderTextColor={COLORS.inputPlaceholder}
+                value={accountNickname}
+                onChangeText={setAccountNickname}
               />
             </View>
+            
+            {/* Account Mode Selection - 账户模式 (真实/模拟) */}
+            <View style={[styles.cardRow, { borderBottomWidth: 1, borderBottomColor: COLORS.border }]}>
+              <Text style={styles.rowLabel}>账户模式</Text>
+              <View style={styles.modeSelector}>
+                <TouchableOpacity
+                  style={[
+                    styles.modeButton,
+                    accountMode === 'real' && styles.modeButtonActive,
+                  ]}
+                  onPress={() => setAccountMode('real')}
+                >
+                  <Text
+                    style={[
+                      styles.modeButtonText,
+                      accountMode === 'real' && styles.modeButtonTextActive,
+                    ]}
+                  >
+                    真实
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.modeButton,
+                    accountMode === 'demo' && styles.modeButtonActive,
+                  ]}
+                  onPress={() => setAccountMode('demo')}
+                >
+                  <Text
+                    style={[
+                      styles.modeButtonText,
+                      accountMode === 'demo' && styles.modeButtonTextActive,
+                    ]}
+                  >
+                    模拟
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            {/* Account Type Selection - 账户类型 (现货/合约/杠杆) */}
+            <View style={[styles.cardRow, { borderBottomWidth: 1, borderBottomColor: COLORS.border }]}>
+              <Text style={styles.rowLabel}>账户类型</Text>
+              <View style={styles.modeSelector}>
+                <View
+                  style={[
+                    styles.typeButton,
+                    styles.typeButtonDisabled,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.modeButtonText,
+                      styles.typeButtonTextDisabled,
+                    ]}
+                  >
+                    现货
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.typeButton,
+                    styles.modeButtonActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.modeButtonText,
+                      styles.modeButtonTextActive,
+                    ]}
+                  >
+                    合约
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.typeButton,
+                    styles.typeButtonDisabled,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.modeButtonText,
+                      styles.typeButtonTextDisabled,
+                    ]}
+                  >
+                    杠杆
+                  </Text>
+                </View>
+              </View>
+            </View>
+            
             <View style={styles.cardRow}>
               <View style={styles.columnLeft}>
                 <Text style={styles.rowLabel}>启用账户</Text>
                 <Text style={styles.helperText}>关闭后停止同步数据</Text>
               </View>
               <Switch
-                trackColor={{ false: "#767577", true: COLORS.primary }}
-                thumbColor={"#f4f3f4"}
+                trackColor={{ false: "#3e3e3e", true: COLORS.success }}
+                thumbColor={isEnabled ? "#ffffff" : "#f4f3f4"}
                 ios_backgroundColor="#3e3e3e"
                 onValueChange={toggleSwitch}
                 value={isEnabled}
@@ -162,9 +533,91 @@ export default function EditExchangeAccount() {
             </Text>
           </View>
         </View>
+
+        {/* Delete Button - Only show when editing */}
+        {accountId && (
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={handleDelete}
+          >
+            <MaterialIcons name="delete-outline" size={20} color={COLORS.danger} />
+            <Text style={styles.deleteButtonText}>删除该账户</Text>
+          </TouchableOpacity>
+        )}
         
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Exchange Selection Modal */}
+      <Modal
+        visible={showExchangeModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowExchangeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowExchangeModal(false)}
+          />
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              {/* Modal Header */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>选择交易所</Text>
+                <TouchableOpacity onPress={() => setShowExchangeModal(false)}>
+                  <Ionicons name="close" size={24} color={COLORS.text} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Exchange List */}
+              <ScrollView style={styles.modalScroll}>
+                {exchanges.map((exchange) => {
+                  const exchangeIcon = getExchangeIcon(exchange.name);
+                  const isSelected = selectedExchange?.id === exchange.id;
+                  return (
+                    <TouchableOpacity
+                      key={exchange.id}
+                      style={[
+                        styles.exchangeItem,
+                        isSelected && styles.exchangeItemSelected
+                      ]}
+                      onPress={() => handleSelectExchange(exchange)}
+                    >
+                      <View style={styles.exchangeLeft}>
+                        <View style={[
+                          styles.exchangeIcon,
+                          { backgroundColor: exchangeIcon.bg }
+                        ]}>
+                          <Text style={[
+                            styles.exchangeIconText,
+                            { color: exchangeIcon.color }
+                          ]}>
+                            {exchangeIcon.icon}
+                          </Text>
+                        </View>
+                        <Text style={styles.exchangeName}>{exchange.display_name}</Text>
+                      </View>
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Toast Notification */}
+      <Toast
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
     </View>
   );
 }
@@ -292,6 +745,21 @@ const styles = StyleSheet.create({
     padding: 0,
     color: COLORS.text,
   },
+  inputWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  inputFlexible: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0,
+    color: COLORS.text,
+  },
+  eyeIcon: {
+    padding: 8,
+    marginLeft: 8,
+  },
   inputRight: {
     flex: 1,
     fontSize: 16,
@@ -305,6 +773,44 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: 12,
     marginTop: 2,
+    color: COLORS.textSecondary,
+  },
+  modeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: 'transparent',
+  },
+  typeButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: 'transparent',
+  },
+  modeButtonActive: {
+    backgroundColor: COLORS.success,
+    borderColor: COLORS.success,
+  },
+  typeButtonDisabled: {
+    opacity: 0.3,
+  },
+  modeButtonText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  modeButtonTextActive: {
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  typeButtonTextDisabled: {
     color: COLORS.textSecondary,
   },
   warningCard: {
@@ -331,5 +837,91 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     color: 'rgba(255, 255, 255, 0.8)',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    marginTop: 8,
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    color: COLORS.danger,
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  modalContainer: {
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+  },
+  modalContent: {
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  modalScroll: {
+    maxHeight: 400,
+  },
+  exchangeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  exchangeItemSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  exchangeLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  exchangeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  exchangeIconText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  exchangeName: {
+    fontSize: 16,
+    color: COLORS.text,
+    fontWeight: '500',
   },
 });
