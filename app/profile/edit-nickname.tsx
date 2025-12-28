@@ -23,6 +23,7 @@ export default function EditNicknamePage() {
   const [nickname, setNickname] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     // 使用与个人信息页面相同的逻辑获取昵称
@@ -73,9 +74,15 @@ export default function EditNicknamePage() {
       if (error) throw error;
 
       await refreshProfile();
-      Alert.alert('成功', '账户名称已更新', [
-        { text: '确定', onPress: () => router.back() }
-      ]);
+      
+      // 显示成功提示
+      setShowToast(true);
+      
+      // 1.5秒后隐藏提示并返回
+      setTimeout(() => {
+        setShowToast(false);
+        router.back();
+      }, 1500);
     } catch (error: any) {
       Alert.alert('错误', '更新失败: ' + error.message);
     } finally {
@@ -149,6 +156,16 @@ export default function EditNicknamePage() {
           <Text style={styles.helperText}>账户名称支持中英文、数字，长度限制2-20个字符。</Text>
         </View>
       </View>
+
+      {/* Success Toast */}
+      {showToast && (
+        <View style={styles.toastContainer}>
+          <View style={styles.toastContent}>
+            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+            <Text style={styles.toastText}>修改成功</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -207,8 +224,7 @@ const styles = StyleSheet.create({
     color: COLORS.textMainDark,
     fontSize: 16,
     height: '100%',
-    outlineStyle: 'none',
-  },
+  } as any,
   clearButton: {
     padding: 4,
   },
@@ -232,5 +248,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     marginBottom: 8,
+  },
+  // Toast Styles
+  toastContainer: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  toastContent: {
+    backgroundColor: '#333333',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontSize: 14,
   },
 });
