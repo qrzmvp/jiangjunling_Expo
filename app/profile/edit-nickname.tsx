@@ -66,12 +66,19 @@ export default function EditNicknamePage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      // 添加超时保护
+      const updatePromise = supabase
         .from('users')
         .update({ username: nickname.trim() })
         .eq('id', user.id);
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('网络请求超时，请检查网络连接后重试')), 15000)
+      );
+      
+      const result = await Promise.race([updatePromise, timeoutPromise]) as any;
 
-      if (error) throw error;
+      if (result.error) throw result.error;
 
       await refreshProfile();
       
@@ -84,7 +91,14 @@ export default function EditNicknamePage() {
         router.back();
       }, 1500);
     } catch (error: any) {
-      Alert.alert('错误', '更新失败: ' + error.message);
+      let errorMessage = '更新失败';
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      if (errorMessage.includes('超时') || errorMessage.includes('timeout')) {
+        errorMessage = '网络连接超时\n\n可能原因：服务器在国外，网络不稳定\n建议：稍后重试或检查网络';
+      }
+      Alert.alert('错误', errorMessage);
     } finally {
       setSaving(false);
     }

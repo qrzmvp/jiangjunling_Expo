@@ -185,86 +185,130 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signInWithPassword = async (email: string, password: string) => {
-    console.log('signInWithPassword 开始:', email);
-    
-    // 1. 先尝试用密码登录
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    // 如果登录成功，直接返回
-    if (!signInError && signInData.session) {
-      console.log('✅ 密码登录成功');
-      return { data: signInData, error: null };
-    }
-
-    // 2. 登录失败，尝试注册
-    if (signInError) {
-      console.log('❌ 登录失败:', signInError.message, 'Status:', signInError.status);
+    try {
+      console.log('🔐 开始密码登录 (使用 HTTP API):', email);
       
-      // 尝试注册新用户
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
+      // 使用原生 fetch 调用 Supabase Auth API - 密码登录
+      const response = await fetch('https://qzcblykahxzktiprxhbf.supabase.co/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6Y2JseWthaHh6a3RpcHJ4aGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MTU0MjksImV4cCI6MjA4MjQ5MTQyOX0.LSVP7CMvqOu2SBaCQjwYoxKO-B4z7Dhcvjthyorbziw',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        })
       });
-
-      // 注册成功
-      if (!signUpError && signUpData.user) {
-        if (signUpData.session) {
-          console.log('✅ 注册成功并自动登录');
-          return { data: signUpData, error: null };
-        } else {
-          console.log('⚠️ 注册成功但需要邮箱确认');
-          return { 
-            data: null, 
-            error: { message: '请检查您的邮箱以确认账户' } 
-          };
-        }
-      }
-
-      // 注册失败
-      if (signUpError) {
-        console.log('❌ 注册失败:', signUpError.message);
+      
+      const result = await response.json();
+      console.log('🔐 HTTP 响应状态:', response.status);
+      
+      // 登录成功
+      if (response.ok && result.access_token) {
+        console.log('✅ 密码登录成功');
         
-        // 用户已存在（说明是密码错误，或者是验证码注册的用户没有密码）
-        if (signUpError.message.includes('already registered') || 
-            signUpError.message.includes('User already registered')) {
-          console.log('ℹ️ 用户已存在，建议使用验证码登录');
-          return { 
-            data: null, 
-            error: { message: '该邮箱已注册，请先使用验证码登录后进入个人资料页面设置密码' } 
-          };
+        // 手动设置 session（SDK 会自动处理）
+        const { data: sessionData, error: setSessionError } = await supabase.auth.setSession({
+          access_token: result.access_token,
+          refresh_token: result.refresh_token,
+        });
+        
+        if (setSessionError) {
+          console.error('❌ 设置 session 失败:', setSessionError);
+          return { data: null, error: { message: '登录失败，请重试' } };
         }
         
-        return { data: null, error: { message: signUpError.message } };
+        return { data: sessionData, error: null };
       }
+      
+      // 登录失败 - 处理各种错误情况
+      console.log('❌ 登录失败:', result);
+      
+      let errorMessage = '登录失败，请重试';
+      
+      // 密码错误
+      if (result.error_description?.includes('Invalid login credentials') ||
+          result.msg?.includes('Invalid login credentials')) {
+        errorMessage = '邮箱或密码错误，请检查后重试';
+      }
+      // 用户不存在或邮箱未验证
+      else if (result.error_description?.includes('Email not confirmed')) {
+        errorMessage = '请先验证您的邮箱';
+      }
+      // 其他错误
+      else if (result.error_description || result.msg) {
+        errorMessage = result.error_description || result.msg;
+      }
+      
+      return { data: null, error: { message: errorMessage } };
+    } catch (error: any) {
+      console.error('🔐 密码登录异常:', error);
+      return { data: null, error: { message: error?.message || '网络错误，请检查网络连接' } };
     }
-
-    // 其他情况
-    console.log('❌ 未知错误');
-    return { 
-      data: null, 
-      error: { message: '登录失败，请重试' } 
-    };
   };
 
   const updatePassword = async (newPassword: string) => {
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      console.log('🔐 开始更新密码 (使用 HTTP API)...');
+      console.log('🔐 新密码长度:', newPassword?.length || 0);
       
-      if (error) {
-        console.error('更新密码失败:', error);
-        return { error };
+      // 检查当前会话（仍然使用 SDK 获取 token）
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('🔐 当前会话:', session ? '存在' : '不存在');
+      
+      if (sessionError || !session) {
+        console.error('🔐 获取会话失败');
+        return { error: { message: '会话已过期，请重新登录' } };
       }
       
-      console.log('密码更新成功');
+      const accessToken = session.access_token;
+      console.log('🔐 Access Token 长度:', accessToken.length);
+      console.log('🔐 请求时间:', new Date().toISOString());
+      
+      // 使用原生 fetch 调用 Supabase Auth API
+      const response = await fetch('https://qzcblykahxzktiprxhbf.supabase.co/auth/v1/user', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6Y2JseWthaHh6a3RpcHJ4aGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MTU0MjksImV4cCI6MjA4MjQ5MTQyOX0.LSVP7CMvqOu2SBaCQjwYoxKO-B4z7Dhcvjthyorbziw',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          password: newPassword
+        })
+      });
+      
+      console.log('🔐 HTTP 响应状态:', response.status);
+      console.log('🔐 响应时间:', new Date().toISOString());
+      
+      const result = await response.json();
+      console.log('🔐 响应数据:', JSON.stringify(result, null, 2));
+      
+      // 检查 HTTP 状态码
+      if (!response.ok) {
+        console.error('🔐 HTTP 错误:', response.status);
+        
+        // 处理错误消息
+        let errorMessage = result?.message || result?.error_description || result?.msg || '更新密码失败';
+        
+        if (errorMessage.includes('New password should be different') || 
+            errorMessage.includes('same as the old password')) {
+          errorMessage = '新密码不能与当前密码相同，请输入一个不同的密码';
+        } else if (errorMessage.includes('Password should be at least')) {
+          errorMessage = '密码长度至少为6个字符';
+        } else if (errorMessage.includes('weak_password')) {
+          errorMessage = '密码强度不够，请使用更复杂的密码';
+        }
+        
+        return { error: { message: errorMessage } };
+      }
+      
+      console.log('✅ 密码更新成功！');
       return { error: null };
-    } catch (error) {
-      console.error('更新密码异常:', error);
-      return { error };
+    } catch (error: any) {
+      console.error('🔐 更新密码异常:', error);
+      return { error: { message: error?.message || '更新密码失败，请检查网络连接' } };
     }
   };
 

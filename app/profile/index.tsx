@@ -193,6 +193,19 @@ export default function PersonalInfoPage() {
 
           <View style={styles.divider} />
 
+          {/* Change Password Row */}
+          <TouchableOpacity 
+            style={styles.row}
+            onPress={() => router.push('/profile/change-password')}
+          >
+            <Text style={styles.label}>修改密码</Text>
+            <View style={styles.rowRight}>
+              <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
           {/* QR Code Row */}
           <TouchableOpacity style={styles.row}>
             <Text style={styles.label}>二维码名片</Text>
