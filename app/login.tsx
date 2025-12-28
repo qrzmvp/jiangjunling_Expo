@@ -186,24 +186,28 @@ export default function LoginScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-              <View style={styles.inputWrapper}>
-                {isPasswordLogin ? (
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: theme.inputBg,
-                        borderColor: theme.inputBorder,
-                        color: theme.text,
-                      },
-                    ]}
-                    placeholder="请输入密码"
-                    placeholderTextColor={theme.placeholder}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                  />
-                ) : (
+              {isPasswordLogin ? (
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.inputBg,
+                      borderColor: theme.inputBorder,
+                      color: theme.text,
+                    },
+                  ]}
+                  placeholder="请输入密码"
+                  placeholderTextColor={theme.placeholder}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoComplete="password"
+                  textContentType="password"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              ) : (
+                <View style={styles.inputWrapper}>
                   <TextInput
                     style={[
                       styles.input,
@@ -221,8 +225,6 @@ export default function LoginScreen() {
                     maxLength={6}
                     keyboardType="number-pad"
                   />
-                )}
-                {!isPasswordLogin && (
                   <TouchableOpacity 
                     style={[styles.getCodeButton, countdown > 0 && { opacity: 0.5 }]}
                     onPress={handleSendCode}
@@ -232,8 +234,8 @@ export default function LoginScreen() {
                       {countdown > 0 ? `${countdown}s` : '获取验证码'}
                     </Text>
                   </TouchableOpacity>
-                )}
-              </View>
+                </View>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
@@ -396,11 +398,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 15,
     fontSize: 16,
+    zIndex: 1,
   },
   clearButton: {
     position: 'absolute',
     right: 12,
     padding: 4,
+    zIndex: 2,
   },
   getCodeButton: {
     position: 'absolute',
