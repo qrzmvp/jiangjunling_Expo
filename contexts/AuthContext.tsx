@@ -2,6 +2,10 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
+// 从环境变量获取配置
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://qzcblykahxzktiprxhbf.supabase.co';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6Y2JseWthaHh6a3RpcHJ4aGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MTU0MjksImV4cCI6MjA4MjQ5MTQyOX0.LSVP7CMvqOu2SBaCQjwYoxKO-B4z7Dhcvjthyorbziw';
+
 export type UserProfile = {
   id: string;
   email: string;
@@ -189,11 +193,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('🔐 开始密码登录 (使用 HTTP API):', email);
       
       // 使用原生 fetch 调用 Supabase Auth API - 密码登录
-      const response = await fetch('https://qzcblykahxzktiprxhbf.supabase.co/auth/v1/token?grant_type=password', {
+      const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6Y2JseWthaHh6a3RpcHJ4aGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MTU0MjksImV4cCI6MjA4MjQ5MTQyOX0.LSVP7CMvqOu2SBaCQjwYoxKO-B4z7Dhcvjthyorbziw',
+          'apikey': SUPABASE_ANON_KEY,
         },
         body: JSON.stringify({
           email,
@@ -267,11 +271,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('🔐 请求时间:', new Date().toISOString());
       
       // 使用原生 fetch 调用 Supabase Auth API
-      const response = await fetch('https://qzcblykahxzktiprxhbf.supabase.co/auth/v1/user', {
+      const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6Y2JseWthaHh6a3RpcHJ4aGJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MTU0MjksImV4cCI6MjA4MjQ5MTQyOX0.LSVP7CMvqOu2SBaCQjwYoxKO-B4z7Dhcvjthyorbziw',
+          'apikey': SUPABASE_ANON_KEY,
           'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
