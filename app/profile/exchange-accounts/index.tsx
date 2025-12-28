@@ -191,10 +191,16 @@ export default function ExchangeAccountsList() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardLabel}>账户总数</Text>
+              <Text style={styles.cardLabel}>启用中</Text>
             </View>
             <View style={styles.statsRow}>
-              <Text style={styles.statsNumber}>{stats.total}</Text>
-              <Text style={styles.statsUnit}>个账户</Text>
+              <View style={styles.statItem}>
+                <Text style={styles.statsNumber}>{stats.total}</Text>
+                <Text style={styles.statsUnit}>个账户</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={[styles.statsNumber, { color: COLORS.success }]}>{stats.enabled}</Text>
+              </View>
             </View>
           </View>
 
@@ -371,6 +377,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: COLORS.textSecondary,
+    flex: 1,
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -385,7 +392,13 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'baseline',
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flex: 1,
   },
   statsNumber: {
     fontSize: 30,
@@ -396,6 +409,16 @@ const styles = StyleSheet.create({
   statsUnit: {
     fontSize: 14,
     color: COLORS.textSecondary,
+  },
+  statsLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: COLORS.text,
+  },
+  statsSubNumber: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   sectionTitle: {
     fontSize: 12,
