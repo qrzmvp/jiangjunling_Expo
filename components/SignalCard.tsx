@@ -158,7 +158,13 @@ export const SignalCard = ({
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.userInfo}>
-            <Image source={{ uri: avatar }} style={styles.avatar} />
+            <Image 
+              source={{ uri: avatar }} 
+              style={styles.avatar}
+              onError={(e) => {
+                console.log('头像加载失败:', avatar);
+              }}
+            />
             <View style={styles.nameContainer}>
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{name}</Text>
@@ -167,6 +173,16 @@ export const SignalCard = ({
               <Text style={styles.description}>{description}</Text>
             </View>
           </View>
+          {/* Copy按钮 */}
+          <TouchableOpacity 
+            style={styles.copyButton}
+            onPress={() => {
+              // TODO: 实现copy功能
+              showToast('Copy成功', 'success');
+            }}
+          >
+            <Text style={styles.copyButtonText}>Copy</Text>
+          </TouchableOpacity>
           {/* 暂时隐藏关注和订阅按钮，避免大量查询请求 */}
           {/* <View style={styles.cardActions}>
             <TouchableOpacity style={styles.starBtn} onPress={handleFollow}>
@@ -253,6 +269,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  copyButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'white',
+  },
+  copyButtonText: {
+    color: 'black',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   cardActions: {
     flexDirection: 'row',

@@ -894,6 +894,12 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
             // Supabase关联查询可能返回数组，需要处理
             const trader = Array.isArray(signal.trader) ? signal.trader[0] : signal.trader;
             
+            // 调试日志 - 帮助排查iOS头像显示问题
+            if (!trader?.avatar_url) {
+              console.log('Missing trader data for signal:', signal.id);
+              console.log('Signal trader:', JSON.stringify(signal.trader));
+            }
+            
             return (
               <SignalCard 
                 key={signal.id}
