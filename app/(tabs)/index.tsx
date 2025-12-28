@@ -704,15 +704,27 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
   const filters = ['全部', '做多', '做空', '已订阅', '已关注'];
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   // 加载信号数据
   useEffect(() => {
-    loadSignals();
+    loadSignals(true); // 重新加载时重置
   }, [activeFilters]);
 
-  const loadSignals = async () => {
+  const loadSignals = async (reset: boolean = false) => {
     try {
-      setLoading(true);
+      if (reset) {
+        setLoading(true);
+        setPage(1);
+        setHasMore(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      const currentPage = reset ? 1 : page;
       let data: Signal[] = [];
 
       // 检查是否同时选择了做多和做空
@@ -722,8 +734,8 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
       if (hasLong && hasShort) {
         // 同时选择做多和做空，获取两者的并集
         const [longSignals, shortSignals] = await Promise.all([
-          SignalService.getSignalsByDirection('long'),
-          SignalService.getSignalsByDirection('short')
+          SignalService.getSignalsByDirection('long', PAGE_SIZE * currentPage),
+          SignalService.getSignalsByDirection('short', PAGE_SIZE * currentPage)
         ]);
         // 合并并去重（基于ID）
         const signalMap = new Map();
@@ -735,20 +747,42 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
         data.sort((a, b) => new Date(b.signal_time).getTime() - new Date(a.signal_time).getTime());
       } else if (hasLong) {
         // 只选择做多
-        data = await SignalService.getSignalsByDirection('long');
+        data = await SignalService.getSignalsByDirection('long', PAGE_SIZE * currentPage);
       } else if (hasShort) {
         // 只选择做空
-        data = await SignalService.getSignalsByDirection('short');
+        data = await SignalService.getSignalsByDirection('short', PAGE_SIZE * currentPage);
       } else {
         // 全部或其他筛选条件
-        data = await SignalService.getActiveSignals();
+        data = await SignalService.getActiveSignals(PAGE_SIZE * currentPage);
       }
 
-      setSignals(data);
+      // 判断是否还有更多数据
+      const hasMoreData = data.length >= PAGE_SIZE * currentPage;
+      setHasMore(hasMoreData);
+
+      if (reset) {
+        setSignals(data);
+      } else {
+        // 追加数据并去重
+        const existingIds = new Set(signals.map(s => s.id));
+        const newSignals = data.filter(s => !existingIds.has(s.id));
+        setSignals([...signals, ...newSignals]);
+      }
+
+      if (!reset) {
+        setPage(currentPage + 1);
+      }
     } catch (error) {
       console.error('加载信号失败:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      loadSignals(false);
     }
   };
 
@@ -825,23 +859,56 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
           <Text style={{ color: COLORS.textMuted }}>暂无信号数据</Text>
         </View>
       ) : (
-        signals.map((signal) => (
-          <SignalCard 
-            key={signal.id}
-            name={signal.trader?.name || '未知交易员'}
-            avatar={signal.trader?.avatar_url || 'https://via.placeholder.com/100'}
-            description={signal.trader?.description || ''}
-            currency={signal.currency}
-            entry={signal.entry_price}
-            direction={signal.direction}
-            stopLoss={signal.stop_loss}
-            takeProfit={signal.take_profit}
-            time={SignalService.formatSignalTime(signal.signal_time)}
-            signalCount={signal.trader?.signal_count || 0}
-            onPress={() => router.push('/trader/detail')}
-            onSubscribe={() => {}}
-          />
-        ))
+        <>
+          {signals.map((signal) => (
+            <SignalCard 
+              key={signal.id}
+              name={signal.trader?.name || '未知交易员'}
+              avatar={signal.trader?.avatar_url || 'https://via.placeholder.com/100'}
+              description={signal.trader?.description || ''}
+              currency={signal.currency}
+              entry={signal.entry_price}
+              direction={signal.direction}
+              stopLoss={signal.stop_loss}
+              takeProfit={signal.take_profit}
+              time={SignalService.formatSignalTime(signal.signal_time)}
+              signalCount={signal.trader?.signal_count || 0}
+              onPress={() => router.push('/trader/detail')}
+              onSubscribe={() => {}}
+            />
+          ))}
+          
+          {/* 加载更多按钮/指示器 */}
+          {hasMore && (
+            <TouchableOpacity 
+              style={{ 
+                padding: 16, 
+                alignItems: 'center',
+                backgroundColor: COLORS.textMain,
+                borderRadius: 8,
+                marginTop: 16
+              }}
+              onPress={handleLoadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? (
+                <ActivityIndicator size="small" color={COLORS.background} />
+              ) : (
+                <Text style={{ color: COLORS.background, fontSize: 14, fontWeight: '600' }}>
+                  加载更多
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {!hasMore && signals.length > 0 && (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>
+                已加载全部信号
+              </Text>
+            </View>
+          )}
+        </>
       )}
     </View>
   </View>
