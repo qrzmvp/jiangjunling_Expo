@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Modal, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Modal, Alert, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -7,6 +7,7 @@ import ImageCropper from './_components/ImageCropper';
 import { useAuth } from '../../contexts/AuthContext';
 import * as Clipboard from 'expo-clipboard';
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
+import { updateAvatarComplete } from '../../lib/avatarService';
 
 const COLORS = {
   backgroundDark: "#000000",
@@ -20,7 +21,7 @@ const COLORS = {
 
 export default function PersonalInfoPage() {
   useProtectedRoute(); // 保护路由
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const router = useRouter();
 
   // Data from profile or fallback to user object
@@ -32,10 +33,13 @@ export default function PersonalInfoPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [cropperVisible, setCropperVisible] = useState(false);
   const [tempImageUri, setTempImageUri] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   
   // Logout Modal & Toast State
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
   const handleCopy = async (text: string) => {
     await Clipboard.setStringAsync(text);
@@ -51,6 +55,8 @@ export default function PersonalInfoPage() {
     setLogoutModalVisible(false);
     
     // 2. Show success toast first
+    setToastType('success');
+    setToastMessage('退出登录成功');
     setShowToast(true);
     
     try {
@@ -68,7 +74,15 @@ export default function PersonalInfoPage() {
 
   const pickImage = async () => {
     setModalVisible(false);
-    // No permissions request is necessary for launching the image library
+    
+    // 请求相册权限
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('需要权限', '请允许访问相册以选择照片');
+      return;
+    }
+
+    // 启动图片选择器
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false, // 关闭系统裁剪，使用自定义裁剪
@@ -83,13 +97,15 @@ export default function PersonalInfoPage() {
 
   const takePhoto = async () => {
     setModalVisible(false);
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     
-    if (permissionResult.granted === false) {
-      alert("需要相机权限来拍摄照片");
+    // 请求相机权限
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('需要权限', '请允许访问相机以拍摄照片');
       return;
     }
 
+    // 启动相机
     let result = await ImagePicker.launchCameraAsync({
       allowsEditing: false, // 关闭系统裁剪，使用自定义裁剪
       quality: 1,
@@ -101,12 +117,45 @@ export default function PersonalInfoPage() {
     }
   };
 
-  const handleCropComplete = (uri: string) => {
-    // TODO: Upload image to Supabase Storage and update profile
-    // setAvatarUri(uri); 
+  const handleCropComplete = async (uri: string) => {
     setCropperVisible(false);
     setTempImageUri(null);
-    Alert.alert('提示', '头像上传功能暂未实现');
+    
+    if (!user?.id) {
+      setToastType('error');
+      setToastMessage('用户信息不完整');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      // 上传头像并更新数据库
+      const newAvatarUrl = await updateAvatarComplete(
+        user.id,
+        uri,
+        profile?.avatar_url
+      );
+
+      // 刷新用户资料
+      await refreshProfile();
+
+      // 显示成功提示
+      setToastType('success');
+      setToastMessage('头像更新成功');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    } catch (error: any) {
+      console.error('Avatar update error:', error);
+      setToastType('error');
+      setToastMessage(error.message || '头像上传失败，请重试');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   return (
@@ -133,7 +182,11 @@ export default function PersonalInfoPage() {
         <View style={styles.card}>
           
           {/* Avatar Row */}
-          <TouchableOpacity style={styles.row} onPress={() => setModalVisible(true)}>
+          <TouchableOpacity 
+            style={styles.row} 
+            onPress={() => setModalVisible(true)}
+            disabled={uploadingAvatar}
+          >
             <Text style={styles.label}>头像</Text>
             <View style={styles.rowRight}>
               <View style={styles.avatarContainer}>
@@ -141,6 +194,11 @@ export default function PersonalInfoPage() {
                   source={{ uri: avatarUri }} 
                   style={styles.avatar}
                 />
+                {uploadingAvatar && (
+                  <View style={styles.avatarLoadingOverlay}>
+                    <ActivityIndicator color={COLORS.white} size="small" />
+                  </View>
+                )}
               </View>
               <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
             </View>
@@ -259,16 +317,21 @@ export default function PersonalInfoPage() {
         </View>
       </Modal>
 
-      {/* Success Toast */}
+      {/* Toast Notification */}
       {showToast && (
         <View style={styles.toastContainer}>
           <View style={styles.toastContent}>
-            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            <Text style={styles.toastText}>退出登录成功</Text>
+            <Ionicons 
+              name={toastType === 'success' ? "checkmark-circle" : "close-circle"} 
+              size={20} 
+              color={toastType === 'success' ? "#4CAF50" : "#FF4D4F"} 
+            />
+            <Text style={styles.toastText}>{toastMessage}</Text>
           </View>
         </View>
       )}
 
+      {/* Avatar Selection Modal */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -283,19 +346,14 @@ export default function PersonalInfoPage() {
           <View style={styles.modalContent}>
             <View style={styles.modalButtonsContainer}>
               <TouchableOpacity style={styles.modalButton} onPress={takePhoto}>
+                <Ionicons name="camera-outline" size={24} color={COLORS.textMainDark} />
                 <Text style={styles.modalButtonText}>拍照</Text>
               </TouchableOpacity>
               <View style={styles.modalDivider} />
               <TouchableOpacity style={styles.modalButton} onPress={pickImage}>
+                <Ionicons name="images-outline" size={24} color={COLORS.textMainDark} />
                 <Text style={styles.modalButtonText}>从手机相册选择</Text>
               </TouchableOpacity>
-
-      <ImageCropper
-        visible={cropperVisible}
-        imageUri={tempImageUri}
-        onCancel={() => setCropperVisible(false)}
-        onComplete={handleCropComplete}
-      />
             </View>
             
             <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setModalVisible(false)}>
@@ -304,6 +362,18 @@ export default function PersonalInfoPage() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Image Cropper */}
+      <ImageCropper
+        visible={cropperVisible}
+        imageUri={tempImageUri}
+        onCancel={() => {
+          setCropperVisible(false);
+          setTempImageUri(null);
+        }}
+        onComplete={handleCropComplete}
+        cropShape="circle"
+      />
     </SafeAreaView>
   );
 }
@@ -391,6 +461,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#1C1C1E',
+    flexDirection: 'row',
+    gap: 8,
   },
   modalDivider: {
     height: 1,
@@ -429,10 +501,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(37, 37, 37, 0.5)',
+    position: 'relative',
   },
   avatar: {
     width: '100%',
     height: '100%',
+  },
+  avatarLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   copyButton: {
     backgroundColor: COLORS.cardHighlight,
