@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { UserInfo, Stats } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { isVipActive, formatVipExpiresAt } from '../../lib/redemptionService';
+import { ExchangeAccountService } from '../../lib/exchangeAccountService';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -22,6 +23,7 @@ const COLORS = {
 const MyPage: React.FC = () => {
   const router = useRouter();
   const { user, profile } = useAuth();
+  const [exchangeAccountCount, setExchangeAccountCount] = useState<number>(0);
 
   // Generate default info from user object or profile
   const defaultNickname = profile?.username || user?.email?.split('@')[0] || 'User';
@@ -29,6 +31,23 @@ const MyPage: React.FC = () => {
   const avatarUri = profile?.avatar_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg";
   const isVerified = profile?.is_verified || false;
   const vipActive = isVipActive(profile?.vip_expires_at || null);
+
+  // 加载交易所账户数量
+  useEffect(() => {
+    const loadExchangeAccountCount = async () => {
+      try {
+        const accounts = await ExchangeAccountService.getExchangeAccounts();
+        setExchangeAccountCount(accounts.length);
+      } catch (error) {
+        console.error('加载交易所账户数量失败:', error);
+        setExchangeAccountCount(0);
+      }
+    };
+
+    if (user) {
+      loadExchangeAccountCount();
+    }
+  }, [user]);
 
   // 使用类型定义的数据
   const userInfo: UserInfo = {
@@ -125,7 +144,7 @@ const MyPage: React.FC = () => {
               <Text style={styles.statLabel}>朋友</Text>
             </TouchableOpacity> */}
             <TouchableOpacity style={styles.statItem} onPress={() => router.push('/profile/exchange-accounts')}>
-              <Text style={styles.statNumber}>99+</Text>
+              <Text style={styles.statNumber}>{exchangeAccountCount > 99 ? '99+' : exchangeAccountCount}</Text>
               <Text style={styles.statLabel}>交易账户</Text>
             </TouchableOpacity>
           </View>
