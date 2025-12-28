@@ -414,6 +414,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    zIndex: 10,
   },
   getCodeText: {
     color: COLORS.textMain,

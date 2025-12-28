@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, NativeSyntheticEvent, NativeScrollEvent, useWindowDimensions, LayoutChangeEvent } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, NativeSyntheticEvent, NativeScrollEvent, useWindowDimensions, LayoutChangeEvent, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -7,6 +7,7 @@ import Svg, { Path, Defs, LinearGradient, Stop, Rect, Circle, G, Image as SvgIma
 import { AddToHomeScreen } from '../../components/AddToHomeScreen';
 import { TraderCard } from '../../components/TraderCard';
 import { SignalCard } from '../../components/SignalCard';
+import { SignalService, Signal } from '../../lib/signalService';
 
 const { width } = Dimensions.get('window');
 
@@ -701,6 +702,55 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
 const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps) => {
   const router = useRouter();
   const filters = ['全部', '做多', '做空', '已订阅', '已关注'];
+  const [signals, setSignals] = useState<Signal[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 加载信号数据
+  useEffect(() => {
+    loadSignals();
+  }, [activeFilters]);
+
+  const loadSignals = async () => {
+    try {
+      setLoading(true);
+      let data: Signal[] = [];
+
+      // 检查是否同时选择了做多和做空
+      const hasLong = activeFilters.includes('做多');
+      const hasShort = activeFilters.includes('做空');
+
+      if (hasLong && hasShort) {
+        // 同时选择做多和做空，获取两者的并集
+        const [longSignals, shortSignals] = await Promise.all([
+          SignalService.getSignalsByDirection('long'),
+          SignalService.getSignalsByDirection('short')
+        ]);
+        // 合并并去重（基于ID）
+        const signalMap = new Map();
+        [...longSignals, ...shortSignals].forEach(signal => {
+          signalMap.set(signal.id, signal);
+        });
+        data = Array.from(signalMap.values());
+        // 按信号时间倒序排序
+        data.sort((a, b) => new Date(b.signal_time).getTime() - new Date(a.signal_time).getTime());
+      } else if (hasLong) {
+        // 只选择做多
+        data = await SignalService.getSignalsByDirection('long');
+      } else if (hasShort) {
+        // 只选择做空
+        data = await SignalService.getSignalsByDirection('short');
+      } else {
+        // 全部或其他筛选条件
+        data = await SignalService.getActiveSignals();
+      }
+
+      setSignals(data);
+    } catch (error) {
+      console.error('加载信号失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFilterPress = (filter: string) => {
     if (filter === '全部') {
@@ -766,48 +816,33 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
     </View>
 
     <View style={styles.traderList}>
-      <SignalCard 
-        name="zh138"
-        avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuCA6jm-quFFL4rGgnuqOTX6aa7ja62sdDdo3axzhQrnFedupfbhBgf-e6uQk2UJW6Fw_P6j3rE-Chdj1ROGQUydNYpLFiDKTnaRkds9OmErntL2HdtacO_UqSoB5ba2135lFtLoHiQHxZEScqx0miCEfAjnfV5_KSl5QyMd8yLi2gw_PLYz0wZiLCXKt2wdodUjdjvSKNgWzPDtwupJElJqhtE9RKBIQ9kS_wrdn6X3Mco8KWrf3EmG7376RFVDEW_ffsBfco13qw"
-        description="飞扬高级VIP策略"
-        currency="ETH"
-        entry="2970-2980"
-        direction="short"
-        stopLoss="3040"
-        takeProfit="2867"
-        time="2025-12-21 15:00:00"
-        signalCount={5}
-        onPress={() => router.push('/trader/detail')}
-        onSubscribe={() => {}}
-      />
-      <SignalCard 
-        name="BeyondHJJ"
-        avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuBzZa78G7eCvQ3Qfir53Hh3en0nyDyqTSQLbXpOwuGfgmNT5K8kK94gFtLZ9c4QsAjTMvLKoJG-ZohYppqv5hWBKiP8tms6JOyEYTUPB-D0glDcbsQTF4Ba9k1opWJScsAodRQkxc1KcoUOmvSt6CsC8FvXUvDGJruHwegzMFzTaFLM_eF5JWZK8HPtqhNbHRWnliPvTu693N4wpz-ZmEZFfhYTq1BUb9135nVBVxM59E0nYYPndbBJBhQkWX9zheGiN9QcioZyIg"
-        description="加密大漂亮-mark"
-        currency="BTC"
-        entry="65000-65500"
-        direction="long"
-        stopLoss="64000"
-        takeProfit="68000"
-        time="2025-12-21 14:45:00"
-        signalCount={3}
-        onPress={() => router.push('/trader/detail')}
-        onSubscribe={() => {}}
-      />
-      <SignalCard 
-        name="Average-Moon-Cypress"
-        avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuB_YJoFtmSgqjEYM2tsRwwH6OcbxEzQ0rOaBPiJTZ4kKmIvaq0Whpfn4QNXrDoxYbqYTbsxrudPSci0vqyxrfvX5NmUtQlekhCyT7-wQDutN-2ZxMOpAvUeEwTkwiZt1NsTnXYQeiDjq55arRKjL8FCa3t0cxXr0bvH7NV1Wo8KBsbV8ddGD1USqDJU2_1BtHf6qmsHmXN0_TGvvZFwElGBKxyPrp7TnUPf9H6emqbfpZBteQl9GvFy3Hm8KvITkQ6I01WLW7MLXQ"
-        description="稳健长线策略"
-        currency="SOL"
-        entry="145-148"
-        direction="long"
-        stopLoss="140"
-        takeProfit="160"
-        time="2025-12-21 13:20:00"
-        signalCount={8}
-        onPress={() => router.push('/trader/detail')}
-        onSubscribe={() => {}}
-      />
+      {loading ? (
+        <View style={{ padding: 40, alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : signals.length === 0 ? (
+        <View style={{ padding: 40, alignItems: 'center' }}>
+          <Text style={{ color: COLORS.textMuted }}>暂无信号数据</Text>
+        </View>
+      ) : (
+        signals.map((signal) => (
+          <SignalCard 
+            key={signal.id}
+            name={signal.trader?.name || '未知交易员'}
+            avatar={signal.trader?.avatar_url || 'https://via.placeholder.com/100'}
+            description={signal.trader?.description || ''}
+            currency={signal.currency}
+            entry={signal.entry_price}
+            direction={signal.direction}
+            stopLoss={signal.stop_loss}
+            takeProfit={signal.take_profit}
+            time={SignalService.formatSignalTime(signal.signal_time)}
+            signalCount={signal.trader?.signal_count || 0}
+            onPress={() => router.push('/trader/detail')}
+            onSubscribe={() => {}}
+          />
+        ))
+      )}
     </View>
   </View>
   );
