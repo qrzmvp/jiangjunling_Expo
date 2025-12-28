@@ -8,6 +8,8 @@ import { AddToHomeScreen } from '../../components/AddToHomeScreen';
 import { TraderCard } from '../../components/TraderCard';
 import { SignalCard } from '../../components/SignalCard';
 import { SignalService, Signal } from '../../lib/signalService';
+import { useAuth } from '../../contexts/AuthContext';
+import { getFollowedTraders, getSubscribedTraders } from '../../lib/userTraderService';
 
 const { width } = Dimensions.get('window');
 
@@ -701,7 +703,9 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
 
 const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps) => {
   const router = useRouter();
-  const filters = ['全部', '做多', '做空', '已订阅', '已关注'];
+  const { user } = useAuth();
+  // 暂时隐藏已订阅和已关注筛选器
+  const filters = ['全部', '做多', '做空'];
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -727,10 +731,27 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
       const currentPage = reset ? 1 : page;
       let data: Signal[] = [];
 
-      // 检查是否同时选择了做多和做空
+      // 检查筛选条件
       const hasLong = activeFilters.includes('做多');
       const hasShort = activeFilters.includes('做空');
+      const hasSubscribed = activeFilters.includes('已订阅');
+      const hasFollowed = activeFilters.includes('已关注');
 
+      // 获取已订阅和已关注的交易员ID
+      let subscribedTraderIds: string[] = [];
+      let followedTraderIds: string[] = [];
+      
+      if (hasSubscribed && user?.id) {
+        const subscribedTraders = await getSubscribedTraders(user.id);
+        subscribedTraderIds = subscribedTraders.map(item => item.trader_id);
+      }
+      
+      if (hasFollowed && user?.id) {
+        const followedTraders = await getFollowedTraders(user.id);
+        followedTraderIds = followedTraders.map(item => item.trader_id);
+      }
+
+      // 根据筛选条件获取信号
       if (hasLong && hasShort) {
         // 同时选择做多和做空，获取两者的并集
         const [longSignals, shortSignals] = await Promise.all([
@@ -754,6 +775,15 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
       } else {
         // 全部或其他筛选条件
         data = await SignalService.getActiveSignals(PAGE_SIZE * currentPage);
+      }
+
+      // 根据已订阅/已关注筛选交易员
+      if (hasSubscribed && subscribedTraderIds.length > 0) {
+        data = data.filter(signal => subscribedTraderIds.includes(signal.trader_id));
+      }
+      
+      if (hasFollowed && followedTraderIds.length > 0) {
+        data = data.filter(signal => followedTraderIds.includes(signal.trader_id));
       }
 
       // 判断是否还有更多数据
@@ -860,23 +890,35 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
         </View>
       ) : (
         <>
-          {signals.map((signal) => (
-            <SignalCard 
-              key={signal.id}
-              name={signal.trader?.name || '未知交易员'}
-              avatar={signal.trader?.avatar_url || 'https://via.placeholder.com/100'}
-              description={signal.trader?.description || ''}
-              currency={signal.currency}
-              entry={signal.entry_price}
-              direction={signal.direction}
-              stopLoss={signal.stop_loss}
-              takeProfit={signal.take_profit}
-              time={SignalService.formatSignalTime(signal.signal_time)}
-              signalCount={signal.trader?.signal_count || 0}
-              onPress={() => router.push('/trader/detail')}
-              onSubscribe={() => {}}
-            />
-          ))}
+          {signals.map((signal) => {
+            // Supabase关联查询可能返回数组，需要处理
+            const trader = Array.isArray(signal.trader) ? signal.trader[0] : signal.trader;
+            
+            return (
+              <SignalCard 
+                key={signal.id}
+                traderId={signal.trader_id}
+                name={trader?.name || '未知交易员'}
+                avatar={trader?.avatar_url || 'https://via.placeholder.com/100'}
+                description={trader?.description || ''}
+                currency={signal.currency}
+                entry={signal.entry_price}
+                direction={signal.direction}
+                stopLoss={signal.stop_loss}
+                takeProfit={signal.take_profit}
+                time={SignalService.formatSignalTime(signal.signal_time)}
+                signalCount={trader?.signal_count || 0}
+                onPress={() => router.push('/trader/detail')}
+                onSubscribe={() => {}}
+                onStatsChange={() => {
+                  // 当关注/订阅状态改变时，重新加载信号列表以更新筛选结果
+                  if (activeFilters.includes('已订阅') || activeFilters.includes('已关注')) {
+                    loadSignals(true);
+                  }
+                }}
+              />
+            );
+          })}
           
           {/* 加载更多按钮/指示器 */}
           {hasMore && (

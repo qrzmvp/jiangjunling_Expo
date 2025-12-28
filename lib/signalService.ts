@@ -34,7 +34,7 @@ export class SignalService {
         .from('signals')
         .select(`
           *,
-          trader:traders (
+          trader:traders!inner (
             id,
             name,
             description,
@@ -50,6 +50,11 @@ export class SignalService {
       if (error) {
         console.error('获取信号失败:', error);
         throw error;
+      }
+
+      // 调试日志
+      if (data && data.length > 0) {
+        console.log('Signal data sample:', JSON.stringify(data[0], null, 2));
       }
 
       return data || [];
@@ -71,7 +76,7 @@ export class SignalService {
         .from('signals')
         .select(`
           *,
-          trader:traders (
+          trader:traders!inner (
             id,
             name,
             description,

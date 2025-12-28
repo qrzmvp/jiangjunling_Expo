@@ -1,6 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../contexts/AuthContext';
+import { 
+  isFollowing, 
+  isSubscribed as checkSubscribed, 
+  followTrader, 
+  unfollowTrader,
+  subscribeTrader,
+  unsubscribeTrader
+} from '../lib/userTraderService';
+import Toast from './Toast';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -18,6 +28,7 @@ const COLORS = {
 };
 
 interface SignalCardProps {
+  traderId: string;
   name: string;
   avatar: string;
   description: string;
@@ -30,9 +41,11 @@ interface SignalCardProps {
   signalCount: number;
   onPress?: () => void;
   onSubscribe?: () => void;
+  onStatsChange?: () => void; // 当关注/订阅状态改变时的回调
 }
 
 export const SignalCard = ({
+  traderId,
   name,
   avatar,
   description,
@@ -44,44 +57,133 @@ export const SignalCard = ({
   time,
   signalCount,
   onPress,
-  onSubscribe
+  onSubscribe,
+  onStatsChange
 }: SignalCardProps) => {
+  const { user } = useAuth();
   const isLong = direction === 'long';
   const directionText = isLong ? '多单' : '空单';
   const directionColor = isLong ? COLORS.primary : COLORS.danger;
-  const [isSubscribed, setIsSubscribed] = React.useState(false);
-  const [isFavorite, setIsFavorite] = React.useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+  // 暂时注释掉关注和订阅状态查询，避免大量请求
+  // 加载关注和订阅状态（基于交易员维度）
+  // 只在用户登录且有traderId时才查询
+  // useEffect(() => {
+  //   const loadStatus = async () => {
+  //     // 如果用户未登录，直接设置为false，不发送请求
+  //     if (!user?.id || !traderId) {
+  //       setIsFavorite(false);
+  //       setIsSubscribed(false);
+  //       return;
+  //     }
+      
+  //     try {
+  //       const [followed, subscribed] = await Promise.all([
+  //         isFollowing(user.id, traderId),
+  //         checkSubscribed(user.id, traderId)
+  //       ]);
+        
+  //       setIsFavorite(followed);
+  //       setIsSubscribed(subscribed);
+  //     } catch (error) {
+  //       // 出错时设置为false，避免显示错误状态
+  //       console.error('加载关注/订阅状态失败:', error);
+  //       setIsFavorite(false);
+  //       setIsSubscribed(false);
+  //     }
+  //   };
+
+  //   loadStatus();
+  // }, [user?.id, traderId]);
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
+  const handleFollow = async () => {
+    if (!user?.id) {
+      showToast('请先登录', 'error');
+      return;
+    }
+
+    const newFollowState = !isFavorite;
+    setIsFavorite(newFollowState);
+
+    const result = newFollowState 
+      ? await followTrader(user.id, traderId)
+      : await unfollowTrader(user.id, traderId);
+
+    if (result.success) {
+      showToast(newFollowState ? '关注成功' : '已取消关注', 'success');
+      onStatsChange?.(); // 通知父组件更新统计
+    } else {
+      setIsFavorite(!newFollowState); // 恢复状态
+      showToast(result.message || '操作失败', 'error');
+    }
+  };
+
+  const handleSubscribe = async () => {
+    if (!user?.id) {
+      showToast('请先登录', 'error');
+      return;
+    }
+
+    const newSubscribeState = !isSubscribed;
+    setIsSubscribed(newSubscribeState);
+
+    const result = newSubscribeState
+      ? await subscribeTrader(user.id, traderId)
+      : await unsubscribeTrader(user.id, traderId);
+
+    if (result.success) {
+      showToast(newSubscribeState ? '订阅成功' : '已取消订阅', 'success');
+      onSubscribe?.();
+      onStatsChange?.(); // 通知父组件更新统计
+    } else {
+      setIsSubscribed(!newSubscribeState); // 恢复状态
+      showToast(result.message || '操作失败', 'error');
+    }
+  };
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.userInfo}>
-          <Image source={{ uri: avatar }} style={styles.avatar} />
-          <View style={styles.nameContainer}>
-            <View style={styles.nameRow}>
-              <Text style={styles.name}>{name}</Text>
-              <View style={styles.statusDot} />
+    <>
+      <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.userInfo}>
+            <Image source={{ uri: avatar }} style={styles.avatar} />
+            <View style={styles.nameContainer}>
+              <View style={styles.nameRow}>
+                <Text style={styles.name}>{name}</Text>
+                <View style={styles.statusDot} />
+              </View>
+              <Text style={styles.description}>{description}</Text>
             </View>
-            <Text style={styles.description}>{description}</Text>
           </View>
+          {/* 暂时隐藏关注和订阅按钮，避免大量查询请求 */}
+          {/* <View style={styles.cardActions}>
+            <TouchableOpacity style={styles.starBtn} onPress={handleFollow}>
+              <MaterialIcons 
+                name={isFavorite ? "star" : "star-border"} 
+                size={20} 
+                color={isFavorite ? COLORS.yellow : COLORS.textMuted} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.cardCopyBtn, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
+              onPress={handleSubscribe}
+            >
+              <Text style={styles.cardCopyBtnText}>{isSubscribed ? '已订阅' : '订阅'}</Text>
+            </TouchableOpacity>
+          </View> */}
         </View>
-        <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.starBtn} onPress={() => setIsFavorite(!isFavorite)}>
-            <MaterialIcons 
-              name={isFavorite ? "star" : "star-border"} 
-              size={20} 
-              color={isFavorite ? COLORS.yellow : COLORS.textMuted} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.cardCopyBtn, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
-            onPress={() => setIsSubscribed(!isSubscribed)}
-          >
-            <Text style={styles.cardCopyBtnText}>{isSubscribed ? '已订阅' : '订阅'}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
 
       {/* Signal Box */}
       <View style={styles.signalBox}>
@@ -125,7 +227,15 @@ export const SignalCard = ({
       {/* <View style={styles.footer}>
         <Text style={styles.timeText}>{time}</Text>
       </View> */}
-    </TouchableOpacity>
+      </TouchableOpacity>
+
+      <Toast 
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
+    </>
   );
 };
 

@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { UserInfo, Stats } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { isVipActive, formatVipExpiresAt } from '../../lib/redemptionService';
 import { ExchangeAccountService } from '../../lib/exchangeAccountService';
+import { getUserStats } from '../../lib/userTraderService';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -24,6 +26,8 @@ const MyPage: React.FC = () => {
   const router = useRouter();
   const { user, profile } = useAuth();
   const [exchangeAccountCount, setExchangeAccountCount] = useState<number>(0);
+  const [followCount, setFollowCount] = useState<number>(0);
+  const [subscriptionCount, setSubscriptionCount] = useState<number>(0);
 
   // Generate default info from user object or profile
   const defaultNickname = profile?.username || user?.email?.split('@')[0] || 'User';
@@ -49,6 +53,44 @@ const MyPage: React.FC = () => {
     }
   }, [user]);
 
+  // 加载关注和订阅数量
+  useEffect(() => {
+    const loadUserStats = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const stats = await getUserStats(user.id);
+        setFollowCount(stats.followCount);
+        setSubscriptionCount(stats.subscriptionCount);
+      } catch (error) {
+        console.error('加载用户统计数据失败:', error);
+        setFollowCount(0);
+        setSubscriptionCount(0);
+      }
+    };
+
+    loadUserStats();
+  }, [user]);
+
+  // 当页面获得焦点时刷新统计数据
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadStats = async () => {
+        if (!user?.id) return;
+        
+        try {
+          const stats = await getUserStats(user.id);
+          setFollowCount(stats.followCount);
+          setSubscriptionCount(stats.subscriptionCount);
+        } catch (error) {
+          console.error('刷新用户统计数据失败:', error);
+        }
+      };
+
+      loadStats();
+    }, [user?.id])
+  );
+
   // 使用类型定义的数据
   const userInfo: UserInfo = {
     username: defaultNickname,
@@ -57,8 +99,8 @@ const MyPage: React.FC = () => {
   };
 
   const stats: Stats = {
-    subscriptions: profile?.subscription_count || 0,
-    following: profile?.following_count || 0,
+    subscriptions: subscriptionCount,
+    following: followCount,
     friends: profile?.friends_count || 0,
     favorites: profile?.favorites_count || 0,
   };
@@ -128,14 +170,14 @@ const MyPage: React.FC = () => {
               style={styles.statItem}
               onPress={() => router.push('/(tabs)?tab=copy&filter=已订阅')}
             >
-              <Text style={styles.statNumber}>36</Text>
+              <Text style={styles.statNumber}>{subscriptionCount}</Text>
               <Text style={styles.statLabel}>订阅</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.statItem}
               onPress={() => router.push('/(tabs)?tab=copy&filter=已关注')}
             >
-              <Text style={styles.statNumber}>5</Text>
+              <Text style={styles.statNumber}>{followCount}</Text>
               <Text style={styles.statLabel}>关注</Text>
             </TouchableOpacity>
             {/* 朋友统计 - 暂时隐藏 */}
