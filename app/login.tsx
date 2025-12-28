@@ -238,7 +238,8 @@ export default function LoginScreen() {
               )}
             </View>
 
-            <View style={styles.inputGroup}>
+            {/* 邀请码输入框 - 暂时隐藏 */}
+            {/* <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: theme.text }]}>邀请码 (选填)</Text>
               <View style={styles.inputWrapper}>
                 <TextInput
@@ -257,7 +258,7 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                 />
               </View>
-            </View>
+            </View> */}
           </View>
 
           {/* 错误提示 */}

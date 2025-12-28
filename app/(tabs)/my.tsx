@@ -83,13 +83,10 @@ const MyPage: React.FC = () => {
               </View>
             </View>
           </View>
-          <TouchableOpacity 
-            style={styles.qrCode}
-            onPress={() => router.push('/qrcode')}
-          >
-            <Ionicons name="qr-code-outline" size={24} color="#8A919E" />
+          {/* 保留向右箭头 */}
+          <View style={styles.qrCode}>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
-          </TouchableOpacity>
+          </View>
         </TouchableOpacity>
 
         {/* Stats Section */}
@@ -109,10 +106,11 @@ const MyPage: React.FC = () => {
               <Text style={styles.statNumber}>5</Text>
               <Text style={styles.statLabel}>关注</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.statItem} onPress={() => router.push('/invite-friends')}>
+            {/* 朋友统计 - 暂时隐藏 */}
+            {/* <TouchableOpacity style={styles.statItem} onPress={() => router.push('/invite-friends')}>
               <Text style={styles.statNumber}>16</Text>
               <Text style={styles.statLabel}>朋友</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity style={styles.statItem} onPress={() => router.push('/profile/exchange-accounts')}>
               <Text style={styles.statNumber}>99+</Text>
               <Text style={styles.statLabel}>交易账户</Text>
@@ -210,7 +208,8 @@ const MyPage: React.FC = () => {
 
         {/* Menu List 2 */}
         <View style={styles.menuCard}>
-          <TouchableOpacity 
+          {/* 邀请好友菜单 - 暂时隐藏 */}
+          {/* <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => router.push('/invite-friends')}
           >
@@ -220,7 +219,7 @@ const MyPage: React.FC = () => {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
-          <View style={styles.menuDivider} />
+          <View style={styles.menuDivider} /> */}
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => router.push('/qrcode')}
