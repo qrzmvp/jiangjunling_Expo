@@ -190,12 +190,7 @@ export default function ExchangeAccountsList() {
           {/* Stats Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardLabel}>连接总数</Text>
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>
-                  {stats.enabled === stats.total ? '运行良好' : '需要关注'}
-                </Text>
-              </View>
+              <Text style={styles.cardLabel}>账户总数</Text>
             </View>
             <View style={styles.statsRow}>
               <Text style={styles.statsNumber}>{stats.total}</Text>
@@ -297,14 +292,15 @@ export default function ExchangeAccountsList() {
             </View>
           )}
 
-          <View style={styles.warningCard}>
+          {/* Security Warning - Hidden */}
+          {/* <View style={styles.warningCard}>
             <MaterialIcons name="security" size={20} color={COLORS.warning} style={{ marginTop: 2 }} />
             <View style={styles.warningContent}>
               <Text style={styles.warningText}>
                 为了您的资金安全，请确保API Key仅开启了交易权限，并未开启提现权限。
               </Text>
             </View>
-          </View>
+          </View> */}
 
           <View style={{ height: 40 }} />
         </ScrollView>

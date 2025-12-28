@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Switch, StyleSheet, Platform, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Switch, StyleSheet, Platform, ActivityIndicator, Modal } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -35,6 +35,7 @@ export default function EditExchangeAccount() {
   const [saving, setSaving] = useState(false);
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [showExchangeModal, setShowExchangeModal] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   
   // Toast state
   const [toastVisible, setToastVisible] = useState(false);
@@ -205,29 +206,22 @@ export default function EditExchangeAccount() {
 
   const handleDelete = () => {
     if (!accountId) return;
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!accountId) return;
     
-    Alert.alert(
-      '确认删除',
-      '删除后将无法恢复，确定要删除该账户吗？',
-      [
-        { text: '取消', style: 'cancel' },
-        {
-          text: '删除',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await ExchangeAccountService.deleteExchangeAccount(accountId);
-              Alert.alert('成功', '账户已删除', [
-                { text: '确定', onPress: () => router.push('/profile/exchange-accounts') }
-              ]);
-            } catch (error) {
-              console.error('删除账户失败:', error);
-              Alert.alert('错误', '删除失败，请重试');
-            }
-          },
-        },
-      ]
-    );
+    setDeleteModalVisible(false);
+    
+    try {
+      await ExchangeAccountService.deleteExchangeAccount(accountId);
+      showToast('账户已删除', 'success');
+      setTimeout(() => router.push('/profile/exchange-accounts'), 1500);
+    } catch (error) {
+      console.error('删除账户失败:', error);
+      showToast('删除失败，请重试', 'error');
+    }
   };
 
   const toggleSwitch = () => setIsEnabled(previousState => !previousState);
@@ -611,6 +605,37 @@ export default function EditExchangeAccount() {
         </View>
       </Modal>
 
+      {/* Delete Confirmation Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={deleteModalVisible}
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <Text style={styles.deleteModalTitle}>确认删除</Text>
+            <Text style={styles.deleteModalMessage}>
+              删除后将无法恢复，确定要删除该账户吗？
+            </Text>
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={[styles.deleteModalButton, styles.deleteCancelButton]}
+                onPress={() => setDeleteModalVisible(false)}
+              >
+                <Text style={styles.deleteModalButtonText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteModalButton, styles.deleteConfirmButton]}
+                onPress={confirmDelete}
+              >
+                <Text style={styles.deleteModalButtonText}>删除</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Toast Notification */}
       <Toast
         visible={toastVisible}
@@ -923,5 +948,52 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.text,
     fontWeight: '500',
+  },
+  // Delete Modal Styles
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteModalContent: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 12,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 12,
+  },
+  deleteModalMessage: {
+    fontSize: 15,
+    color: '#AAAAAA',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  deleteModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  deleteCancelButton: {
+    backgroundColor: '#2C2C2C',
+  },
+  deleteConfirmButton: {
+    backgroundColor: '#D32F2F',
+  },
+  deleteModalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
