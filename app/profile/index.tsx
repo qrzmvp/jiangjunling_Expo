@@ -78,42 +78,81 @@ export default function PersonalInfoPage() {
     // 请求相册权限
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('需要权限', '请允许访问相册以选择照片');
+      setToastType('error');
+      setToastMessage('需要相册权限才能选择照片');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
       return;
     }
 
-    // 启动图片选择器
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: false, // 关闭系统裁剪，使用自定义裁剪
-      quality: 1,
-    });
+    try {
+      // 启动图片选择器
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false, // 关闭系统裁剪，使用自定义裁剪
+        quality: 1,
+      });
 
-    if (!result.canceled) {
-      setTempImageUri(result.assets[0].uri);
-      setCropperVisible(true);
+      if (!result.canceled) {
+        setTempImageUri(result.assets[0].uri);
+        setCropperVisible(true);
+      }
+    } catch (error: any) {
+      console.error('Image picker error:', error);
+      setToastType('error');
+      setToastMessage('选择图片失败，请重试');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
     }
   };
 
   const takePhoto = async () => {
     setModalVisible(false);
     
+    // Web 端不支持相机
+    if (Platform.OS === 'web') {
+      setToastType('error');
+      setToastMessage('Web 端暂不支持拍照功能，请选择相册图片');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+      return;
+    }
+    
     // 请求相机权限
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('需要权限', '请允许访问相机以拍摄照片');
+      setToastType('error');
+      setToastMessage('需要相机权限才能拍照');
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
       return;
     }
 
-    // 启动相机
-    let result = await ImagePicker.launchCameraAsync({
-      allowsEditing: false, // 关闭系统裁剪，使用自定义裁剪
-      quality: 1,
-    });
+    try {
+      // 启动相机
+      let result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false, // 关闭系统裁剪，使用自定义裁剪
+        quality: 1,
+      });
 
-    if (!result.canceled) {
-      setTempImageUri(result.assets[0].uri);
-      setCropperVisible(true);
+      if (!result.canceled) {
+        setTempImageUri(result.assets[0].uri);
+        setCropperVisible(true);
+      }
+    } catch (error: any) {
+      console.error('Camera error:', error);
+      // 模拟器会抛出错误
+      if (error.message?.includes('simulator') || error.message?.includes('Camera') || error.message?.includes('available')) {
+        setToastType('error');
+        setToastMessage('模拟器不支持拍照，请使用真机或选择相册');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2500);
+      } else {
+        setToastType('error');
+        setToastMessage('拍照失败，请重试');
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 2000);
+      }
     }
   };
 
@@ -345,14 +384,21 @@ export default function PersonalInfoPage() {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalButtonsContainer}>
-              <TouchableOpacity style={styles.modalButton} onPress={takePhoto}>
-                <Ionicons name="camera-outline" size={24} color={COLORS.textMainDark} />
-                <Text style={styles.modalButtonText}>拍照</Text>
-              </TouchableOpacity>
-              <View style={styles.modalDivider} />
+              {/* 只在非 Web 平台显示拍照选项 */}
+              {Platform.OS !== 'web' && (
+                <>
+                  <TouchableOpacity style={styles.modalButton} onPress={takePhoto}>
+                    <Ionicons name="camera-outline" size={24} color={COLORS.textMainDark} />
+                    <Text style={styles.modalButtonText}>拍照</Text>
+                  </TouchableOpacity>
+                  <View style={styles.modalDivider} />
+                </>
+              )}
               <TouchableOpacity style={styles.modalButton} onPress={pickImage}>
                 <Ionicons name="images-outline" size={24} color={COLORS.textMainDark} />
-                <Text style={styles.modalButtonText}>从手机相册选择</Text>
+                <Text style={styles.modalButtonText}>
+                  {Platform.OS === 'web' ? '选择图片' : '从手机相册选择'}
+                </Text>
               </TouchableOpacity>
             </View>
             
