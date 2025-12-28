@@ -105,6 +105,10 @@ export const SignalCard = ({
           <Text style={[styles.signalValue, { color: directionColor }]}>{directionText}</Text>
         </View>
         <View style={styles.signalRow}>
+          <Text style={styles.signalLabel}>杠杆：</Text>
+          <Text style={styles.signalValue}>10x</Text>
+        </View>
+        <View style={styles.signalRow}>
           <Text style={styles.signalLabel}>止损：</Text>
           <Text style={styles.signalValue}>{stopLoss}</Text>
         </View>
