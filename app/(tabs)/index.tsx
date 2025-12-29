@@ -321,7 +321,7 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
   };
 
   return (
-  <>
+  <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
     {/* Statistics Section */}
     <View style={styles.statsContainer}>
       <View style={styles.statItem}>
@@ -560,7 +560,7 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
         />
       </View>
     </View>
-  </>
+  </ScrollView>
   );
 };
 
@@ -604,9 +604,9 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
   };
   
   return (
-  <View style={[styles.copyTabContainer, { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }]}>
-
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
+  <View style={{ flex: 1 }}>
+    {/* Fixed Filter Bar */}
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: COLORS.background, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flex: 1 }}>
         {filters.map((filter) => {
           const isActive = activeFilters.includes(filter);
@@ -636,7 +636,9 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
       </TouchableOpacity>
     </View>
 
-    <View style={styles.traderList}>
+    {/* Scrollable Content */}
+    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}>
+      <View style={styles.traderList}>
       <TraderCard 
         roiLabel={getRoiLabel()} 
         name="zh138"
@@ -697,6 +699,7 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
         onPress={() => router.push('/trader/detail')}
       />
     </View>
+    </ScrollView>
   </View>
   );
 };
@@ -847,9 +850,9 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
   };
   
   return (
-  <View style={[styles.copyTabContainer, { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }]}>
-
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
+  <View style={{ flex: 1 }}>
+    {/* Fixed Filter Bar */}
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: COLORS.background, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flex: 1 }}>
         {filters.map((filter) => {
           const isActive = activeFilters.includes(filter);
@@ -879,7 +882,9 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
       </TouchableOpacity>
     </View>
 
-    <View style={styles.traderList}>
+    {/* Scrollable Content */}
+    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}>
+      <View style={styles.traderList}>
       {loading ? (
         <View style={{ padding: 40, alignItems: 'center' }}>
           <ActivityIndicator size="large" color={COLORS.primary} />
@@ -956,6 +961,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
         </>
       )}
     </View>
+    </ScrollView>
   </View>
   );
 };
@@ -1038,77 +1044,71 @@ export default function HomePage() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <AddToHomeScreen />
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        directionalLockEnabled={true}
-        automaticallyAdjustContentInsets={false}
-      >
-        {/* Header Top Removed */}
-
-        {/* Sticky Nav Tabs */}
-        <View style={styles.stickyNavTabs}>
-          <View style={styles.navBarContent}>
-            <View style={styles.navTabs}>
-              <TouchableOpacity 
-                style={styles.tabItem} 
-                onPress={() => handleTabPress('overview')}
-              >
-                <Text style={activeTab === 'overview' ? styles.tabTextActive : styles.tabText}>Overview</Text>
-                {activeTab === 'overview' && <View style={styles.tabIndicator} />}
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.tabItem}
-                onPress={() => handleTabPress('signal')}
-              >
-                <Text style={activeTab === 'signal' ? styles.tabTextActive : styles.tabText}>Signals</Text>
-                {activeTab === 'signal' && <View style={styles.tabIndicator} />}
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.tabItem}
-                onPress={() => handleTabPress('copy')}
-              >
-                <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>Traders</Text>
-                {activeTab === 'copy' && <View style={styles.tabIndicator} />}
-              </TouchableOpacity>
-            </View>
+      
+      {/* Fixed Sticky Nav Tabs */}
+      <View style={styles.stickyNavTabs}>
+        <View style={styles.navBarContent}>
+          <View style={styles.navTabs}>
+            <TouchableOpacity 
+              style={styles.tabItem} 
+              onPress={() => handleTabPress('overview')}
+            >
+              <Text style={activeTab === 'overview' ? styles.tabTextActive : styles.tabText}>Overview</Text>
+              {activeTab === 'overview' && <View style={styles.tabIndicator} />}
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.tabItem}
+              onPress={() => handleTabPress('signal')}
+            >
+              <Text style={activeTab === 'signal' ? styles.tabTextActive : styles.tabText}>Signals</Text>
+              {activeTab === 'signal' && <View style={styles.tabIndicator} />}
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.tabItem}
+              onPress={() => handleTabPress('copy')}
+            >
+              <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>Traders</Text>
+              {activeTab === 'copy' && <View style={styles.tabIndicator} />}
+            </TouchableOpacity>
           </View>
         </View>
+      </View>
 
-        <View onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
-          <ScrollView
-            ref={scrollViewRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={400}
-            onMomentumScrollEnd={handleScrollEnd}
-            onScrollEndDrag={handleScrollEnd}
-            nestedScrollEnabled={true}
-            directionalLockEnabled={true}
-          >
-            <View style={{ width: containerWidth }} onLayout={(e) => {
-              const height = e.nativeEvent.layout.height;
-              setHeights(h => ({ ...h, overview: height }));
-            }}>
-              <OverviewTabContent onMorePress={handleMorePress} />
-            </View>
-            <View style={{ width: containerWidth }} onLayout={(e) => {
-              const height = e.nativeEvent.layout.height;
-              setHeights(h => ({ ...h, signal: height }));
-            }}>
-              <SignalTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
-            </View>
-            <View style={{ width: containerWidth }} onLayout={(e) => {
-              const height = e.nativeEvent.layout.height;
-              setHeights(h => ({ ...h, copy: height }));
-            }}>
-              <CopyTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
-            </View>
-          </ScrollView>
-        </View>
-      </ScrollView>
+      {/* Scrollable Content */}
+      <View style={{ flex: 1 }} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={400}
+          onMomentumScrollEnd={handleScrollEnd}
+          onScrollEndDrag={handleScrollEnd}
+          nestedScrollEnabled={true}
+          directionalLockEnabled={true}
+          style={{ flex: 1 }}
+        >
+          <View style={{ width: containerWidth, height: '100%' }} onLayout={(e) => {
+            const height = e.nativeEvent.layout.height;
+            setHeights(h => ({ ...h, overview: height }));
+          }}>
+            <OverviewTabContent onMorePress={handleMorePress} />
+          </View>
+          <View style={{ width: containerWidth, height: '100%' }} onLayout={(e) => {
+            const height = e.nativeEvent.layout.height;
+            setHeights(h => ({ ...h, signal: height }));
+          }}>
+            <SignalTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
+          </View>
+          <View style={{ width: containerWidth, height: '100%' }} onLayout={(e) => {
+            const height = e.nativeEvent.layout.height;
+            setHeights(h => ({ ...h, copy: height }));
+          }}>
+            <CopyTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
+          </View>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -1128,8 +1128,10 @@ const styles = StyleSheet.create({
   stickyNavTabs: {
     backgroundColor: COLORS.background,
     zIndex: 100,
-    marginBottom: 16,
     paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
   headerTop: {
     flexDirection: 'row',
