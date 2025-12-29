@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { ExchangeAccountService } from '../../lib/exchangeAccountService';
+import { ExchangeAccount } from '../../types';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -66,6 +68,10 @@ const NumberTicker = ({ value, style, duration = 1000 }: { value: string, style?
 const TradePage: React.FC = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'position' | 'order' | 'history'>('position');
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [exchangeAccounts, setExchangeAccounts] = useState<ExchangeAccount[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<ExchangeAccount | null>(null);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
 
   // 模拟持仓数据
   const positionData = [
@@ -171,16 +177,95 @@ const TradePage: React.FC = () => {
     },
   ];
 
+  // 加载交易所账户
+  useEffect(() => {
+    loadExchangeAccounts();
+  }, []);
+
+  const loadExchangeAccounts = async () => {
+    try {
+      setLoadingAccounts(true);
+      // 直接获取已启用的账户
+      const enabledAccounts = await ExchangeAccountService.getEnabledExchangeAccounts();
+      setExchangeAccounts(enabledAccounts);
+      
+      // 如果当前选中的账户已经被禁用或删除，则重新选择第一个账户
+      if (selectedAccount) {
+        const stillExists = enabledAccounts.find(acc => acc.id === selectedAccount.id);
+        if (!stillExists && enabledAccounts.length > 0) {
+          setSelectedAccount(enabledAccounts[0]);
+        } else if (stillExists) {
+          // 更新选中账户的数据（可能昵称等信息已更改）
+          setSelectedAccount(stillExists);
+        }
+      } else if (enabledAccounts.length > 0) {
+        // 如果之前没有选中账户，选择第一个
+        setSelectedAccount(enabledAccounts[0]);
+      }
+    } catch (error) {
+      console.error('加载交易所账户失败:', error);
+    } finally {
+      setLoadingAccounts(false);
+    }
+  };
+
+  const handleSelectAccount = (account: ExchangeAccount) => {
+    setSelectedAccount(account);
+    setShowAccountModal(false);
+  };
+
+  const handleOpenAccountModal = () => {
+    setShowAccountModal(true);
+    // 每次打开模态框时重新获取最新数据
+    loadExchangeAccounts();
+  };
+
+  const getExchangeIcon = (name: string) => {
+    const lowerName = name.toLowerCase();
+    const icons: { [key: string]: { icon: string; bg: string; color: string } } = {
+      'binance': { icon: 'B', bg: '#FCD535', color: '#000000' },
+      'okx': { icon: 'O', bg: '#FFFFFF', color: '#000000' },
+      'bybit': { icon: 'B', bg: '#F7A600', color: '#000000' },
+      'coinbase': { icon: 'C', bg: '#0052FF', color: '#FFFFFF' },
+      'kraken': { icon: 'K', bg: '#5741D9', color: '#FFFFFF' },
+      'huobi': { icon: 'H', bg: '#2EAEF0', color: '#FFFFFF' },
+    };
+    return icons[lowerName] || { icon: name[0]?.toUpperCase() || 'E', bg: '#666666', color: '#FFFFFF' };
+  };
+
   return (
     <View style={styles.container}>
       {/* Header with Account Selector */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.accountInfo} onPress={() => router.push('/profile/exchange-accounts')}>
-          <View style={styles.okxIcon}>
-            <Text style={styles.okxText}>OKX</Text>
-          </View>
-          <Text style={styles.accountName}>我的账户(1001)</Text>
-          <Ionicons name="chevron-down" size={18} color="#8A919E" style={{ marginLeft: 4 }} />
+        <TouchableOpacity 
+          style={styles.accountInfo} 
+          onPress={handleOpenAccountModal}
+        >
+          {selectedAccount && selectedAccount.exchanges ? (
+            <>
+              <View style={[
+                styles.exchangeIconSmall,
+                { backgroundColor: getExchangeIcon(selectedAccount.exchanges.name).bg }
+              ]}>
+                <Text style={[
+                  styles.exchangeIconTextSmall,
+                  { color: getExchangeIcon(selectedAccount.exchanges.name).color }
+                ]}>
+                  {getExchangeIcon(selectedAccount.exchanges.name).icon}
+                </Text>
+              </View>
+              <Text style={styles.accountName}>{selectedAccount.account_nickname}</Text>
+              <Ionicons name="chevron-down" size={18} color="#8A919E" style={{ marginLeft: 4 }} />
+            </>
+          ) : (
+            <>
+              <View style={styles.okxIcon}>
+                <Text style={styles.okxText}>OKX</Text>
+              </View>
+              <Text style={styles.accountName}>我的账户(1001)</Text>
+              <Ionicons name="chevron-down" size={18} color="#8A919E" style={{ marginLeft: 4 }} />
+            </>
+          )}
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/profile/exchange-accounts/edit')}>
           <Ionicons name="add" size={28} color="#EAEBEF" />
@@ -433,6 +518,90 @@ const TradePage: React.FC = () => {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Account Selection Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showAccountModal}
+        onRequestClose={() => setShowAccountModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowAccountModal(false)}
+          />
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              {/* Modal Header */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>选择交易所账户</Text>
+                <TouchableOpacity onPress={() => setShowAccountModal(false)}>
+                  <Ionicons name="close" size={24} color={COLORS.textMain} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Account List */}
+              <ScrollView style={styles.modalScroll}>
+                {loadingAccounts ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={COLORS.textMain} />
+                  </View>
+                ) : exchangeAccounts.length === 0 ? (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>暂无已启用的交易所账户</Text>
+                    <TouchableOpacity 
+                      style={styles.createAccountButton}
+                      onPress={() => {
+                        setShowAccountModal(false);
+                        router.push('/profile/exchange-accounts/edit');
+                      }}
+                    >
+                      <Text style={styles.createAccountButtonText}>创建账户</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  exchangeAccounts.map((account) => {
+                    const exchangeIcon = account.exchanges 
+                      ? getExchangeIcon(account.exchanges.name)
+                      : { icon: 'E', bg: '#666666', color: '#FFFFFF' };
+                    const isSelected = selectedAccount?.id === account.id;
+                    return (
+                      <TouchableOpacity
+                        key={account.id}
+                        style={[
+                          styles.accountItem,
+                          isSelected && styles.accountItemSelected
+                        ]}
+                        onPress={() => handleSelectAccount(account)}
+                      >
+                        <View style={styles.accountLeft}>
+                          <View style={[
+                            styles.accountIcon,
+                            { backgroundColor: exchangeIcon.bg }
+                          ]}>
+                            <Text style={[
+                              styles.accountIconText,
+                              { color: exchangeIcon.color }
+                            ]}>
+                              {exchangeIcon.icon}
+                            </Text>
+                          </View>
+                          <Text style={styles.accountNameText}>{account.account_nickname}</Text>
+                        </View>
+                        {isSelected && (
+                          <Ionicons name="checkmark-circle" size={24} color={COLORS.textMain} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -715,6 +884,111 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 4,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    flex: 1,
+  },
+  modalContainer: {
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+  },
+  modalContent: {
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.textMain,
+  },
+  modalScroll: {
+    maxHeight: 400,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: COLORS.textMuted,
+    marginBottom: 20,
+  },
+  createAccountButton: {
+    backgroundColor: COLORS.textMain,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  createAccountButtonText: {
+    color: COLORS.background,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  accountItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  accountItemSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  accountLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  accountIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  accountIconText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  accountNameText: {
+    fontSize: 16,
+    color: COLORS.textMain,
+    fontWeight: '500',
+  },
+  exchangeIconSmall: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  exchangeIconTextSmall: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

@@ -107,6 +107,38 @@ export class ExchangeAccountService {
   }
 
   /**
+   * 获取当前用户的已启用交易所账户
+   */
+  static async getEnabledExchangeAccounts(): Promise<ExchangeAccount[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('用户未登录');
+    }
+
+    const { data, error } = await supabase
+      .from('exchange_accounts')
+      .select(`
+        *,
+        exchanges (
+          id,
+          name,
+          display_name,
+          logo_url
+        )
+      `)
+      .eq('user_id', user.id)
+      .eq('is_enabled', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('获取已启用交易所账户失败:', error);
+      throw error;
+    }
+
+    return data || [];
+  }
+
+  /**
    * 根据ID获取交易所账户
    */
   static async getExchangeAccountById(id: string): Promise<ExchangeAccount | null> {
