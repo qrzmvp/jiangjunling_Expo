@@ -326,15 +326,15 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
     <View style={styles.statsContainer}>
       <View style={styles.statItem}>
         <Text style={styles.statValue}>36</Text>
-        <Text style={styles.statLabel}>今日信号</Text>
+        <Text style={styles.statLabelSmall}>今日信号</Text>
       </View>
       <View style={styles.statItem}>
         <Text style={styles.statValue}>5</Text>
-        <Text style={styles.statLabel}>活跃博主</Text>
+        <Text style={styles.statLabelSmall}>活跃博主</Text>
       </View>
       <View style={styles.statItem}>
         <Text style={styles.statValue}>16</Text>
-        <Text style={styles.statLabel}>交易币种</Text>
+        <Text style={styles.statLabelSmall}>交易币种</Text>
       </View>
     </View>
 
@@ -604,7 +604,7 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
   };
   
   return (
-  <View style={[styles.copyTabContainer, { paddingHorizontal: 16, paddingTop: 16 }]}>
+  <View style={[styles.copyTabContainer, { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }]}>
 
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flex: 1 }}>
@@ -847,7 +847,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
   };
   
   return (
-  <View style={[styles.copyTabContainer, { paddingHorizontal: 16, paddingTop: 16 }]}>
+  <View style={[styles.copyTabContainer, { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }]}>
 
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flex: 1 }}>
@@ -1087,7 +1087,6 @@ export default function HomePage() {
             onScrollEndDrag={handleScrollEnd}
             nestedScrollEnabled={true}
             directionalLockEnabled={true}
-            style={{ height: heights[activeTab] || undefined }}
           >
             <View style={{ width: containerWidth }} onLayout={(e) => {
               const height = e.nativeEvent.layout.height;
@@ -1370,7 +1369,7 @@ const styles = StyleSheet.create({
   chartPoint: {
     position: 'absolute',
     alignItems: 'center',
-    justifyContent: 'visible',
+    justifyContent: 'center',
     width: 32, // 给定一个宽度，避免布局塌缩
     height: 32,
     transform: [{ translateX: -16 }, { translateY: -16 }], // Center the point
@@ -1760,7 +1759,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  statLabel: {
+  statLabelSmall: {
     color: COLORS.textMuted,
     fontSize: 11,
   },
