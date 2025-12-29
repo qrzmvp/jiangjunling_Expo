@@ -1,10 +1,15 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, TouchableWithoutFeedback } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image, Dimensions, TouchableWithoutFeedback, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { useProtectedRoute } from '../hooks/useProtectedRoute';
+import * as MediaLibrary from 'expo-media-library';
+import * as Clipboard from 'expo-clipboard';
+import { Asset } from 'expo-asset';
+import { Ionicons } from '@expo/vector-icons';
+import Toast from '../components/Toast';
+
+// 导入图片资源
+const customerQRImage = require('../assets/images/customer-service-qr.jpg');
 
 const { width } = Dimensions.get('window');
 
@@ -23,6 +28,120 @@ const COLORS = {
 export default function QRCodePage() {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
+
+  // 复制电报ID到剪贴板
+  const handleCopyTelegramId = async () => {
+    try {
+      await Clipboard.setStringAsync('@Michael_Qin');
+      setToast({ visible: true, message: '电报ID已复制', type: 'success' });
+    } catch (error) {
+      console.error('复制失败:', error);
+      setToast({ visible: true, message: '复制失败', type: 'error' });
+    }
+  };
+
+  // 下载图片到相册
+  const handleSaveImage = async () => {
+    if (isSaving) return;
+    
+    console.log('开始保存图片, Platform:', Platform.OS);
+    
+    try {
+      setIsSaving(true);
+
+      // Web 端特殊处理 - 直接下载
+      if (Platform.OS === 'web') {
+        console.log('Web端下载开始');
+        try {
+          // Web端直接使用require的路径
+          const imageModule = customerQRImage;
+          console.log('图片模块:', imageModule);
+
+          // Web环境下，require返回的是资源路径
+          const imagePath = typeof imageModule === 'number' 
+            ? imageModule 
+            : (imageModule.uri || imageModule);
+
+          console.log('图片路径:', imagePath);
+
+          // 使用 fetch 获取图片
+          const response = await fetch(imagePath);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          console.log('Blob 大小:', blob.size, 'bytes', 'Blob类型:', blob.type);
+          
+          if (blob.size === 0) {
+            throw new Error('图片文件为空');
+          }
+
+          const url = window.URL.createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = '客服二维码.jpg';
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          
+          // 延迟清理
+          setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+          }, 100);
+          
+          console.log('Web端下载完成');
+          Alert.alert('保存成功', '客服二维码已开始下载');
+        } catch (error) {
+          console.error('Web下载失败:', error);
+          Alert.alert('下载失败', `错误: ${error instanceof Error ? error.message : '未知错误'}`);
+        }
+        setIsSaving(false);
+        return;
+      }
+
+      // 移动端：加载图片资源
+      console.log('移动端保存开始');
+      const asset = await Asset.fromModule(customerQRImage).downloadAsync();
+      console.log('Asset 信息:', {
+        localUri: asset.localUri,
+        uri: asset.uri,
+        width: asset.width,
+        height: asset.height,
+      });
+
+      // 请求媒体库权限
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      console.log('权限状态:', status);
+      
+      if (status !== 'granted') {
+        Alert.alert('需要权限', '请授予访问相册的权限以保存图片');
+        setIsSaving(false);
+        return;
+      }
+
+      if (!asset.localUri) {
+        throw new Error('无法获取本地图片路径');
+      }
+
+      console.log('保存路径:', asset.localUri);
+
+      // 保存到相册
+      const savedAsset = await MediaLibrary.createAssetAsync(asset.localUri);
+      console.log('保存成功:', savedAsset);
+      
+      Alert.alert('保存成功', '客服二维码已保存到相册');
+      setIsSaving(false);
+    } catch (error) {
+      console.error('保存图片失败:', error);
+      Alert.alert('保存失败', `无法保存图片: ${error instanceof Error ? error.message : '未知错误'}`);
+      setIsSaving(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -30,96 +149,50 @@ export default function QRCodePage() {
         <View style={styles.overlay} />
       </TouchableWithoutFeedback>
 
-      <View style={styles.content} pointerEvents="box-none">
-        {/* Card */}
-        <View style={styles.card}>
-          {/* Card Top (White) */}
-          <View style={styles.cardTop}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoIcon}>
-                <MaterialIcons name="sports-motorsports" size={24} color="white" />
-              </View>
-              <View style={styles.logoTextContainer}>
-                <Text style={styles.appName}>将军令</Text>
-                <Text style={styles.appSlogan}>GENERAL'S ORDER</Text>
-              </View>
-            </View>
-            {/* Decorative Gradient/Shape */}
-            <View style={styles.decorativeShape} />
+      <View style={styles.content}>
+        {/* 直接显示二维码图片 */}
+        <View style={styles.qrContainer}>
+          <Image 
+            source={customerQRImage}
+            style={styles.qrImage}
+            resizeMode="contain"
+          />
+          
+          {/* 按钮容器 */}
+          <View style={styles.buttonContainer}>
+            {/* 下载按钮 */}
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleSaveImage}
+              disabled={isSaving}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="download-outline" size={20} color="#000" />
+              <Text style={styles.buttonText}>
+                {isSaving ? '保存中...' : '保存到相册'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* 添加电报ID按钮 */}
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleCopyTelegramId}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="copy-outline" size={20} color="#000" />
+              <Text style={styles.buttonText}>添加电报ID</Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Card Bottom (Dark) */}
-          <View style={styles.cardBottom}>
-            {/* Avatar */}
-            <View style={styles.avatarWrapper}>
-              <View style={styles.avatarContainer}>
-                <Image 
-                  source={{ uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAd41aAXypJ-KoThdlQwaGvekk668Wn24nqPwjwrYnBoIOw9pU3-LQYE9Fsl8_qQILrWGjvZyQITeAQOBevDrIemfVF3QzYQpYfK1w5ZOOhnFMSx6XdJI_f4eLVb5Pd4PZyDEhf5-VCRsq-Oqx2lYS1BPhzGVQWlahH0z-uyOAo3QeC4LaKCSbr-e5l55Ch6YEltOtm-mWr9rnLtfioCWZP9g0iH6wA-kJ2MSoJl36o4IVmy332j2yZ3eD-iy5BIINUrxaacF_rUA" }} 
-                  style={styles.avatar} 
-                />
-              </View>
-            </View>
-
-            <Text style={styles.username}>Alex_Trader</Text>
-            <View style={styles.uidBadge}>
-              <Text style={styles.uidText}>UID: 82910</Text>
-            </View>
-
-            {/* QR Code Area */}
-            <View style={styles.qrCodeContainer}>
-              <Svg width="180" height="180" viewBox="0 0 100 100" color="black">
-                <Path d="M10,10 h20 v20 h-20 z M15,15 v10 h10 v-10 z" fill="currentColor" />
-                <Path d="M70,10 h20 v20 h-20 z M75,15 v10 h10 v-10 z" fill="currentColor" />
-                <Path d="M10,70 h20 v20 h-20 z M15,75 v10 h10 v-10 z" fill="currentColor" />
-                <Path d="M12.5,12.5 h15 v15 h-15 z M72.5,12.5 h15 v15 h-15 z M12.5,72.5 h15 v15 h-15 z" fill="none" stroke="currentColor" strokeWidth="5" />
-                
-                {/* Random rects to simulate QR code data */}
-                <Rect x="40" y="10" width="5" height="5" fill="currentColor" />
-                <Rect x="50" y="10" width="5" height="5" fill="currentColor" />
-                <Rect x="60" y="15" width="5" height="5" fill="currentColor" />
-                <Rect x="45" y="20" width="5" height="5" fill="currentColor" />
-                <Rect x="55" y="25" width="5" height="5" fill="currentColor" />
-                <Rect x="40" y="40" width="5" height="5" fill="currentColor" />
-                <Rect x="50" y="45" width="5" height="5" fill="currentColor" />
-                <Rect x="60" y="40" width="5" height="5" fill="currentColor" />
-                <Rect x="70" y="50" width="5" height="5" fill="currentColor" />
-                <Rect x="80" y="45" width="5" height="5" fill="currentColor" />
-                <Rect x="10" y="50" width="5" height="5" fill="currentColor" />
-                <Rect x="20" y="45" width="5" height="5" fill="currentColor" />
-                <Rect x="30" y="50" width="5" height="5" fill="currentColor" />
-                <Rect x="75" y="70" width="5" height="5" fill="currentColor" />
-                <Rect x="85" y="80" width="5" height="5" fill="currentColor" />
-                <Rect x="70" y="85" width="5" height="5" fill="currentColor" />
-                <Rect x="50" y="75" width="5" height="5" fill="currentColor" />
-                <Rect x="60" y="80" width="5" height="5" fill="currentColor" />
-                <Rect x="45" y="60" width="5" height="5" fill="currentColor" />
-                <Rect x="55" y="65" width="5" height="5" fill="currentColor" />
-
-                {/* Center Logo */}
-                <Circle cx="50" cy="50" r="7" fill="white" />
-                <Circle cx="50" cy="50" r="5" fill="black" />
-              </Svg>
-            </View>
-
-            <Text style={styles.scanText}>扫码上方二维码，好友加我</Text>
-            
-            <View style={styles.telegramContainer}>
-              <MaterialCommunityIcons name="telegram" size={20} color="#2AABEE" />
-              <Text style={styles.telegramText}>@JiangJunLing_Support</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionButtonOutline}>
-            <Text style={styles.actionButtonTextOutline}>保存图片</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButtonPrimary}>
-            <Text style={styles.actionButtonTextPrimary}>分享</Text>
-          </TouchableOpacity>
         </View>
       </View>
+
+      {/* Toast 提示 */}
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onHide={() => setToast({ ...toast, visible: false })}
+      />
     </View>
   );
 }
@@ -132,7 +205,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
   },
   content: {
     width: '100%',
@@ -140,196 +213,50 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
     zIndex: 1,
+    pointerEvents: 'box-none',
   },
-  header: {
-    display: 'none', // Hide header
-  },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.textMain,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 300, // Slightly smaller for modal
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.borderDark,
-    backgroundColor: COLORS.cardDark,
-  },
-  cardTop: {
-    height: 128,
-    backgroundColor: COLORS.white,
-    padding: 24,
-    position: 'relative',
-    flexDirection: 'row',
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    zIndex: 2,
-  },
-  logoIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: COLORS.black,
-    borderRadius: 8,
+  qrContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    pointerEvents: 'auto',
   },
-  logoTextContainer: {
-    justifyContent: 'center',
-  },
-  appName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    lineHeight: 20,
-  },
-  appSlogan: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#6b7280', // gray-500
-    marginTop: 2,
-    letterSpacing: 1,
-  },
-  decorativeShape: {
-    position: 'absolute',
-    right: -20,
-    top: 0,
-    width: 128,
-    height: '100%',
-    backgroundColor: '#f3f4f6', // gray-100
-    opacity: 0.5,
-    transform: [{ skewX: '-12deg' }, { translateX: 40 }],
-  },
-  cardBottom: {
-    backgroundColor: '#1A1A1A',
-    alignItems: 'center',
-    paddingTop: 56,
-    paddingBottom: 40,
-    paddingHorizontal: 24,
-    position: 'relative',
-  },
-  avatarWrapper: {
-    position: 'absolute',
-    top: -48,
-    left: '50%',
-    marginLeft: -48, // half of width
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#1A1A1A',
-    padding: 6,
-    zIndex: 10,
-  },
-  avatarContainer: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 48,
-    overflow: 'hidden',
-    backgroundColor: COLORS.cardHighlight,
-    borderWidth: 2,
-    borderColor: COLORS.borderDark,
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-  },
-  username: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.textMain,
-    marginBottom: 4,
-  },
-  uidBadge: {
-    backgroundColor: COLORS.cardHighlight,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(37, 37, 37, 0.5)',
-    marginBottom: 24,
-  },
-  uidText: {
-    fontSize: 12,
-    color: COLORS.textSub,
-  },
-  qrCodeContainer: {
-    padding: 16,
-    backgroundColor: COLORS.white,
+  qrImage: {
+    width: width * 0.85,
+    height: width * 0.85,
+    maxWidth: 500,
+    maxHeight: 500,
     borderRadius: 16,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
   },
-  scanText: {
-    fontSize: 12,
-    color: COLORS.textSub,
-    letterSpacing: 0.5,
-  },
-  actionsContainer: {
+  buttonContainer: {
     flexDirection: 'row',
-    gap: 16,
-    marginTop: 32,
-    width: '100%',
-    maxWidth: 300,
-  },
-  actionButtonOutline: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 100,
-    borderWidth: 1,
-    borderColor: 'rgba(240, 240, 240, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)', // Add background for visibility
+    gap: 12,
+    marginTop: 24,
   },
-  actionButtonTextOutline: {
-    color: COLORS.textMain,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  actionButtonPrimary: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 100,
-    backgroundColor: COLORS.accentOrange,
+  actionButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: COLORS.accentOrange,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 100,
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
     elevation: 5,
   },
-  actionButtonTextPrimary: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontWeight: 'bold',
+  buttonText: {
+    color: '#000',
+    fontSize: 15,
+    fontWeight: '600',
   },
-  telegramContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-    gap: 6,
-  },
-  telegramText: {
+  tipText: {
+    marginTop: 24,
     color: COLORS.textSub,
     fontSize: 14,
+    textAlign: 'center',
   },
 });
