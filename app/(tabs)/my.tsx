@@ -6,7 +6,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { UserInfo, Stats } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { isVipActive, formatVipExpiresAt } from '../../lib/redemptionService';
-import { ExchangeAccountService } from '../../lib/exchangeAccountService';
 import { getUserStats } from '../../lib/userTraderService';
 
 const COLORS = {
@@ -36,24 +35,7 @@ const MyPage: React.FC = () => {
   const isVerified = profile?.is_verified || false;
   const vipActive = isVipActive(profile?.vip_expires_at || null);
 
-  // 加载交易所账户数量
-  useEffect(() => {
-    const loadExchangeAccountCount = async () => {
-      try {
-        const accounts = await ExchangeAccountService.getExchangeAccounts();
-        setExchangeAccountCount(accounts.length);
-      } catch (error) {
-        console.error('加载交易所账户数量失败:', error);
-        setExchangeAccountCount(0);
-      }
-    };
-
-    if (user) {
-      loadExchangeAccountCount();
-    }
-  }, [user]);
-
-  // 加载关注和订阅数量
+  // 加载所有统计数据（关注、订阅、交易账户）
   useEffect(() => {
     const loadUserStats = async () => {
       if (!user?.id) return;
@@ -62,10 +44,12 @@ const MyPage: React.FC = () => {
         const stats = await getUserStats(user.id);
         setFollowCount(stats.followCount);
         setSubscriptionCount(stats.subscriptionCount);
+        setExchangeAccountCount(stats.exchangeAccountCount);
       } catch (error) {
         console.error('加载用户统计数据失败:', error);
         setFollowCount(0);
         setSubscriptionCount(0);
+        setExchangeAccountCount(0);
       }
     };
 
@@ -82,6 +66,7 @@ const MyPage: React.FC = () => {
           const stats = await getUserStats(user.id);
           setFollowCount(stats.followCount);
           setSubscriptionCount(stats.subscriptionCount);
+          setExchangeAccountCount(stats.exchangeAccountCount);
         } catch (error) {
           console.error('刷新用户统计数据失败:', error);
         }

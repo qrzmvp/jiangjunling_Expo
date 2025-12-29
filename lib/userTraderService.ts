@@ -1,35 +1,29 @@
 import { supabase } from './supabase';
 
 /**
- * 获取用户的关注和订阅统计
+ * 获取用户的关注、订阅和交易账户统计
+ * 优化：使用数据库函数，单次 RPC 调用获取所有统计数据
+ * 性能提升：从 3 个 HTTP 请求减少为 1 个
  */
 export async function getUserStats(userId: string) {
   try {
-    // 获取关注数
-    const { count: followCount, error: followError } = await supabase
-      .from('user_follows')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
+    // 使用数据库函数，一次调用获取所有统计
+    const { data, error } = await supabase
+      .rpc('get_user_stats', { p_user_id: userId });
 
-    if (followError) throw followError;
-
-    // 获取订阅数
-    const { count: subscriptionCount, error: subscriptionError } = await supabase
-      .from('user_subscriptions')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-
-    if (subscriptionError) throw subscriptionError;
+    if (error) throw error;
 
     return {
-      followCount: followCount || 0,
-      subscriptionCount: subscriptionCount || 0,
+      followCount: data?.followCount || 0,
+      subscriptionCount: data?.subscriptionCount || 0,
+      exchangeAccountCount: data?.exchangeAccountCount || 0,
     };
   } catch (error) {
     console.error('Error fetching user stats:', error);
     return {
       followCount: 0,
       subscriptionCount: 0,
+      exchangeAccountCount: 0,
     };
   }
 }
