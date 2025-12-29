@@ -898,10 +898,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    minHeight: '35%',
     maxHeight: '70%',
   },
   modalContent: {
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    minHeight: 280,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -929,6 +931,7 @@ const styles = StyleSheet.create({
     padding: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 200,
   },
   emptyText: {
     fontSize: 16,
