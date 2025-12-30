@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, NativeSyntheticEvent, NativeScrollEvent, useWindowDimensions, LayoutChangeEvent, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, NativeSyntheticEvent, NativeScrollEvent, useWindowDimensions, LayoutChangeEvent, ActivityIndicator, RefreshControl, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -712,8 +712,11 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+  const [loadedCount, setLoadedCount] = useState(0);
+  const [showLoadedMessage, setShowLoadedMessage] = useState(false);
   const PAGE_SIZE = 20;
 
   // 加载信号数据
@@ -721,10 +724,13 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
     loadSignals(true); // 重新加载时重置
   }, [activeFilters]);
 
-  const loadSignals = async (reset: boolean = false) => {
+  const loadSignals = async (reset: boolean = false, isRefreshing: boolean = false) => {
     try {
       if (reset) {
-        setLoading(true);
+        // 下拉刷新时不设置 loading，只设置 refreshing
+        if (!isRefreshing) {
+          setLoading(true);
+        }
         setPage(1);
         setHasMore(true);
       } else {
@@ -795,11 +801,13 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
 
       if (reset) {
         setSignals(data);
+        setLoadedCount(data.length);
       } else {
         // 追加数据并去重
         const existingIds = new Set(signals.map(s => s.id));
         const newSignals = data.filter(s => !existingIds.has(s.id));
         setSignals([...signals, ...newSignals]);
+        setLoadedCount(signals.length + newSignals.length);
       }
 
       if (!reset) {
@@ -810,6 +818,29 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
     } finally {
       setLoading(false);
       setLoadingMore(false);
+    }
+  };
+
+  // 下拉刷新
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setShowLoadedMessage(false);
+    await loadSignals(true, true); // 传递 isRefreshing = true
+    setRefreshing(false);
+    // 显示加载完成消息
+    setShowLoadedMessage(true);
+    setTimeout(() => {
+      setShowLoadedMessage(false);
+    }, 2000);
+  };
+
+  // Web端滚动处理 - 检测下拉手势
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset } = event.nativeEvent;
+    
+    // 当滚动到顶部并继续下拉时触发刷新
+    if (contentOffset.y < -50 && !refreshing && !loading) {
+      onRefresh();
     }
   };
 
@@ -882,8 +913,76 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
       </TouchableOpacity>
     </View>
 
+    {/* 加载完成提示 */}
+    {showLoadedMessage && (
+      <View style={{
+        position: 'absolute',
+        top: 60,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 1000,
+      }}>
+        <View style={{
+          backgroundColor: 'rgba(22, 22, 22, 0.95)',
+          paddingHorizontal: 20,
+          paddingVertical: 12,
+          borderRadius: 24,
+          borderWidth: 1,
+          borderColor: 'rgba(46, 189, 133, 0.3)',
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}>
+          <MaterialIcons name="check-circle" size={20} color={COLORS.primary} />
+          <Text style={{
+            fontSize: 14,
+            color: COLORS.primary,
+            marginLeft: 8,
+            fontWeight: '500',
+          }}>
+            已加载 {loadedCount} 条最新数据
+          </Text>
+        </View>
+      </View>
+    )}
+
+    {/* 下拉刷新加载中提示 */}
+    {refreshing && (
+      <View style={{
+        paddingVertical: 16,
+        alignItems: 'center',
+        backgroundColor: COLORS.background,
+      }}>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+        <Text style={{
+          color: COLORS.primary,
+          fontSize: 12,
+          marginTop: 8,
+        }}>
+          加载中...
+        </Text>
+      </View>
+    )}
+
     {/* Scrollable Content */}
-    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}>
+    <ScrollView 
+      style={{ flex: 1 }} 
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}
+      refreshControl={
+        Platform.OS === 'web' ? undefined : (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primary}
+            colors={[COLORS.primary]}
+            progressBackgroundColor={COLORS.surface}
+          />
+        )
+      }
+      onScroll={Platform.OS === 'web' ? handleScroll : undefined}
+      scrollEventThrottle={Platform.OS === 'web' ? 16 : undefined}
+    >
       <View style={styles.traderList}>
       {loading ? (
         <View style={{ padding: 40, alignItems: 'center' }}>
