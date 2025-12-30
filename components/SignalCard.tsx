@@ -44,6 +44,88 @@ interface SignalCardProps {
   onStatsChange?: () => void; // 当关注/订阅状态改变时的回调
 }
 
+// 计算盈亏比的函数
+const calculateRiskRewardRatio = (
+  entry: string,
+  stopLoss: string,
+  takeProfit: string,
+  direction: 'long' | 'short'
+): string => {
+  try {
+    const stopLossPrice = parseFloat(stopLoss);
+    const takeProfitPrice = parseFloat(takeProfit);
+
+    // 验证止损和止盈价格有效性
+    if (isNaN(stopLossPrice) || isNaN(takeProfitPrice)) {
+      return '-';
+    }
+
+    // 检查入场价是否为区间（如 3200-3250）
+    if (entry.includes('-')) {
+      const [minEntry, maxEntry] = entry.split('-').map(s => parseFloat(s.trim()));
+      
+      // 验证入场价有效性
+      if (isNaN(minEntry) || isNaN(maxEntry)) {
+        return '-';
+      }
+
+      // 分别计算两个入场价的盈亏比
+      const ratio1 = calculateSingleRatio(minEntry, stopLossPrice, takeProfitPrice, direction);
+      const ratio2 = calculateSingleRatio(maxEntry, stopLossPrice, takeProfitPrice, direction);
+
+      if (ratio1 === null || ratio2 === null) {
+        return '-';
+      }
+
+      // 返回区间格式，较小值在前
+      const minRatio = Math.min(ratio1, ratio2);
+      const maxRatio = Math.max(ratio1, ratio2);
+      return `${minRatio.toFixed(2)}-${maxRatio.toFixed(2)}`;
+    } else {
+      // 单一入场价
+      const entryPrice = parseFloat(entry);
+      if (isNaN(entryPrice)) {
+        return '-';
+      }
+
+      const ratio = calculateSingleRatio(entryPrice, stopLossPrice, takeProfitPrice, direction);
+      return ratio !== null ? ratio.toFixed(2) : '-';
+    }
+  } catch (error) {
+    console.error('计算盈亏比出错:', error);
+    return '-';
+  }
+};
+
+// 计算单个入场价的盈亏比
+const calculateSingleRatio = (
+  entryPrice: number,
+  stopLossPrice: number,
+  takeProfitPrice: number,
+  direction: 'long' | 'short'
+): number | null => {
+  let risk: number;
+  let reward: number;
+
+  if (direction === 'long') {
+    // 做多：风险 = 入场价 - 止损价，收益 = 止盈价 - 入场价
+    risk = entryPrice - stopLossPrice;
+    reward = takeProfitPrice - entryPrice;
+  } else {
+    // 做空：风险 = 止损价 - 入场价，收益 = 入场价 - 止盈价
+    risk = stopLossPrice - entryPrice;
+    reward = entryPrice - takeProfitPrice;
+  }
+
+  // 确保风险和收益为正数
+  if (risk <= 0 || reward <= 0) {
+    return null;
+  }
+
+  // 计算盈亏比 = 收益 / 风险
+  return reward / risk;
+};
+
 export const SignalCard = ({
   traderId,
   name,
@@ -69,6 +151,9 @@ export const SignalCard = ({
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+  // 计算盈亏比
+  const riskRewardRatio = calculateRiskRewardRatio(entry, stopLoss, takeProfit, direction);
 
   // 暂时注释掉关注和订阅状态查询，避免大量请求
   // 加载关注和订阅状态（基于交易员维度）
@@ -234,6 +319,16 @@ export const SignalCard = ({
           <Text style={styles.signalLabel}>止盈：</Text>
           <Text style={styles.signalValue}>{takeProfit}</Text>
         </View>
+        <View style={styles.signalRow}>
+          <Text style={styles.signalLabel}>盈亏：</Text>
+          <Text style={styles.riskRewardValue}>
+            {riskRewardRatio !== '-' ? (
+              riskRewardRatio.includes('-') 
+                ? `${riskRewardRatio}:1` 
+                : `${riskRewardRatio}:1`
+            ) : '-'}
+          </Text>
+        </View>
         <View style={styles.signalTimeContainer}>
           <Text style={styles.timeText}>{time}</Text>
         </View>
@@ -389,6 +484,12 @@ const styles = StyleSheet.create({
     color: COLORS.textMain,
     fontSize: 13,
     fontWeight: '500',
+  },
+  riskRewardValue: {
+    color: COLORS.yellow,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   footer: {
     flexDirection: 'row',
