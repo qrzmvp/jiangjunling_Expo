@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Modal, Alert, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Modal, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -45,7 +45,11 @@ export default function PersonalInfoPage() {
 
   const handleCopy = async (text: string) => {
     await Clipboard.setStringAsync(text);
-    Alert.alert('成功', '已复制到剪贴板');
+    // 显示成功提示
+    setToastType('success');
+    setToastMessage('复制成功');
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 1500);
   };
 
   const handleLogout = () => {
