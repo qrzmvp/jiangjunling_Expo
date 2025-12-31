@@ -80,20 +80,21 @@ export async function isSubscribed(userId: string, traderId: string) {
 
 /**
  * 关注交易员
+ * 使用 upsert 避免重复插入错误
  */
 export async function followTrader(userId: string, traderId: string) {
   try {
     const { error } = await supabase
       .from('user_follows')
-      .insert({ user_id: userId, trader_id: traderId });
+      .upsert(
+        { user_id: userId, trader_id: traderId },
+        { onConflict: 'user_id,trader_id', ignoreDuplicates: true }
+      );
 
     if (error) throw error;
     return { success: true };
   } catch (error: any) {
     console.error('Error following trader:', error);
-    if (error.code === '23505') {
-      return { success: false, message: '已经关注过该交易员' };
-    }
     return { success: false, message: '关注失败，请稍后重试' };
   }
 }
@@ -119,20 +120,21 @@ export async function unfollowTrader(userId: string, traderId: string) {
 
 /**
  * 订阅交易员
+ * 使用 upsert 避免重复插入错误
  */
 export async function subscribeTrader(userId: string, traderId: string) {
   try {
     const { error } = await supabase
       .from('user_subscriptions')
-      .insert({ user_id: userId, trader_id: traderId });
+      .upsert(
+        { user_id: userId, trader_id: traderId },
+        { onConflict: 'user_id,trader_id', ignoreDuplicates: true }
+      );
 
     if (error) throw error;
     return { success: true };
   } catch (error: any) {
     console.error('Error subscribing trader:', error);
-    if (error.code === '23505') {
-      return { success: false, message: '已经订阅过该交易员' };
-    }
     return { success: false, message: '订阅失败，请稍后重试' };
   }
 }

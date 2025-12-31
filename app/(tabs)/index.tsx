@@ -586,12 +586,21 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   const [followedTraders, setFollowedTraders] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(false); // 添加加载状态标志
   const PAGE_SIZE = 20;
 
   // 【优化】加载交易员数据和用户的订阅/关注状态
   // 使用分页加载，每次加载20条
   const loadTraders = async (reset: boolean = false, isRefreshing: boolean = false) => {
+    // 防止重复请求
+    if (isLoadingData && !isRefreshing) {
+      console.log('⚠️ [TradersTabContent] 正在加载中，跳过重复请求');
+      return;
+    }
+
     try {
+      setIsLoadingData(true); // 设置加载状态
+      
       if (reset) {
         // 下拉刷新时不设置 loading，只设置 refreshing
         if (!isRefreshing) {
@@ -645,12 +654,13 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
       setLoading(false);
       setLoadingMore(false);
       setRefreshing(false);
+      setIsLoadingData(false); // 重置加载状态
     }
   };
 
   // 组件挂载时加载数据 - 只在当前标签是 copy 时才加载
   useEffect(() => {
-    if (currentTab === 'copy') {
+    if (currentTab === 'copy' && !isLoadingData) {
       console.log('🟢 [TradersTabContent] 组件挂载或标签切换，开始加载交易员列表');
       loadTraders(true);
     }
@@ -869,39 +879,50 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
   const [loadedCount, setLoadedCount] = useState(0);
   const [showLoadedMessage, setShowLoadedMessage] = useState(false);
   const PAGE_SIZE = 20;
+  const [isLoadingData, setIsLoadingData] = useState(false); // 添加加载状态标志，防止重复请求
   
   // 默认头像 - 简单的灰色圆形头像 (1x1 像素的灰色图片 base64)
   const DEFAULT_AVATAR = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8/x8AAn8B9h12xqwAAAAASUVORK5CYII=';
 
-  // 加载信号数据 - 当筛选条件改变时，且当前在 signal 标签
+  // 合并所有加载逻辑到一个 useEffect，避免重复触发
   useEffect(() => {
-    if (currentTab === 'signal') {
-      console.log('🔵 [SignalTab] 筛选条件变化，重新加载信号');
-      loadSignals(true); // 重新加载时重置
-    }
-  }, [activeFilters, currentTab]);
-
-  // 当外部触发刷新时（切换到此Tab）
-  useEffect(() => {
-    if (refreshTrigger && refreshTrigger > 0 && currentTab === 'signal') {
-      console.log('🔵 [SignalTab] 外部触发刷新');
+    // 只在当前是 signal 标签且没有正在加载时才执行
+    if (currentTab === 'signal' && !isLoadingData) {
+      console.log('🔵 [SignalTab] 标签激活或筛选条件变化，加载信号');
       loadSignals(true);
     }
-  }, [refreshTrigger, currentTab]);
+  }, [activeFilters, currentTab, refreshTrigger]);
+
+  // 注释掉独立的 refreshTrigger useEffect，已合并到上面
+  // useEffect(() => {
+  //   if (refreshTrigger && refreshTrigger > 0 && currentTab === 'signal' && !isLoadingData) {
+  //     console.log('🔵 [SignalTab] 外部触发刷新');
+  //     loadSignals(true);
+  //   }
+  // }, [refreshTrigger, currentTab]);
 
   // 当页面获得焦点时刷新数据 - 确保每次切换到主Tab时都刷新
-  useFocusEffect(
-    React.useCallback(() => {
-      // 只在用户已登录且当前在 signal 标签时刷新
-      if (user?.id && currentTab === 'signal') {
-        console.log('🔵 [SignalTab] 页面获得焦点，刷新数据');
-        loadSignals(true);
-      }
-    }, [user?.id, currentTab])
-  );
+  // 注释掉这个，因为已经有 currentTab 变化的监听了
+  // useFocusEffect(
+  //   React.useCallback(() => {
+  //     // 只在用户已登录且当前在 signal 标签时刷新
+  //     if (user?.id && currentTab === 'signal') {
+  //       console.log('🔵 [SignalTab] 页面获得焦点，刷新数据');
+  //       loadSignals(true);
+  //     }
+  //   }, [user?.id, currentTab])
+  // );
 
   const loadSignals = async (reset: boolean = false, isRefreshing: boolean = false) => {
+    // 防止重复请求
+    if (isLoadingData && !isRefreshing) {
+      console.log('⚠️ [SignalTab] 正在加载中，跳过重复请求');
+      return;
+    }
+
     try {
+      setIsLoadingData(true); // 设置加载状态
+      
       if (reset) {
         // 下拉刷新时不设置 loading，只设置 refreshing
         if (!isRefreshing) {
@@ -994,6 +1015,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      setIsLoadingData(false); // 重置加载状态
     }
   };
 

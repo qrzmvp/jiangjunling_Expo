@@ -56,14 +56,31 @@ export async function getTradersWithUserStatus(
       p_limit: limit
     });
     
-    console.log('✅ [TraderService] 成功获取', data?.length || 0, '条交易员数据');
-
     if (error) {
       console.error('获取交易员列表失败:', error);
       throw error;
     }
 
-    return data || [];
+    // 映射数据库字段（下划线命名）到前端字段（驼峰命名）
+    const mappedData = (data || []).map((trader: any) => ({
+      id: trader.id,
+      name: trader.name,
+      avatar_url: trader.avatar_url,
+      description: trader.description,
+      created_at: trader.created_at,
+      updated_at: trader.updated_at,
+      isSubscribed: trader.is_subscribed,  // 下划线 -> 驼峰
+      isFollowed: trader.is_followed        // 下划线 -> 驼峰
+    }));
+    
+    console.log('✅ [TraderService] 成功获取', mappedData?.length || 0, '条交易员数据');
+    console.log('📊 [TraderService] 第一条数据状态:', {
+      name: mappedData[0]?.name,
+      isSubscribed: mappedData[0]?.isSubscribed,
+      isFollowed: mappedData[0]?.isFollowed
+    });
+
+    return mappedData;
   } catch (error) {
     console.error('获取交易员列表及状态异常:', error);
     throw error;
@@ -116,9 +133,30 @@ export async function getTraderByIdWithUserStatus(
     }
 
     // RPC 返回数组，取第一个元素
-    const trader = data && data.length > 0 ? data[0] : null;
+    const rawTrader = data && data.length > 0 ? data[0] : null;
     
-    console.log('✅ [TraderService] 成功获取交易员详情:', trader?.name);
+    if (!rawTrader) {
+      console.log('⚠️ [TraderService] 未找到交易员详情');
+      return null;
+    }
+
+    // 映射数据库字段（下划线命名）到前端字段（驼峰命名）
+    const trader: TraderWithUserStatus = {
+      id: rawTrader.id,
+      name: rawTrader.name,
+      avatar_url: rawTrader.avatar_url,
+      description: rawTrader.description,
+      created_at: rawTrader.created_at,
+      updated_at: rawTrader.updated_at,
+      isSubscribed: rawTrader.is_subscribed,  // 下划线 -> 驼峰
+      isFollowed: rawTrader.is_followed        // 下划线 -> 驼峰
+    };
+    
+    console.log('✅ [TraderService] 成功获取交易员详情:', trader.name);
+    console.log('📊 [TraderService] 订阅/关注状态:', {
+      isSubscribed: trader.isSubscribed,
+      isFollowed: trader.isFollowed
+    });
 
     return trader;
   } catch (error) {
