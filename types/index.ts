@@ -131,3 +131,12 @@ export interface RedemptionRecord {
   new_vip_expires_at: string;
 }
 
+// 交易员类型
+export interface Trader {
+  id: string;
+  name: string;
+  avatar_url: string;
+  bio?: string;
+  created_at: string;
+  updated_at: string;
+}
