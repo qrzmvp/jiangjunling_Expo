@@ -81,7 +81,7 @@ export const TraderCard = ({
             style={[styles.cardCopyBtn, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
             onPress={() => setIsSubscribed(!isSubscribed)}
           >
-            <Text style={styles.cardCopyBtnText}>{isSubscribed ? '已copy' : 'Copy'}</Text>
+            <Text style={styles.cardCopyBtnText}>{isSubscribed ? '已订阅' : '订阅'}</Text>
           </TouchableOpacity>
         </View>
       </View>
