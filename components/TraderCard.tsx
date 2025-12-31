@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import { useAuth } from '../contexts/AuthContext';
+import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../lib/userTraderService';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -17,6 +19,7 @@ const COLORS = {
 };
 
 export const TraderCard = ({ 
+  traderId,
   name, 
   avatar, 
   followers, 
@@ -30,8 +33,13 @@ export const TraderCard = ({
   coins,
   chartPath,
   statusColor = COLORS.yellow,
+  initialIsSubscribed = false,
+  initialIsFavorite = false,
+  onSubscriptionChange,
+  onFavoriteChange,
   onPress
 }: {
+  traderId: string,
   name: string,
   avatar: string,
   followers: number,
@@ -45,10 +53,80 @@ export const TraderCard = ({
   coins: string[],
   chartPath: string,
   statusColor?: string,
+  initialIsSubscribed?: boolean,
+  initialIsFavorite?: boolean,
+  onSubscriptionChange?: () => void,
+  onFavoriteChange?: () => void,
   onPress?: () => void
 }) => {
-  const [isSubscribed, setIsSubscribed] = React.useState(false);
-  const [isFavorite, setIsFavorite] = React.useState(false);
+  const { user } = useAuth();
+  const [isSubscribed, setIsSubscribed] = React.useState(initialIsSubscribed);
+  const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
+  const [loading, setLoading] = React.useState(false);
+
+  // 处理订阅/取消订阅
+  const handleSubscriptionToggle = async () => {
+    if (!user?.id) {
+      console.log('请先登录');
+      return;
+    }
+
+    if (loading) return;
+
+    try {
+      setLoading(true);
+      
+      if (isSubscribed) {
+        const result = await unsubscribeTrader(user.id, traderId);
+        if (result.success) {
+          setIsSubscribed(false);
+          onSubscriptionChange?.();
+        }
+      } else {
+        const result = await subscribeTrader(user.id, traderId);
+        if (result.success) {
+          setIsSubscribed(true);
+          onSubscriptionChange?.();
+        }
+      }
+    } catch (error) {
+      console.error('订阅操作失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 处理关注/取消关注
+  const handleFavoriteToggle = async () => {
+    if (!user?.id) {
+      console.log('请先登录');
+      return;
+    }
+
+    if (loading) return;
+
+    try {
+      setLoading(true);
+      
+      if (isFavorite) {
+        const result = await unfollowTrader(user.id, traderId);
+        if (result.success) {
+          setIsFavorite(false);
+          onFavoriteChange?.();
+        }
+      } else {
+        const result = await followTrader(user.id, traderId);
+        if (result.success) {
+          setIsFavorite(true);
+          onFavoriteChange?.();
+        }
+      }
+    } catch (error) {
+      console.error('关注操作失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <TouchableOpacity style={styles.traderCard} onPress={onPress} activeOpacity={0.9}>
@@ -70,7 +148,11 @@ export const TraderCard = ({
           </View>
         </View>
         <View style={styles.cardActions}>
-          <TouchableOpacity style={styles.starBtn} onPress={() => setIsFavorite(!isFavorite)}>
+          <TouchableOpacity 
+            style={styles.starBtn} 
+            onPress={handleFavoriteToggle}
+            disabled={loading}
+          >
             <MaterialIcons 
               name={isFavorite ? "star" : "star-border"} 
               size={20} 
@@ -79,9 +161,12 @@ export const TraderCard = ({
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.cardCopyBtn, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
-            onPress={() => setIsSubscribed(!isSubscribed)}
+            onPress={handleSubscriptionToggle}
+            disabled={loading}
           >
-            <Text style={styles.cardCopyBtnText}>{isSubscribed ? '已订阅' : '订阅'}</Text>
+            <Text style={styles.cardCopyBtnText}>
+              {loading ? '...' : (isSubscribed ? '已订阅' : '订阅')}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

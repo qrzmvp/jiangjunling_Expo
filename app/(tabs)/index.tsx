@@ -575,16 +575,30 @@ interface CopyTabContentProps {
 
 const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps) => {
   const router = useRouter();
+  const { user } = useAuth();
   const filters = ['综合', '近一周收益', '近一月收益', '已订阅', '已关注'];
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subscribedTraders, setSubscribedTraders] = useState<Set<string>>(new Set());
+  const [followedTraders, setFollowedTraders] = useState<Set<string>>(new Set());
 
-  // 加载交易员数据
+  // 加载交易员数据和用户的订阅/关注状态
   const loadTraders = async () => {
     try {
       setLoading(true);
       const data = await getTraders();
       setTraders(data);
+
+      // 如果用户已登录，获取订阅和关注状态
+      if (user?.id) {
+        const [subscribed, followed] = await Promise.all([
+          getSubscribedTraders(user.id),
+          getFollowedTraders(user.id)
+        ]);
+        
+        setSubscribedTraders(new Set(subscribed.map(item => item.trader_id)));
+        setFollowedTraders(new Set(followed.map(item => item.trader_id)));
+      }
     } catch (error) {
       console.error('加载交易员数据失败:', error);
     } finally {
@@ -596,6 +610,30 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
   useEffect(() => {
     loadTraders();
   }, []);
+
+  // 当用户订阅/取消订阅后刷新状态
+  const handleSubscriptionChange = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const subscribed = await getSubscribedTraders(user.id);
+      setSubscribedTraders(new Set(subscribed.map(item => item.trader_id)));
+    } catch (error) {
+      console.error('刷新订阅状态失败:', error);
+    }
+  };
+
+  // 当用户关注/取消关注后刷新状态
+  const handleFavoriteChange = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const followed = await getFollowedTraders(user.id);
+      setFollowedTraders(new Set(followed.map(item => item.trader_id)));
+    } catch (error) {
+      console.error('刷新关注状态失败:', error);
+    }
+  };
 
   const handleFilterPress = (filter: string) => {
     if (filter === '综合') {
@@ -675,9 +713,14 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
           {traders.map((trader) => (
             <TraderCard 
               key={trader.id}
+              traderId={trader.id}
               roiLabel={getRoiLabel()} 
               name={trader.name}
               avatar={trader.avatar_url}
+              initialIsSubscribed={subscribedTraders.has(trader.id)}
+              initialIsFavorite={followedTraders.has(trader.id)}
+              onSubscriptionChange={handleSubscriptionChange}
+              onFavoriteChange={handleFavoriteChange}
               // 以下为模拟数据，后续可以从数据库获取
               followers={Math.floor(Math.random() * 100) + 10}
               maxFollowers={100}
