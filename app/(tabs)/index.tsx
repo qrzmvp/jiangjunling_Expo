@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import Svg, { Path, Defs, LinearGradient, Stop, Rect, Circle, G, Image as SvgImage, Text as SvgText, ClipPath } from 'react-native-svg';
 import { AddToHomeScreen } from '../../components/AddToHomeScreen';
 import { TraderCard } from '../../components/TraderCard';
@@ -567,6 +568,7 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
 interface CopyTabContentProps {
   activeFilters: string[];
   setActiveFilters: (filters: string[]) => void;
+  refreshTrigger?: number; // 用于外部触发刷新
 }
 
 const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps) => {
@@ -704,7 +706,7 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
   );
 };
 
-const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps) => {
+const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger }: CopyTabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
   // 暂时隐藏已订阅和已关注筛选器
@@ -719,10 +721,27 @@ const SignalTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentPro
   const [showLoadedMessage, setShowLoadedMessage] = useState(false);
   const PAGE_SIZE = 20;
 
-  // 加载信号数据
+  // 加载信号数据 - 当筛选条件改变时
   useEffect(() => {
     loadSignals(true); // 重新加载时重置
   }, [activeFilters]);
+
+  // 当外部触发刷新时（切换到此Tab）
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      loadSignals(true);
+    }
+  }, [refreshTrigger]);
+
+  // 当页面获得焦点时刷新数据 - 确保每次切换到主Tab时都刷新
+  useFocusEffect(
+    React.useCallback(() => {
+      // 只在用户已登录时刷新
+      if (user?.id) {
+        loadSignals(true);
+      }
+    }, [user?.id])
+  );
 
   const loadSignals = async (reset: boolean = false, isRefreshing: boolean = false) => {
     try {
@@ -1075,6 +1094,7 @@ export default function HomePage() {
   const [heights, setHeights] = React.useState({ overview: 0, copy: 0, signal: 0 });
   const [activeFilters, setActiveFilters] = React.useState<string[]>(['综合']);
   const isScrollingRef = React.useRef(false); // 用于标记是否正在滚动
+  const [refreshSignalTab, setRefreshSignalTab] = React.useState(0); // 用于触发信号Tab刷新
 
   const handleMorePress = () => {
     handleTabPress('copy');
@@ -1124,6 +1144,11 @@ export default function HomePage() {
   const handleTabPress = (tab: 'overview' | 'copy' | 'signal') => {
     setActiveTab(tab);
     isScrollingRef.current = true; // 标记正在滚动
+    
+    // 当切换到信号Tab时，触发刷新
+    if (tab === 'signal') {
+      setRefreshSignalTab(prev => prev + 1);
+    }
     
     let x = 0;
     if (tab === 'signal') x = containerWidth;
@@ -1198,7 +1223,11 @@ export default function HomePage() {
             const height = e.nativeEvent.layout.height;
             setHeights(h => ({ ...h, signal: height }));
           }}>
-            <SignalTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
+            <SignalTabContent 
+              activeFilters={activeFilters} 
+              setActiveFilters={setActiveFilters} 
+              refreshTrigger={refreshSignalTab}
+            />
           </View>
           <View style={{ width: containerWidth, height: '100%' }} onLayout={(e) => {
             const height = e.nativeEvent.layout.height;
