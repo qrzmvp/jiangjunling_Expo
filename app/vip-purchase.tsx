@@ -91,9 +91,10 @@ export default function VipPurchasePage() {
           <TouchableOpacity onPress={() => router.push('/purchase-history')} style={styles.headerIcon}>
             <Ionicons name="receipt-outline" size={22} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/profile/redemption-history')} style={styles.headerIcon}>
+          {/* 兑换记录入口 - 暂时隐藏 */}
+          {/* <TouchableOpacity onPress={() => router.push('/profile/redemption-history')} style={styles.headerIcon}>
             <Ionicons name="gift-outline" size={22} color="#fff" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
 
@@ -190,7 +191,8 @@ export default function VipPurchasePage() {
           ))}
         </View>
 
-        <View style={styles.redemptionContainer}>
+        {/* 兑换码区域 - 暂时隐藏 */}
+        {/* <View style={styles.redemptionContainer}>
           <Text style={styles.sectionTitle}>兑换码</Text>
           <View style={styles.inputRow}>
             <TextInput
@@ -214,7 +216,7 @@ export default function VipPurchasePage() {
               )}
             </TouchableOpacity>
           </View>
-        </View>
+        </View> */}
 
         <View style={styles.description}>
           <Text style={styles.descriptionText}>

@@ -261,7 +261,8 @@ const MyPage: React.FC = () => {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
-          <View style={styles.menuDivider} />
+          {/* 兑换记录 - 暂时隐藏 */}
+          {/* <View style={styles.menuDivider} />
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => router.push('/profile/redemption-history')}
@@ -271,7 +272,7 @@ const MyPage: React.FC = () => {
               <Text style={styles.menuText}>兑换记录</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Menu List 2 */}
