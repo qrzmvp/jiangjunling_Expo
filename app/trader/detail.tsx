@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Defs, LinearGradient, Stop, Circle, G, Image as SvgImage, Text as SvgText, ClipPath } from 'react-native-svg';
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
+import { useAuth } from '../../contexts/AuthContext';
+import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../../lib/userTraderService';
+import { getTraders } from '../../lib/traderService';
+import type { Trader } from '../../types';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -23,13 +27,135 @@ const COLORS = {
 const TraderDetailScreen = () => {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
+  const { user } = useAuth();
+  const params = useLocalSearchParams();
+  const traderId = params.traderId as string;
+  const returnTab = params.returnTab as string | undefined;
+  
   const { width: windowWidth } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [timeFilter, setTimeFilter] = useState('近一周');
-  
-  const traderAvatar = "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg";
+  const [trader, setTrader] = useState<Trader | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // 加载交易员数据
+  useEffect(() => {
+    loadTraderData();
+  }, [traderId]);
+
+  const loadTraderData = async () => {
+    if (!traderId) return;
+    
+    try {
+      setLoading(true);
+      const traders = await getTraders();
+      const foundTrader = traders.find(t => t.id === traderId);
+      if (foundTrader) {
+        setTrader(foundTrader);
+        
+        // 如果用户已登录，检查订阅和关注状态
+        if (user?.id) {
+          const [subscribed, followed] = await Promise.all([
+            checkSubscriptionStatus(user.id, traderId),
+            checkFollowStatus(user.id, traderId)
+          ]);
+          setIsSubscribed(subscribed);
+          setIsFavorite(followed);
+        }
+      }
+    } catch (error) {
+      console.error('加载交易员数据失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 检查订阅状态
+  const checkSubscriptionStatus = async (userId: string, traderId: string): Promise<boolean> => {
+    try {
+      const { getSubscribedTraders } = await import('../../lib/userTraderService');
+      const subscribedTraders = await getSubscribedTraders(userId);
+      return subscribedTraders.some((item: any) => item.trader_id === traderId);
+    } catch (error) {
+      console.error('检查订阅状态失败:', error);
+      return false;
+    }
+  };
+
+  // 检查关注状态
+  const checkFollowStatus = async (userId: string, traderId: string): Promise<boolean> => {
+    try {
+      const { getFollowedTraders } = await import('../../lib/userTraderService');
+      const followedTraders = await getFollowedTraders(userId);
+      return followedTraders.some((item: any) => item.trader_id === traderId);
+    } catch (error) {
+      console.error('检查关注状态失败:', error);
+      return false;
+    }
+  };
+
+  // 处理订阅/取消订阅
+  const handleSubscriptionToggle = async () => {
+    if (!user?.id || !trader) {
+      console.log('请先登录');
+      return;
+    }
+
+    if (actionLoading) return;
+
+    try {
+      setActionLoading(true);
+      
+      if (isSubscribed) {
+        const result = await unsubscribeTrader(user.id, trader.id);
+        if (result.success) {
+          setIsSubscribed(false);
+        }
+      } else {
+        const result = await subscribeTrader(user.id, trader.id);
+        if (result.success) {
+          setIsSubscribed(true);
+        }
+      }
+    } catch (error) {
+      console.error('订阅操作失败:', error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 处理关注/取消关注
+  const handleFavoriteToggle = async () => {
+    if (!user?.id || !trader) {
+      console.log('请先登录');
+      return;
+    }
+
+    if (actionLoading) return;
+
+    try {
+      setActionLoading(true);
+      
+      if (isFavorite) {
+        const result = await unfollowTrader(user.id, trader.id);
+        if (result.success) {
+          setIsFavorite(false);
+        }
+      } else {
+        const result = await followTrader(user.id, trader.id);
+        if (result.success) {
+          setIsFavorite(true);
+        }
+      }
+    } catch (error) {
+      console.error('关注操作失败:', error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // Mock Chart Data
   const rawChartData = [
@@ -138,7 +264,18 @@ const TraderDetailScreen = () => {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.iconButton} 
-          onPress={() => router.back()}
+          onPress={() => {
+            if (returnTab) {
+              // 如果有returnTab参数，返回首页并切换到对应标签
+              router.push({
+                pathname: '/(tabs)',
+                params: { returnTab }
+              });
+            } else {
+              // 否则使用默认返回
+              router.back();
+            }
+          }}
         >
           <MaterialIcons name="arrow-back-ios" size={20} color={COLORS.textSub} />
         </TouchableOpacity>
@@ -148,53 +285,61 @@ const TraderDetailScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        
-        {/* Trader Info Section */}
-        <View style={styles.card}>
-          <View style={styles.traderHeader}>
-            <View style={styles.avatarContainer}>
-              <Image 
-                source={{ uri: traderAvatar }}
-                style={styles.avatar}
-              />
-              <View style={styles.verifiedBadge}>
-                <MaterialIcons name="verified" size={14} color={COLORS.yellow} />
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : !trader ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: COLORS.textSub }}>未找到交易员信息</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+          
+          {/* Trader Info Section */}
+          <View style={styles.card}>
+            <View style={styles.traderHeader}>
+              <View style={styles.avatarContainer}>
+                <Image 
+                  source={{ uri: trader.avatar_url }}
+                  style={styles.avatar}
+                />
+                <View style={styles.verifiedBadge}>
+                  <MaterialIcons name="verified" size={14} color={COLORS.yellow} />
+                </View>
               </View>
-            </View>
-            
-            <View style={styles.traderInfo}>
-              <View style={styles.nameRow}>
-                <View style={styles.nameContainer}>
-                  <Text style={styles.traderName} numberOfLines={1}>Aaron</Text>
-                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-                    <View style={styles.tagContainer}>
-                      <Text style={styles.tagText}>合约</Text>
-                    </View>
-                    <View style={[styles.tagContainer, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-                      <Text style={[styles.tagText, { color: '#3b82f6' }]}>模拟</Text>
-                    </View>
+              
+              <View style={styles.traderInfo}>
+                <View style={styles.nameRow}>
+                  <View style={styles.nameContainer}>
+                    <Text style={styles.traderName} numberOfLines={1}>{trader.name}</Text>
+                  </View>
+                  <View style={styles.actionButtons}>
+                    <TouchableOpacity 
+                      style={styles.starButton} 
+                      onPress={handleFavoriteToggle}
+                      disabled={actionLoading}
+                    >
+                      <MaterialIcons 
+                        name={isFavorite ? "star" : "star-border"} 
+                        size={24} 
+                        color={isFavorite ? COLORS.yellow : COLORS.textSub} 
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
+                      onPress={handleSubscriptionToggle}
+                      disabled={actionLoading}
+                    >
+                      <Text style={styles.copyButtonText}>
+                        {actionLoading ? '...' : (isSubscribed ? '已订阅' : '订阅')}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity style={styles.starButton} onPress={() => setIsFavorite(!isFavorite)}>
-                    <MaterialIcons 
-                      name={isFavorite ? "star" : "star-border"} 
-                      size={24} 
-                      color={isFavorite ? COLORS.yellow : COLORS.textSub} 
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
-                    onPress={() => setIsSubscribed(!isSubscribed)}
-                  >
-                    <Text style={styles.copyButtonText}>{isSubscribed ? '已copy' : 'Copy'}</Text>
-                  </TouchableOpacity>
-                </View>
+                <Text style={styles.description} numberOfLines={1}>{trader.bio || '暂无描述'}</Text>
               </View>
-              <Text style={styles.description} numberOfLines={1}>年底大豐收 - 稳健投资策略</Text>
             </View>
-          </View>
 
           <View style={styles.statsContainer}>
             <View style={styles.roiSection}>
@@ -360,7 +505,7 @@ const TraderDetailScreen = () => {
 
                   {/* Avatar at the end */}
                   {(() => {
-                    if (chartData.length === 0) return null;
+                    if (chartData.length === 0 || !trader) return null;
                     const lastPoint = chartData[chartData.length - 1];
                     const i = chartData.length - 1;
                     const x = i * xStep;
@@ -389,7 +534,7 @@ const TraderDetailScreen = () => {
                           y={y - 12}
                           width={24}
                           height={24}
-                          href={{ uri: traderAvatar }}
+                          href={{ uri: trader.avatar_url }}
                           clipPath="url(#clip-trader-detail)"
                           preserveAspectRatio="xMidYMid slice"
                         />
@@ -588,6 +733,7 @@ const TraderDetailScreen = () => {
         </View>
 
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 };

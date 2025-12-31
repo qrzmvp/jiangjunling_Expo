@@ -571,9 +571,10 @@ interface CopyTabContentProps {
   activeFilters: string[];
   setActiveFilters: (filters: string[]) => void;
   refreshTrigger?: number; // 用于外部触发刷新
+  currentTab?: 'overview' | 'copy' | 'signal'; // 当前激活的标签
 }
 
-const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps) => {
+const CopyTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy' }: CopyTabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
   const filters = ['综合', '近一周收益', '近一月收益', '已订阅', '已关注'];
@@ -736,7 +737,13 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
               ]}
               chartPath="M0,35 Q10,32 20,30 T40,20 T60,25 T80,10 L100,20"
               statusColor={COLORS.yellow}
-              onPress={() => router.push('/trader/detail')}
+              onPress={() => router.push({
+                pathname: '/trader/detail',
+                params: { 
+                  traderId: trader.id,
+                  returnTab: currentTab
+                }
+              })}
             />
           ))}
         </View>
@@ -746,7 +753,7 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
   );
 };
 
-const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger }: CopyTabContentProps) => {
+const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, currentTab = 'signal' }: CopyTabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
   // 暂时隐藏已订阅和已关注筛选器
@@ -760,6 +767,9 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger }: C
   const [loadedCount, setLoadedCount] = useState(0);
   const [showLoadedMessage, setShowLoadedMessage] = useState(false);
   const PAGE_SIZE = 20;
+  
+  // 默认头像 - 简单的灰色圆形头像 (1x1 像素的灰色图片 base64)
+  const DEFAULT_AVATAR = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8/x8AAn8B9h12xqwAAAAASUVORK5CYII=';
 
   // 加载信号数据 - 当筛选条件改变时
   useEffect(() => {
@@ -1068,7 +1078,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger }: C
                 key={signal.id}
                 traderId={signal.trader_id}
                 name={trader?.name || '未知交易员'}
-                avatar={trader?.avatar_url || 'https://via.placeholder.com/100'}
+                avatar={trader?.avatar_url || DEFAULT_AVATAR}
                 description={trader?.description || ''}
                 currency={signal.currency}
                 entry={signal.entry_price}
@@ -1077,7 +1087,13 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger }: C
                 takeProfit={signal.take_profit}
                 time={SignalService.formatSignalTime(signal.signal_time)}
                 signalCount={trader?.signal_count || 0}
-                onPress={() => router.push('/trader/detail')}
+                onPress={() => router.push({
+                  pathname: '/trader/detail',
+                  params: { 
+                    traderId: signal.trader_id,
+                    returnTab: currentTab
+                  }
+                })}
                 onSubscribe={() => {}}
                 onStatsChange={() => {
                   // 当关注/订阅状态改变时，重新加载信号列表以更新筛选结果
@@ -1149,14 +1165,20 @@ export default function HomePage() {
     }
   }, [activeTab]);
 
+  // 处理从详情页返回时恢复标签状态
   React.useEffect(() => {
-    if (params.tab === 'copy') {
+    if (params.returnTab) {
+      const returnTab = params.returnTab as 'overview' | 'copy' | 'signal';
+      if (returnTab !== activeTab) {
+        handleTabPress(returnTab);
+      }
+    } else if (params.tab === 'copy') {
       handleTabPress('copy');
       if (params.filter) {
         setActiveFilters([params.filter as string]);
       }
     }
-  }, [params.tab, params.filter]);
+  }, [params.returnTab, params.tab, params.filter]);
 
   const updateTabFromScroll = (offsetX: number) => {
     // 如果是手动触发的滚动动画，不更新状态
@@ -1267,13 +1289,18 @@ export default function HomePage() {
               activeFilters={activeFilters} 
               setActiveFilters={setActiveFilters} 
               refreshTrigger={refreshSignalTab}
+              currentTab={activeTab}
             />
           </View>
           <View style={{ width: containerWidth, height: '100%' }} onLayout={(e) => {
             const height = e.nativeEvent.layout.height;
             setHeights(h => ({ ...h, copy: height }));
           }}>
-            <CopyTabContent activeFilters={activeFilters} setActiveFilters={setActiveFilters} />
+            <CopyTabContent 
+              activeFilters={activeFilters} 
+              setActiveFilters={setActiveFilters} 
+              currentTab={activeTab}
+            />
           </View>
         </ScrollView>
       </View>
