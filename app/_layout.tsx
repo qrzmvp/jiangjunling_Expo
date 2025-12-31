@@ -16,6 +16,15 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: '#14151A' },
+          // 配置iOS原生风格的滑动转场动画
+          animation: Platform.OS === 'ios' ? 'slide_from_right' : 'default', // iOS使用右滑，Android使用默认
+          // iOS和Android的手势配置
+          gestureEnabled: true,
+          gestureDirection: 'horizontal',
+          // Web平台的转场配置
+          ...(Platform.OS === 'web' && {
+            animationTypeForReplace: 'push',
+          }),
         }}
       >
         <Stack.Screen name="splash" />

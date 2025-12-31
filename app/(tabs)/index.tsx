@@ -608,7 +608,7 @@ const CopyTabContent = ({ activeFilters, setActiveFilters }: CopyTabContentProps
   return (
   <View style={{ flex: 1 }}>
     {/* Fixed Filter Bar */}
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: COLORS.background, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: COLORS.background }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flex: 1 }}>
         {filters.map((filter) => {
           const isActive = activeFilters.includes(filter);
@@ -901,8 +901,8 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger }: C
   
   return (
   <View style={{ flex: 1 }}>
-    {/* Fixed Filter Bar */}
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: COLORS.background, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+    {/* Fixed Filter Bar - 移除了 borderBottomWidth 和 borderBottomColor */}
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: COLORS.background }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flex: 1 }}>
         {filters.map((filter) => {
           const isActive = activeFilters.includes(filter);
@@ -1258,8 +1258,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
     paddingTop: 16,
     paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerTop: {
     flexDirection: 'row',
