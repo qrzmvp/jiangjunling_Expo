@@ -136,7 +136,7 @@ export interface Trader {
   id: string;
   name: string;
   avatar_url: string;
-  bio?: string;
+  description?: string;  // 修改：bio -> description
   created_at: string;
   updated_at: string;
 }
