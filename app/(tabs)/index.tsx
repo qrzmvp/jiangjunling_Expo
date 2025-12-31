@@ -11,7 +11,7 @@ import { SignalCard } from '../../components/SignalCard';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
 import { getFollowedTraders, getSubscribedTraders } from '../../lib/userTraderService';
-import { getTraders } from '../../lib/traderService';
+import { getTraders, getTradersWithUserStatus } from '../../lib/traderService';
 import type { Trader } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -567,50 +567,107 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
   );
 };
 
-interface CopyTabContentProps {
+interface TabContentProps {
   activeFilters: string[];
   setActiveFilters: (filters: string[]) => void;
   refreshTrigger?: number; // 用于外部触发刷新
   currentTab?: 'overview' | 'copy' | 'signal'; // 当前激活的标签
 }
 
-const CopyTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy' }: CopyTabContentProps) => {
+const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy' }: TabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
   const filters = ['综合', '近一周收益', '近一月收益', '已订阅', '已关注'];
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [subscribedTraders, setSubscribedTraders] = useState<Set<string>>(new Set());
   const [followedTraders, setFollowedTraders] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 20;
 
-  // 加载交易员数据和用户的订阅/关注状态
-  const loadTraders = async () => {
+  // 【优化】加载交易员数据和用户的订阅/关注状态
+  // 使用分页加载，每次加载20条
+  const loadTraders = async (reset: boolean = false, isRefreshing: boolean = false) => {
     try {
-      setLoading(true);
-      const data = await getTraders();
-      setTraders(data);
+      if (reset) {
+        // 下拉刷新时不设置 loading，只设置 refreshing
+        if (!isRefreshing) {
+          setLoading(true);
+        }
+        setPage(1);
+        setHasMore(true);
+      } else {
+        setLoadingMore(true);
+      }
 
-      // 如果用户已登录，获取订阅和关注状态
-      if (user?.id) {
-        const [subscribed, followed] = await Promise.all([
-          getSubscribedTraders(user.id),
-          getFollowedTraders(user.id)
-        ]);
-        
-        setSubscribedTraders(new Set(subscribed.map(item => item.trader_id)));
-        setFollowedTraders(new Set(followed.map(item => item.trader_id)));
+      const currentPage = reset ? 1 : page;
+      
+      // 使用优化后的函数：一次查询获取分页数据
+      const tradersWithStatus = await getTradersWithUserStatus(
+        user?.id,
+        PAGE_SIZE * currentPage
+      );
+      
+      // 判断是否还有更多数据
+      const hasMoreData = tradersWithStatus.length >= PAGE_SIZE * currentPage;
+      setHasMore(hasMoreData);
+
+      if (reset) {
+        setTraders(tradersWithStatus);
+      } else {
+        // 追加数据并去重
+        const existingIds = new Set(traders.map(t => t.id));
+        const newTraders = tradersWithStatus.filter(t => !existingIds.has(t.id));
+        setTraders([...traders, ...newTraders]);
+      }
+      
+      // 提取订阅和关注状态
+      const subscribed = new Set<string>();
+      const followed = new Set<string>();
+      
+      tradersWithStatus.forEach(trader => {
+        if (trader.isSubscribed) subscribed.add(trader.id);
+        if (trader.isFollowed) followed.add(trader.id);
+      });
+      
+      setSubscribedTraders(subscribed);
+      setFollowedTraders(followed);
+
+      if (!reset) {
+        setPage(currentPage + 1);
       }
     } catch (error) {
       console.error('加载交易员数据失败:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+      setRefreshing(false);
     }
   };
 
-  // 组件挂载时加载数据
+  // 组件挂载时加载数据 - 只在当前标签是 copy 时才加载
   useEffect(() => {
-    loadTraders();
-  }, []);
+    if (currentTab === 'copy') {
+      console.log('🟢 [TradersTabContent] 组件挂载或标签切换，开始加载交易员列表');
+      loadTraders(true);
+    }
+  }, [currentTab]);
+
+  // 下拉刷新
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadTraders(true, true);
+  };
+
+  // 滚动到底部加载更多
+  const handleLoadMore = () => {
+    if (!loading && !loadingMore && hasMore) {
+      loadTraders(false);
+    }
+  };
 
   // 当用户订阅/取消订阅后刷新状态
   const handleSubscriptionChange = async () => {
@@ -665,6 +722,12 @@ const CopyTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy' }
     if (activeFilters.includes('近一月收益')) return 'Lead trader 30D PnL';
     return 'Lead trader 90D PnL';
   };
+
+  // 检查是否滚动到底部
+  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any) => {
+    const paddingToBottom = 20;
+    return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+  };
   
   return (
   <View style={{ flex: 1 }}>
@@ -700,7 +763,25 @@ const CopyTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy' }
     </View>
 
     {/* Scrollable Content */}
-    <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}>
+    <ScrollView 
+      style={{ flex: 1 }} 
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 120 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[COLORS.primary]}
+          tintColor={COLORS.primary}
+        />
+      }
+      onScroll={({ nativeEvent }) => {
+        if (isCloseToBottom(nativeEvent)) {
+          handleLoadMore();
+        }
+      }}
+      scrollEventThrottle={400}
+    >
       {loading ? (
         <View style={{ padding: 40, alignItems: 'center' }}>
           <ActivityIndicator size="large" color={COLORS.primary} />
@@ -710,50 +791,71 @@ const CopyTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy' }
           <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>暂无交易员数据</Text>
         </View>
       ) : (
-        <View style={styles.traderList}>
-          {traders.map((trader) => (
-            <TraderCard 
-              key={trader.id}
-              traderId={trader.id}
-              roiLabel={getRoiLabel()} 
-              name={trader.name}
-              avatar={trader.avatar_url}
-              initialIsSubscribed={subscribedTraders.has(trader.id)}
-              initialIsFavorite={followedTraders.has(trader.id)}
-              onSubscriptionChange={handleSubscriptionChange}
-              onFavoriteChange={handleFavoriteChange}
-              // 以下为模拟数据，后续可以从数据库获取
-              followers={Math.floor(Math.random() * 100) + 10}
-              maxFollowers={100}
-              roi={`+${(Math.random() * 50 + 5).toFixed(2)}%`}
-              pnl={`+$${(Math.random() * 10000 + 1000).toFixed(2)}`}
-              winRate={`${(Math.random() * 30 + 50).toFixed(2)}%`}
-              aum={`$${(Math.random() * 100000 + 5000).toFixed(2)}`}
-              days={Math.floor(Math.random() * 300) + 50}
-              coins={[
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuATVNwivtQOZ2npc_w1PrcrX_4y17f4sOiNkn0PcY8zqp0YLkQ3QuxIkuDHNbTjM1ZyrnwY3GKd7UVSYfoETg68d3DNq3yliS1uwFDzri7UqYgzB5fN2Ju5KYY8plwkhuhEWVym03IBsLlyKhgTloiJKTujcHXIe_z-lpDvnkbxcYGocB5nfG-PQGKRLQ1b7pknYTUavPCwz1iU0-cRBaTMqb597A3OgbOCuT2YYwBSVl3V5yGQaMdwr6lBh9K9vzREuJyuOGn7Tg",
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuBqVLgtNIEpUr5EnOPS_CgkITlq0vVjaigO9jnxDPyQnAokTkWkEOTGXrlpCYF9sNvRwze7xjCTLCxaNfb3DiTbcvBgZhA5rJt4lyW5zxbfuPyai7ANHCgpXluqDnWr9ATykGdJ9X5sTLPyJND5T5bvWN7ciyMIvkT-OAUvZG8khWTSrhiGjPrSs-AL0ZpdNIzo2pRweRiGqFRbsmXXfg4024-qe1haFHvijyQhWvK--a2M_RHLjsnDeVusKni_aeEZwEa9cuvmxA",
-                "https://lh3.googleusercontent.com/aida-public/AB6AXuAEcAV67993OCt0DPtM2p8O2VOufk16pTKp8rXdxYzZU8G7G59l0CDW4oL01HveVAtNT8Kh31Z9GKhffkuQDVAasrQHuE6ebVN23WctH5f7nUebYYIynGAqCZBHm1obLP8vwJwmcWrJZWa6EMfh2j2DJYl9_nwAh14I6lW2R3ZM_WibvUnRtI2a_v96J6JPW2yEh_yFxhIxz-NjuG02m8tjKWN6rti6CP0T5pyv_yhFsEtAHivwBNN7IhN3qg66P95nZngpHi5fcQ"
-              ]}
-              chartPath="M0,35 Q10,32 20,30 T40,20 T60,25 T80,10 L100,20"
-              statusColor={COLORS.yellow}
-              onPress={() => router.push({
-                pathname: '/trader/detail',
-                params: { 
-                  traderId: trader.id,
-                  returnTab: currentTab
-                }
-              })}
-            />
-          ))}
-        </View>
+        <>
+          <View style={styles.traderList}>
+            {traders.map((trader) => (
+              <TraderCard 
+                key={trader.id}
+                traderId={trader.id}
+                roiLabel={getRoiLabel()} 
+                name={trader.name}
+                avatar={trader.avatar_url}
+                initialIsSubscribed={subscribedTraders.has(trader.id)}
+                initialIsFavorite={followedTraders.has(trader.id)}
+                onSubscriptionChange={handleSubscriptionChange}
+                onFavoriteChange={handleFavoriteChange}
+                // 以下为模拟数据，后续可以从数据库获取
+                followers={Math.floor(Math.random() * 100) + 10}
+                maxFollowers={100}
+                roi={`+${(Math.random() * 50 + 5).toFixed(2)}%`}
+                pnl={`+$${(Math.random() * 10000 + 1000).toFixed(2)}`}
+                winRate={`${(Math.random() * 30 + 50).toFixed(2)}%`}
+                aum={`$${(Math.random() * 100000 + 5000).toFixed(2)}`}
+                days={Math.floor(Math.random() * 300) + 50}
+                coins={[
+                  "https://lh3.googleusercontent.com/aida-public/AB6AXuATVNwivtQOZ2npc_w1PrcrX_4y17f4sOiNkn0PcY8zqp0YLkQ3QuxIkuDHNbTjM1ZyrnwY3GKd7UVSYfoETg68d3DNq3yliS1uwFDzri7UqYgzB5fN2Ju5KYY8plwkhuhEWVym03IBsLlyKhgTloiJKTujcHXIe_z-lpDvnkbxcYGocB5nfG-PQGKRLQ1b7pknYTUavPCwz1iU0-cRBaTMqb597A3OgbOCuT2YYwBSVl3V5yGQaMdwr6lBh9K9vzREuJyuOGn7Tg",
+                  "https://lh3.googleusercontent.com/aida-public/AB6AXuBqVLgtNIEpUr5EnOPS_CgkITlq0vVjaigO9jnxDPyQnAokTkWkEOTGXrlpCYF9sNvRwze7xjCTLCxaNfb3DiTbcvBgZhA5rJt4lyW5zxbfuPyai7ANHCgpXluqDnWr9ATykGdJ9X5sTLPyJND5T5bvWN7ciyMIvkT-OAUvZG8khWTSrhiGjPrSs-AL0ZpdNIzo2pRweRiGqFRbsmXXfg4024-qe1haFHvijyQhWvK--a2M_RHLjsnDeVusKni_aeEZwEa9cuvmxA",
+                  "https://lh3.googleusercontent.com/aida-public/AB6AXuAEcAV67993OCt0DPtM2p8O2VOufk16pTKp8rXdxYzZU8G7G59l0CDW4oL01HveVAtNT8Kh31Z9GKhffkuQDVAasrQHuE6ebVN23WctH5f7nUebYYIynGAqCZBHm1obLP8vwJwmcWrJZWa6EMfh2j2DJYl9_nwAh14I6lW2R3ZM_WibvUnRtI2a_v96J6JPW2yEh_yFxhIxz-NjuG02m8tjKWN6rti6CP0T5pyv_yhFsEtAHivwBNN7IhN3qg66P95nZngpHi5fcQ"
+                ]}
+                chartPath="M0,35 Q10,32 20,30 T40,20 T60,25 T80,10 L100,20"
+                statusColor={COLORS.yellow}
+                onPress={() => router.push({
+                  pathname: '/trader/detail',
+                  params: { 
+                    traderId: trader.id,
+                    returnTab: currentTab
+                  }
+                })}
+              />
+            ))}
+          </View>
+          
+          {/* 加载更多指示器 */}
+          {loadingMore && (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={COLORS.primary} />
+              <Text style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 8 }}>
+                加载中...
+              </Text>
+            </View>
+          )}
+          
+          {/* 没有更多数据提示 */}
+          {!hasMore && traders.length > 0 && (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>
+                没有更多数据了
+              </Text>
+            </View>
+          )}
+        </>
       )}
     </ScrollView>
   </View>
   );
 };
 
-const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, currentTab = 'signal' }: CopyTabContentProps) => {
+const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, currentTab = 'signal' }: TabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
   // 暂时隐藏已订阅和已关注筛选器
@@ -771,26 +873,31 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
   // 默认头像 - 简单的灰色圆形头像 (1x1 像素的灰色图片 base64)
   const DEFAULT_AVATAR = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8/x8AAn8B9h12xqwAAAAASUVORK5CYII=';
 
-  // 加载信号数据 - 当筛选条件改变时
+  // 加载信号数据 - 当筛选条件改变时，且当前在 signal 标签
   useEffect(() => {
-    loadSignals(true); // 重新加载时重置
-  }, [activeFilters]);
+    if (currentTab === 'signal') {
+      console.log('🔵 [SignalTab] 筛选条件变化，重新加载信号');
+      loadSignals(true); // 重新加载时重置
+    }
+  }, [activeFilters, currentTab]);
 
   // 当外部触发刷新时（切换到此Tab）
   useEffect(() => {
-    if (refreshTrigger && refreshTrigger > 0) {
+    if (refreshTrigger && refreshTrigger > 0 && currentTab === 'signal') {
+      console.log('🔵 [SignalTab] 外部触发刷新');
       loadSignals(true);
     }
-  }, [refreshTrigger]);
+  }, [refreshTrigger, currentTab]);
 
   // 当页面获得焦点时刷新数据 - 确保每次切换到主Tab时都刷新
   useFocusEffect(
     React.useCallback(() => {
-      // 只在用户已登录时刷新
-      if (user?.id) {
+      // 只在用户已登录且当前在 signal 标签时刷新
+      if (user?.id && currentTab === 'signal') {
+        console.log('🔵 [SignalTab] 页面获得焦点，刷新数据');
         loadSignals(true);
       }
-    }, [user?.id])
+    }, [user?.id, currentTab])
   );
 
   const loadSignals = async (reset: boolean = false, isRefreshing: boolean = false) => {
@@ -1296,7 +1403,7 @@ export default function HomePage() {
             const height = e.nativeEvent.layout.height;
             setHeights(h => ({ ...h, copy: height }));
           }}>
-            <CopyTabContent 
+            <TradersTabContent 
               activeFilters={activeFilters} 
               setActiveFilters={setActiveFilters} 
               currentTab={activeTab}

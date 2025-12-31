@@ -7,7 +7,7 @@ import Svg, { Path, Defs, LinearGradient, Stop, Circle, G, Image as SvgImage, Te
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 import { useAuth } from '../../contexts/AuthContext';
 import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../../lib/userTraderService';
-import { getTraders } from '../../lib/traderService';
+import { getTraders, getTraderByIdWithUserStatus } from '../../lib/traderService';
 import type { Trader } from '../../types';
 
 const COLORS = {
@@ -41,7 +41,7 @@ const TraderDetailScreen = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // 加载交易员数据
+  // 【优化】加载交易员数据 - 使用单次优化查询
   useEffect(() => {
     loadTraderData();
   }, [traderId]);
@@ -51,49 +51,19 @@ const TraderDetailScreen = () => {
     
     try {
       setLoading(true);
-      const traders = await getTraders();
-      const foundTrader = traders.find(t => t.id === traderId);
-      if (foundTrader) {
-        setTrader(foundTrader);
-        
-        // 如果用户已登录，检查订阅和关注状态
-        if (user?.id) {
-          const [subscribed, followed] = await Promise.all([
-            checkSubscriptionStatus(user.id, traderId),
-            checkFollowStatus(user.id, traderId)
-          ]);
-          setIsSubscribed(subscribed);
-          setIsFavorite(followed);
-        }
+      
+      // 使用优化后的函数：一次查询获取交易员信息及用户状态
+      const traderWithStatus = await getTraderByIdWithUserStatus(traderId, user?.id);
+      
+      if (traderWithStatus) {
+        setTrader(traderWithStatus);
+        setIsSubscribed(traderWithStatus.isSubscribed || false);
+        setIsFavorite(traderWithStatus.isFollowed || false);
       }
     } catch (error) {
       console.error('加载交易员数据失败:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // 检查订阅状态
-  const checkSubscriptionStatus = async (userId: string, traderId: string): Promise<boolean> => {
-    try {
-      const { getSubscribedTraders } = await import('../../lib/userTraderService');
-      const subscribedTraders = await getSubscribedTraders(userId);
-      return subscribedTraders.some((item: any) => item.trader_id === traderId);
-    } catch (error) {
-      console.error('检查订阅状态失败:', error);
-      return false;
-    }
-  };
-
-  // 检查关注状态
-  const checkFollowStatus = async (userId: string, traderId: string): Promise<boolean> => {
-    try {
-      const { getFollowedTraders } = await import('../../lib/userTraderService');
-      const followedTraders = await getFollowedTraders(userId);
-      return followedTraders.some((item: any) => item.trader_id === traderId);
-    } catch (error) {
-      console.error('检查关注状态失败:', error);
-      return false;
     }
   };
 
