@@ -243,19 +243,21 @@ export const SignalCard = ({
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.userInfo}>
-            <Image 
-              source={{ uri: avatar }} 
-              style={styles.avatar}
-              onError={(e) => {
-                console.log('头像加载失败:', avatar);
-              }}
-            />
-            <View style={styles.nameContainer}>
-              <View style={styles.nameRow}>
-                <Text style={styles.name}>{name}</Text>
+            <View style={styles.avatarContainer}>
+              <Image 
+                source={{ uri: avatar }} 
+                style={styles.avatar}
+                onError={(e) => {
+                  console.log('头像加载失败:', avatar);
+                }}
+              />
+              <View style={styles.statusIndicatorContainer}>
                 <View style={styles.statusDot} />
               </View>
-              <Text style={styles.description}>{description}</Text>
+            </View>
+            <View style={styles.nameContainer}>
+              <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+              <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">{description}</Text>
             </View>
           </View>
           {/* Copy按钮 */}
@@ -404,6 +406,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+  },
+  avatarContainer: {
+    position: 'relative',
+    width: 40,
+    height: 40,
   },
   avatar: {
     width: 40,
@@ -412,25 +420,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
+  statusIndicatorContainer: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: 8,
+    padding: 2,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.primary,
+  },
   nameContainer: {
     justifyContent: 'center',
+    flex: 1,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     marginBottom: 2,
+    maxWidth: '100%',
   },
   name: {
     color: COLORS.textMain,
     fontSize: 14,
     fontWeight: 'bold',
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.primary,
+    flexShrink: 1,
   },
   description: {
     color: COLORS.textMuted,
