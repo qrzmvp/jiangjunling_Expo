@@ -577,7 +577,7 @@ interface TabContentProps {
 const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy' }: TabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
-  const filters = ['综合', '近一周收益', '近一月收益', '已订阅', '已关注'];
+  const filters = ['全部', '已订阅', '已关注'];
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -704,14 +704,14 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   };
 
   const handleFilterPress = (filter: string) => {
-    if (filter === '综合') {
-      setActiveFilters(['综合']);
+    if (filter === '全部') {
+      setActiveFilters(['全部']);
       return;
     }
 
     let newFilters = [...activeFilters];
-    if (newFilters.includes('综合')) {
-      newFilters = newFilters.filter(f => f !== '综合');
+    if (newFilters.includes('全部')) {
+      newFilters = newFilters.filter(f => f !== '全部');
     }
 
     if (newFilters.includes(filter)) {
@@ -721,16 +721,14 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
     }
 
     if (newFilters.length === 0) {
-      setActiveFilters(['综合']);
+      setActiveFilters(['全部']);
     } else {
       setActiveFilters(newFilters);
     }
   };
 
   const getRoiLabel = () => {
-    if (activeFilters.includes('近一周收益')) return 'Lead trader 7D PnL';
-    if (activeFilters.includes('近一月收益')) return 'Lead trader 30D PnL';
-    return 'Lead trader 90D PnL';
+    return '信号总数';
   };
 
   // 检查是否滚动到底部
@@ -807,7 +805,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
               <TraderCard 
                 key={trader.id}
                 traderId={trader.id}
-                roiLabel={getRoiLabel()} 
+                roiLabel="信号总数" 
                 name={trader.name}
                 avatar={trader.avatar_url}
                 initialIsSubscribed={subscribedTraders.has(trader.id)}
@@ -817,10 +815,10 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
                 // 以下为模拟数据，后续可以从数据库获取
                 followers={Math.floor(Math.random() * 100) + 10}
                 maxFollowers={100}
-                roi={`+${(Math.random() * 50 + 5).toFixed(2)}%`}
-                pnl={`+$${(Math.random() * 10000 + 1000).toFixed(2)}`}
-                winRate={`${(Math.random() * 30 + 50).toFixed(2)}%`}
-                aum={`$${(Math.random() * 100000 + 5000).toFixed(2)}`}
+                roi={`${Math.floor(Math.random() * 150) + 50}`}
+                pnl=""
+                winRate={`${Math.floor(Math.random() * 80) + 20}`}
+                aum={`${Math.floor(Math.random() * 70) + 10}`}
                 days={Math.floor(Math.random() * 300) + 50}
                 coins={[
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuATVNwivtQOZ2npc_w1PrcrX_4y17f4sOiNkn0PcY8zqp0YLkQ3QuxIkuDHNbTjM1ZyrnwY3GKd7UVSYfoETg68d3DNq3yliS1uwFDzri7UqYgzB5fN2Ju5KYY8plwkhuhEWVym03IBsLlyKhgTloiJKTujcHXIe_z-lpDvnkbxcYGocB5nfG-PQGKRLQ1b7pknYTUavPCwz1iU0-cRBaTMqb597A3OgbOCuT2YYwBSVl3V5yGQaMdwr6lBh9K9vzREuJyuOGn7Tg",
@@ -1073,9 +1071,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
   };
 
   const getRoiLabel = () => {
-    if (activeFilters.includes('近一周收益')) return 'Lead trader 7D PnL';
-    if (activeFilters.includes('近一月收益')) return 'Lead trader 30D PnL';
-    return 'Lead trader 90D PnL';
+    return '信号总数';
   };
   
   return (
@@ -1277,20 +1273,20 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = React.useState<'overview' | 'copy' | 'signal'>('overview');
   const scrollViewRef = React.useRef<ScrollView>(null);
   const [heights, setHeights] = React.useState({ overview: 0, copy: 0, signal: 0 });
-  const [activeFilters, setActiveFilters] = React.useState<string[]>(['综合']);
+  const [activeFilters, setActiveFilters] = React.useState<string[]>(['全部']);
   const isScrollingRef = React.useRef(false); // 用于标记是否正在滚动
   const [refreshSignalTab, setRefreshSignalTab] = React.useState(0); // 用于触发信号Tab刷新
 
   const handleMorePress = () => {
     handleTabPress('copy');
-    setActiveFilters(['近一周收益']);
+    setActiveFilters(['全部']);
   };
 
   React.useEffect(() => {
     if (activeTab === 'signal') {
       setActiveFilters(['全部']);
     } else if (activeTab === 'copy') {
-      setActiveFilters(['综合']);
+      setActiveFilters(['全部']);
     }
   }, [activeTab]);
 

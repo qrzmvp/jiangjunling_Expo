@@ -171,54 +171,41 @@ export const TraderCard = ({
         </View>
       </View>
 
-      {/* Main Stats & Chart */}
-      <View style={styles.mainStatsRow}>
-        <View>
-          <View style={styles.statLabelRow}>
-            <Text style={styles.statLabel}>{roiLabel}</Text>
-          </View>
-          <Text style={styles.roiText}>{roi}</Text>
-          <Text style={styles.pnlText}>{pnl}</Text>
+      {/* Stats Section - 与详情页完全一致 */}
+      <View style={styles.statsSection}>
+        <View style={styles.statsHeader}>
+          <Text style={styles.statsLabel}>信号总数（近7天）</Text>
         </View>
-        <View style={styles.miniChartContainer}>
-          <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
-            <Path 
-              d={chartPath} 
-              fill="none" 
-              stroke={COLORS.primary} 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            />
-          </Svg>
+        <View style={styles.statsRow}>
+          <Text style={styles.statsValue}>{roi}</Text>
+          <View style={styles.miniChartContainer}>
+            <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
+              <Path 
+                d={chartPath} 
+                fill="none" 
+                stroke={COLORS.primary} 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </View>
         </View>
       </View>
 
-      {/* Footer Stats */}
+      {/* Footer Stats - 3列布局 */}
       <View style={styles.cardFooter}>
-        <View style={styles.footerLeft}>
-          <View style={styles.footerStatRow}>
-            <Text style={styles.footerLabel}>Win rate</Text>
-            <Text style={styles.footerValue}>{winRate}</Text>
-          </View>
-          <View style={styles.footerStatRow}>
-            <Text style={styles.footerLabel}>AUM</Text>
-            <Text style={styles.footerValue}>{aum}</Text>
-          </View>
+        <View style={styles.footerStatItem}>
+          <Text style={styles.footerLabel}>做多信号</Text>
+          <Text style={styles.footerValue}>{winRate}</Text>
         </View>
-        <View style={styles.footerRight}>
-          <View style={styles.daysInfo}>
-            <MaterialIcons name="calendar-today" size={12} color={COLORS.textMuted} style={{ marginRight: 4 }} />
-            <Text style={styles.daysText}>{days} days</Text>
-          </View>
-          <View style={styles.coinIcons}>
-            {coins.map((coin, index) => (
-              <Image key={index} source={{ uri: coin }} style={[styles.coinIcon, { zIndex: coins.length - index, marginLeft: index > 0 ? -6 : 0 }]} />
-            ))}
-            <View style={[styles.moreCoinsBadge, { zIndex: 0, marginLeft: -6 }]}>
-              <Text style={styles.moreCoinsText}>2</Text>
-            </View>
-          </View>
+        <View style={[styles.footerStatItem, { alignItems: 'center' }]}>
+          <Text style={styles.footerLabel}>做空信号</Text>
+          <Text style={styles.footerValue}>{aum}</Text>
+        </View>
+        <View style={[styles.footerStatItem, { alignItems: 'flex-end' }]}>
+          <Text style={styles.footerLabel}>交易天数</Text>
+          <Text style={styles.footerValue}>{days}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -307,100 +294,48 @@ const styles = StyleSheet.create({
   copyButtonSubscribed: {
     backgroundColor: COLORS.yellow,
   },
-  mainStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
+  statsSection: {
     marginBottom: 16,
   },
-  statLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
+  statsHeader: {
+    marginBottom: 6,
   },
-  statLabel: {
+  statsLabel: {
     color: COLORS.textMuted,
     fontSize: 12,
   },
-  roiText: {
-    color: COLORS.primary,
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 2,
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  pnlText: {
-    color: COLORS.textMain,
-    fontSize: 12,
-    fontWeight: '500',
+  statsValue: {
+    color: COLORS.primary,
+    fontSize: 30,
+    fontWeight: 'bold',
+    letterSpacing: -0.5,
   },
   miniChartContainer: {
-    width: 100,
-    height: 40,
+    width: 120,
+    height: 50,
   },
   cardFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 12,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: 'rgba(37, 37, 37, 0.5)',
   },
-  footerLeft: {
-    gap: 4,
-  },
-  footerRight: {
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-  },
-  footerStatRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    minWidth: 120,
-    justifyContent: 'space-between',
+  footerStatItem: {
+    flex: 1,
   },
   footerLabel: {
     color: COLORS.textMuted,
-    fontSize: 12,
+    fontSize: 11,
+    marginBottom: 4,
   },
   footerValue: {
     color: COLORS.textMain,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  daysInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  daysText: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-  },
-  coinIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 6,
-  },
-  coinIcon: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.surfaceLight,
-    backgroundColor: COLORS.surface,
-  },
-  moreCoinsBadge: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moreCoinsText: {
-    color: COLORS.textMuted,
-    fontSize: 8,
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
