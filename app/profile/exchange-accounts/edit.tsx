@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Switch, StyleSheet, Platform, ActivityIndicator, Modal, KeyboardAvoidingView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Switch, StyleSheet, Platform, ActivityIndicator, Modal, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -62,6 +62,38 @@ export default function EditExchangeAccount() {
     setToastType(type);
     setToastVisible(true);
   };
+
+  // 处理键盘事件，修复移动端浏览器键盘收起后的空白区域问题
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      // 监听窗口大小变化
+      const handleResize = () => {
+        // 强制重新计算视口高度
+        const vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+      };
+
+      // 初始设置
+      handleResize();
+
+      // 监听窗口大小变化和方向变化
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('orientationchange', handleResize);
+
+      // 监听视觉视口变化（更准确地检测键盘）
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', handleResize);
+      }
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('orientationchange', handleResize);
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener('resize', handleResize);
+        }
+      };
+    }
+  }, []);
 
   useEffect(() => {
     loadExchanges();
@@ -249,8 +281,9 @@ export default function EditExchangeAccount() {
   return (
     <KeyboardAvoidingView 
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      enabled={Platform.OS !== 'web'}
     >
       <StatusBar style="light" />
       {/* Header */}
@@ -284,6 +317,8 @@ export default function EditExchangeAccount() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={() => Keyboard.dismiss()}
+        scrollEventThrottle={16}
       >
         {/* Exchange Info */}
         <View style={styles.section}>
@@ -711,6 +746,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
     paddingTop: Platform.OS === 'android' ? 30 : 0,
+    ...(Platform.OS === 'web' && {
+      minHeight: '100vh',
+      height: '100%',
+    }),
   },
   safeArea: {
     backgroundColor: COLORS.background,
@@ -747,7 +786,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    paddingBottom: Platform.OS === 'web' ? 100 : (Platform.OS === 'ios' ? 40 : 24),
+    flexGrow: 1,
   },
   section: {
     marginBottom: 24,
