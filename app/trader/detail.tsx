@@ -384,7 +384,7 @@ const TraderDetailScreen = () => {
               onPress={() => setActiveTab('current')}
             >
               <View style={styles.tabContent}>
-                <Text style={[styles.tabText, activeTab === 'current' ? styles.tabTextActive : null]}>当前信号</Text>
+                <Text style={[styles.tabText, activeTab === 'current' ? styles.tabTextActive : null]}>当天信号</Text>
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>3</Text>
                 </View>
@@ -411,7 +411,7 @@ const TraderDetailScreen = () => {
                   <View style={styles.signalCardHeader}>
                     <Text style={styles.signalPairText}>XPLUSDT 永续</Text>
                     <View style={styles.signalStatusTag}>
-                      <Text style={styles.signalStatusText}>买入开多</Text>
+                      <Text style={styles.signalStatusText}>做多</Text>
                     </View>
                     <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>全仓</Text>
@@ -423,27 +423,27 @@ const TraderDetailScreen = () => {
 
                   <View style={styles.signalInfoGrid}>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>委托时间</Text>
-                      <Text style={styles.signalInfoValue}>2026/01/01 19:13:29</Text>
+                      <Text style={styles.signalInfoLabel}>入场价</Text>
+                      <Text style={styles.signalInfoValue}>86,943.6</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>交易方向</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>买入开多</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>做多</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>入场价</Text>
-                      <Text style={styles.signalInfoValue}>86,943.6 Ⓩ</Text>
+                      <Text style={styles.signalInfoLabel}>委托时间</Text>
+                      <Text style={styles.signalInfoValue}>2026/01/01 19:13:29</Text>
                     </View>
                   </View>
 
                   <View style={styles.signalInfoGrid}>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>止盈价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>90,000 Ⓩ</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>90,000</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>止损价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>85,000 Ⓩ</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>85,000</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>盈亏比</Text>
@@ -457,7 +457,7 @@ const TraderDetailScreen = () => {
                   <View style={styles.signalCardHeader}>
                     <Text style={styles.signalPairText}>BTC 永续</Text>
                     <View style={styles.signalStatusTag}>
-                      <Text style={styles.signalStatusText}>买入开多</Text>
+                      <Text style={styles.signalStatusText}>做多</Text>
                     </View>
                     <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>全仓</Text>
@@ -469,27 +469,27 @@ const TraderDetailScreen = () => {
 
                   <View style={styles.signalInfoGrid}>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>委托时间</Text>
-                      <Text style={styles.signalInfoValue}>2025/12/31 22:15:00</Text>
+                      <Text style={styles.signalInfoLabel}>入场价</Text>
+                      <Text style={styles.signalInfoValue}>65,420</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>交易方向</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>买入开多</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>做多</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>入场价</Text>
-                      <Text style={styles.signalInfoValue}>65,420 Ⓩ</Text>
+                      <Text style={styles.signalInfoLabel}>委托时间</Text>
+                      <Text style={styles.signalInfoValue}>2025/12/31 22:15:00</Text>
                     </View>
                   </View>
 
                   <View style={styles.signalInfoGrid}>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>止盈价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>68,000 Ⓩ</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>68,000</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>止损价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>64,000 Ⓩ</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>64,000</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>盈亏比</Text>
@@ -503,7 +503,7 @@ const TraderDetailScreen = () => {
                   <View style={styles.signalCardHeader}>
                     <Text style={styles.signalPairText}>ETH 永续</Text>
                     <View style={[styles.signalStatusTag, { backgroundColor: 'rgba(246, 70, 93, 0.15)' }]}>
-                      <Text style={[styles.signalStatusText, { color: COLORS.danger }]}>卖出开空</Text>
+                      <Text style={[styles.signalStatusText, { color: COLORS.danger }]}>做空</Text>
                     </View>
                     <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>全仓</Text>
@@ -515,27 +515,27 @@ const TraderDetailScreen = () => {
 
                   <View style={styles.signalInfoGrid}>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>委托时间</Text>
-                      <Text style={styles.signalInfoValue}>2025/12/31 18:30:00</Text>
+                      <Text style={styles.signalInfoLabel}>入场价</Text>
+                      <Text style={styles.signalInfoValue}>3,450.0</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>交易方向</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>卖出开空</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>做空</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>入场价</Text>
-                      <Text style={styles.signalInfoValue}>3,450.0 Ⓩ</Text>
+                      <Text style={styles.signalInfoLabel}>委托时间</Text>
+                      <Text style={styles.signalInfoValue}>2025/12/31 18:30:00</Text>
                     </View>
                   </View>
 
                   <View style={styles.signalInfoGrid}>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>止盈价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>3,200 Ⓩ</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>3,200</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>止损价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>3,550 Ⓩ</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>3,550</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>盈亏比</Text>
@@ -547,9 +547,99 @@ const TraderDetailScreen = () => {
             )}
 
             {activeTab === 'history' && (
-               <View style={{ padding: 20, alignItems: 'center' }}>
-                 <Text style={{ color: COLORS.textSub }}>暂无历史信号</Text>
-               </View>
+              <>
+                {/* 历史信号1 - 已完成做多 */}
+                <View style={styles.signalCard}>
+                  <View style={styles.signalCardHeader}>
+                    <Text style={styles.signalPairText}>SOL 永续</Text>
+                    <View style={styles.signalStatusTag}>
+                      <Text style={styles.signalStatusText}>做多</Text>
+                    </View>
+                    <View style={styles.signalLeverageTag}>
+                      <Text style={styles.signalLeverageText}>全仓</Text>
+                    </View>
+                    <View style={styles.signalLeverageTag}>
+                      <Text style={styles.signalLeverageText}>5x</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>入场价</Text>
+                      <Text style={styles.signalInfoValue}>148.50</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>交易方向</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>做多</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>委托时间</Text>
+                      <Text style={styles.signalInfoValue}>2025/12/30 15:20:00</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止盈价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>155.00</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止损价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>145.00</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>1.86:1</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* 历史信号2 - 已完成做空 */}
+                <View style={styles.signalCard}>
+                  <View style={styles.signalCardHeader}>
+                    <Text style={styles.signalPairText}>LINK 永续</Text>
+                    <View style={[styles.signalStatusTag, { backgroundColor: 'rgba(246, 70, 93, 0.15)' }]}>
+                      <Text style={[styles.signalStatusText, { color: COLORS.danger }]}>做空</Text>
+                    </View>
+                    <View style={styles.signalLeverageTag}>
+                      <Text style={styles.signalLeverageText}>全仓</Text>
+                    </View>
+                    <View style={styles.signalLeverageTag}>
+                      <Text style={styles.signalLeverageText}>10x</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>入场价</Text>
+                      <Text style={styles.signalInfoValue}>18.50</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>交易方向</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>做空</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>委托时间</Text>
+                      <Text style={styles.signalInfoValue}>2025/12/29 10:30:00</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止盈价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>17.00</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止损价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>19.50</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>1.50:1</Text>
+                    </View>
+                  </View>
+                </View>
+              </>
             )}
           </View>
         </View>
