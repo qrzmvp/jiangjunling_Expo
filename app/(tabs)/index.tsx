@@ -11,7 +11,7 @@ import { SignalCard } from '../../components/SignalCard';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
 import { getFollowedTraders, getSubscribedTraders } from '../../lib/userTraderService';
-import { getTradersWithStats, TraderWithStats } from '../../lib/traderService';
+import { getTradersWithStats, TraderWithStats, getTraderSignalTrend } from '../../lib/traderService';
 import type { Trader } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -574,6 +574,45 @@ interface TabContentProps {
   currentTab?: 'overview' | 'copy' | 'signal'; // 当前激活的标签
 }
 
+// 生成SVG图表路径的辅助函数
+const generateChartPath = (trendData: Array<{ date: string; signal_count: number }>) => {
+  if (!trendData || trendData.length === 0) {
+    return "M 0,20 L 100,20"; // 无数据显示直线
+  }
+
+  // 找到最大值用于归一化
+  const maxCount = Math.max(...trendData.map(d => d.signal_count), 1);
+  
+  // 计算每个点的坐标
+  const points = trendData.map((data, index) => {
+    const x = (index / (trendData.length - 1)) * 100;
+    // Y轴倒置(SVG坐标系),归一化到5-35范围(留出边距)
+    const y = 35 - (data.signal_count / maxCount) * 30;
+    return { x, y };
+  });
+
+  // 生成平滑曲线路径
+  if (points.length === 1) {
+    return `M ${points[0].x},${points[0].y} L ${points[0].x},${points[0].y}`;
+  }
+
+  let path = `M ${points[0].x},${points[0].y}`;
+  
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+    
+    // 使用二次贝塞尔曲线进行平滑
+    const controlX = (current.x + next.x) / 2;
+    const controlY = (current.y + next.y) / 2;
+    
+    path += ` Q ${controlX},${current.y} ${(current.x + next.x) / 2},${controlY}`;
+    path += ` T ${next.x},${next.y}`;
+  }
+  
+  return path;
+};
+
 const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy' }: TabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
@@ -587,7 +626,35 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingData, setIsLoadingData] = useState(false); // 添加加载状态标志
+  const [traderTrendData, setTraderTrendData] = useState<Map<string, Array<{ date: string; signal_count: number }>>>(new Map());
   const PAGE_SIZE = 20;
+
+  // 加载交易员的7天趋势数据
+  const loadTrendDataForTraders = async (traders: TraderWithStats[]) => {
+    const trendMap = new Map<string, Array<{ date: string; signal_count: number }>>();
+    
+    // 并行加载所有交易员的趋势数据
+    await Promise.all(
+      traders.map(async (trader) => {
+        try {
+          const trendData = await getTraderSignalTrend(trader.id, 7);
+          trendMap.set(trader.id, trendData);
+        } catch (error) {
+          console.error(`加载交易员 ${trader.id} 趋势数据失败:`, error);
+          // 失败时设置为空数组
+          trendMap.set(trader.id, []);
+        }
+      })
+    );
+    
+    setTraderTrendData(prevMap => {
+      const newMap = new Map(prevMap);
+      trendMap.forEach((value, key) => {
+        newMap.set(key, value);
+      });
+      return newMap;
+    });
+  };
 
   // 【优化】加载交易员数据和用户的订阅/关注状态
   // 使用分页加载，每次加载20条
@@ -646,6 +713,9 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
       
       setSubscribedTraders(subscribed);
       setFollowedTraders(followed);
+
+      // 加载每个交易员的7天趋势数据
+      loadTrendDataForTraders(tradersWithStatus);
 
       if (!reset) {
         setPage(currentPage + 1);
@@ -828,7 +898,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuBqVLgtNIEpUr5EnOPS_CgkITlq0vVjaigO9jnxDPyQnAokTkWkEOTGXrlpCYF9sNvRwze7xjCTLCxaNfb3DiTbcvBgZhA5rJt4lyW5zxbfuPyai7ANHCgpXluqDnWr9ATykGdJ9X5sTLPyJND5T5bvWN7ciyMIvkT-OAUvZG8khWTSrhiGjPrSs-AL0ZpdNIzo2pRweRiGqFRbsmXXfg4024-qe1haFHvijyQhWvK--a2M_RHLjsnDeVusKni_aeEZwEa9cuvmxA",
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuAEcAV67993OCt0DPtM2p8O2VOufk16pTKp8rXdxYzZU8G7G59l0CDW4oL01HveVAtNT8Kh31Z9GKhffkuQDVAasrQHuE6ebVN23WctH5f7nUebYYIynGAqCZBHm1obLP8vwJwmcWrJZWa6EMfh2j2DJYl9_nwAh14I6lW2R3ZM_WibvUnRtI2a_v96J6JPW2yEh_yFxhIxz-NjuG02m8tjKWN6rti6CP0T5pyv_yhFsEtAHivwBNN7IhN3qg66P95nZngpHi5fcQ"
                 ]}
-                chartPath="M0,35 Q10,32 20,30 T40,20 T60,25 T80,10 L100,20"
+                chartPath={generateChartPath(traderTrendData.get(trader.id) || [])}
                 statusColor={trader.is_online ? COLORS.primary : COLORS.yellow}
                 onPress={() => router.push({
                   pathname: '/trader/detail',
