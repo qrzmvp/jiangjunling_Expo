@@ -37,6 +37,7 @@ const TraderDetailScreen = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [timeFilter, setTimeFilter] = useState('近一周');
+  const [signalTrendPeriod, setSignalTrendPeriod] = useState<'7' | '30' | '90'>('7');
   const [trader, setTrader] = useState<Trader | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -314,8 +315,30 @@ const TraderDetailScreen = () => {
           <View style={styles.statsContainer}>
             <View style={styles.roiSection}>
               <View style={styles.roiHeader}>
-                <Text style={styles.roiLabel}>信号总数</Text>
-                <MaterialIcons name="info-outline" size={14} color="rgba(136, 136, 136, 0.5)" />
+                <View style={styles.roiHeaderLeft}>
+                  <Text style={styles.roiLabel}>信号总数</Text>
+                  <MaterialIcons name="info-outline" size={14} color="rgba(136, 136, 136, 0.5)" />
+                </View>
+                <View style={styles.periodSelector}>
+                  <TouchableOpacity 
+                    style={[styles.periodButton, signalTrendPeriod === '7' && styles.periodButtonActive]}
+                    onPress={() => setSignalTrendPeriod('7')}
+                  >
+                    <Text style={[styles.periodButtonText, signalTrendPeriod === '7' && styles.periodButtonTextActive]}>7天</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.periodButton, signalTrendPeriod === '30' && styles.periodButtonActive]}
+                    onPress={() => setSignalTrendPeriod('30')}
+                  >
+                    <Text style={[styles.periodButtonText, signalTrendPeriod === '30' && styles.periodButtonTextActive]}>30天</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.periodButton, signalTrendPeriod === '90' && styles.periodButtonActive]}
+                    onPress={() => setSignalTrendPeriod('90')}
+                  >
+                    <Text style={[styles.periodButtonText, signalTrendPeriod === '90' && styles.periodButtonTextActive]}>90天</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
               <View style={styles.roiRow}>
                 <View style={styles.roiValues}>
@@ -428,11 +451,11 @@ const TraderDetailScreen = () => {
                       <Text style={styles.signalStatusText}>做多</Text>
                     </View>
                     <View style={styles.signalLeverageTag}>
-                      <Text style={styles.signalLeverageText}>全仓</Text>
-                    </View>
-                    <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>5x</Text>
                     </View>
+                    <TouchableOpacity style={styles.signalCopyButton}>
+                      <Text style={styles.signalCopyButtonText}>Copy</Text>
+                    </TouchableOpacity>
                   </View>
 
                   <View style={styles.signalInfoGrid}>
@@ -441,8 +464,8 @@ const TraderDetailScreen = () => {
                       <Text style={styles.signalInfoValue}>86,943.6</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>交易方向</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>做多</Text>
+                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
+                      <Text style={styles.signalInfoValue}>全仓</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>委托时间</Text>
@@ -474,11 +497,11 @@ const TraderDetailScreen = () => {
                       <Text style={styles.signalStatusText}>做多</Text>
                     </View>
                     <View style={styles.signalLeverageTag}>
-                      <Text style={styles.signalLeverageText}>全仓</Text>
-                    </View>
-                    <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>20x</Text>
                     </View>
+                    <TouchableOpacity style={styles.signalCopyButton}>
+                      <Text style={styles.signalCopyButtonText}>Copy</Text>
+                    </TouchableOpacity>
                   </View>
 
                   <View style={styles.signalInfoGrid}>
@@ -487,8 +510,8 @@ const TraderDetailScreen = () => {
                       <Text style={styles.signalInfoValue}>65,420</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>交易方向</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>做多</Text>
+                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
+                      <Text style={styles.signalInfoValue}>全仓</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>委托时间</Text>
@@ -520,11 +543,11 @@ const TraderDetailScreen = () => {
                       <Text style={[styles.signalStatusText, { color: COLORS.danger }]}>做空</Text>
                     </View>
                     <View style={styles.signalLeverageTag}>
-                      <Text style={styles.signalLeverageText}>全仓</Text>
-                    </View>
-                    <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>10x</Text>
                     </View>
+                    <TouchableOpacity style={styles.signalCopyButton}>
+                      <Text style={styles.signalCopyButtonText}>Copy</Text>
+                    </TouchableOpacity>
                   </View>
 
                   <View style={styles.signalInfoGrid}>
@@ -533,8 +556,8 @@ const TraderDetailScreen = () => {
                       <Text style={styles.signalInfoValue}>3,450.0</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>交易方向</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>做空</Text>
+                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
+                      <Text style={styles.signalInfoValue}>全仓</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>委托时间</Text>
@@ -570,11 +593,11 @@ const TraderDetailScreen = () => {
                       <Text style={styles.signalStatusText}>做多</Text>
                     </View>
                     <View style={styles.signalLeverageTag}>
-                      <Text style={styles.signalLeverageText}>全仓</Text>
-                    </View>
-                    <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>5x</Text>
                     </View>
+                    <TouchableOpacity style={styles.signalCopyButton}>
+                      <Text style={styles.signalCopyButtonText}>Copy</Text>
+                    </TouchableOpacity>
                   </View>
 
                   <View style={styles.signalInfoGrid}>
@@ -583,8 +606,8 @@ const TraderDetailScreen = () => {
                       <Text style={styles.signalInfoValue}>148.50</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>交易方向</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>做多</Text>
+                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
+                      <Text style={styles.signalInfoValue}>全仓</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>委托时间</Text>
@@ -616,11 +639,11 @@ const TraderDetailScreen = () => {
                       <Text style={[styles.signalStatusText, { color: COLORS.danger }]}>做空</Text>
                     </View>
                     <View style={styles.signalLeverageTag}>
-                      <Text style={styles.signalLeverageText}>全仓</Text>
-                    </View>
-                    <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>10x</Text>
                     </View>
+                    <TouchableOpacity style={styles.signalCopyButton}>
+                      <Text style={styles.signalCopyButtonText}>Copy</Text>
+                    </TouchableOpacity>
                   </View>
 
                   <View style={styles.signalInfoGrid}>
@@ -629,8 +652,8 @@ const TraderDetailScreen = () => {
                       <Text style={styles.signalInfoValue}>18.50</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>交易方向</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>做空</Text>
+                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
+                      <Text style={styles.signalInfoValue}>全仓</Text>
                     </View>
                     <View style={styles.signalGridItem}>
                       <Text style={styles.signalInfoLabel}>委托时间</Text>
@@ -803,6 +826,11 @@ const styles = StyleSheet.create({
   roiHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  roiHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
   },
   roiLabel: {
@@ -830,8 +858,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  periodSelector: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  periodButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: 'rgba(37, 37, 37, 0.5)',
+  },
+  periodButtonActive: {
+    backgroundColor: COLORS.primary,
+  },
+  periodButtonText: {
+    color: COLORS.textSub,
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  periodButtonTextActive: {
+    color: COLORS.background,
+  },
   miniChartContainer: {
-    width: 120,
+    width: 150,
     height: 50,
   },
   gridStats: {
@@ -1176,7 +1225,7 @@ const styles = StyleSheet.create({
   // Signal Card Styles
   signalCard: {
     backgroundColor: COLORS.surfaceLight,
-    marginLeft: 4,
+    marginLeft: 0,
     marginRight: 0,
     marginBottom: 12,
     borderRadius: 8,
@@ -1216,6 +1265,18 @@ const styles = StyleSheet.create({
   signalLeverageText: {
     color: COLORS.textMain,
     fontSize: 11,
+  },
+  signalCopyButton: {
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginLeft: 'auto',
+  },
+  signalCopyButtonText: {
+    color: COLORS.background,
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   signalInfoRow: {
     flexDirection: 'row',
