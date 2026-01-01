@@ -254,6 +254,21 @@ export default function ChangePasswordPage() {
               secureTextEntry={!showPassword}
               autoCapitalize="none"
             />
+            {password.length > 0 && (
+              <TouchableOpacity 
+                onPress={() => {
+                  setPassword('');
+                  setPasswordError('');
+                }} 
+                style={styles.clearButton}
+              >
+                <Ionicons 
+                  name="close-circle" 
+                  size={20} 
+                  color={COLORS.textSubDark} 
+                />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity 
               onPress={() => setShowPassword(!showPassword)} 
               style={styles.eyeButton}
@@ -287,6 +302,21 @@ export default function ChangePasswordPage() {
               secureTextEntry={!showConfirmPassword}
               autoCapitalize="none"
             />
+            {confirmPassword.length > 0 && (
+              <TouchableOpacity 
+                onPress={() => {
+                  setConfirmPassword('');
+                  setConfirmPasswordError('');
+                }} 
+                style={styles.clearButton}
+              >
+                <Ionicons 
+                  name="close-circle" 
+                  size={20} 
+                  color={COLORS.textSubDark} 
+                />
+              </TouchableOpacity>
+            )}
             <TouchableOpacity 
               onPress={() => setShowConfirmPassword(!showConfirmPassword)} 
               style={styles.eyeButton}
@@ -409,9 +439,13 @@ const styles = StyleSheet.create({
     color: COLORS.textMainDark,
     paddingVertical: 14,
   },
+  clearButton: {
+    padding: 4,
+    marginLeft: 4,
+  },
   eyeButton: {
     padding: 4,
-    marginLeft: 8,
+    marginLeft: 4,
   },
   errorContainer: {
     flexDirection: 'row',

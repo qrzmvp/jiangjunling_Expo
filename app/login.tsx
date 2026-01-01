@@ -187,25 +187,35 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
               {isPasswordLogin ? (
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: theme.inputBg,
-                      borderColor: theme.inputBorder,
-                      color: theme.text,
-                    },
-                  ]}
-                  placeholder="请输入密码"
-                  placeholderTextColor={theme.placeholder}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                  autoComplete="password"
-                  textContentType="password"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.inputBg,
+                        borderColor: theme.inputBorder,
+                        color: theme.text,
+                      },
+                    ]}
+                    placeholder="请输入密码"
+                    placeholderTextColor={theme.placeholder}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    autoComplete="password"
+                    textContentType="password"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {password.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setPassword('')}
+                      style={styles.clearButton}
+                    >
+                      <MaterialIcons name="cancel" size={20} color={COLORS.textMuted} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               ) : (
                 <View style={styles.inputWrapper}>
                   <TextInput
@@ -225,6 +235,14 @@ export default function LoginScreen() {
                     maxLength={6}
                     keyboardType="number-pad"
                   />
+                  {code.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setCode('')}
+                      style={[styles.clearButton, { right: 90 }]}
+                    >
+                      <MaterialIcons name="cancel" size={20} color={COLORS.textMuted} />
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity 
                     style={[styles.getCodeButton, countdown > 0 && { opacity: 0.5 }]}
                     onPress={handleSendCode}

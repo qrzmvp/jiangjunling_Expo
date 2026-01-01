@@ -330,6 +330,18 @@ export default function EditExchangeAccount() {
                   autoCapitalize="none"
                   secureTextEntry={!showApiKey}
                 />
+                {apiKey.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setApiKey('')}
+                    style={styles.clearIcon}
+                  >
+                    <Ionicons 
+                      name="close-circle" 
+                      size={18} 
+                      color={COLORS.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity 
                   onPress={() => setShowApiKey(!showApiKey)}
                   style={styles.eyeIcon}
@@ -358,6 +370,18 @@ export default function EditExchangeAccount() {
                   onChangeText={setSecretKey}
                   autoCapitalize="none"
                 />
+                {secretKey.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setSecretKey('')}
+                    style={styles.clearIcon}
+                  >
+                    <Ionicons 
+                      name="close-circle" 
+                      size={18} 
+                      color={COLORS.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity 
                   onPress={() => setShowSecretKey(!showSecretKey)}
                   style={styles.eyeIcon}
@@ -386,6 +410,18 @@ export default function EditExchangeAccount() {
                   onChangeText={setPassphrase}
                   autoCapitalize="none"
                 />
+                {passphrase.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setPassphrase('')}
+                    style={styles.clearIcon}
+                  >
+                    <Ionicons 
+                      name="close-circle" 
+                      size={18} 
+                      color={COLORS.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity 
                   onPress={() => setShowPassphrase(!showPassphrase)}
                   style={styles.eyeIcon}
@@ -409,13 +445,27 @@ export default function EditExchangeAccount() {
           <View style={styles.card}>
             <View style={[styles.cardRow, { borderBottomWidth: 1, borderBottomColor: COLORS.border }]}>
               <Text style={styles.rowLabel}>账户名称</Text>
-              <TextInput 
-                style={[styles.inputRight, removeOutline]}
-                placeholder="例如: 币安主账户"
-                placeholderTextColor={COLORS.inputPlaceholder}
-                value={accountNickname}
-                onChangeText={setAccountNickname}
-              />
+              <View style={styles.inputWithIconRight}>
+                <TextInput 
+                  style={[styles.inputRight, removeOutline]}
+                  placeholder="例如: 币安主账户"
+                  placeholderTextColor={COLORS.inputPlaceholder}
+                  value={accountNickname}
+                  onChangeText={setAccountNickname}
+                />
+                {accountNickname.length > 0 && (
+                  <TouchableOpacity 
+                    onPress={() => setAccountNickname('')}
+                    style={styles.clearIconRight}
+                  >
+                    <Ionicons 
+                      name="close-circle" 
+                      size={18} 
+                      color={COLORS.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
             
             {/* Account Mode Selection - 账户模式 (真实/模拟) */}
@@ -791,8 +841,21 @@ const styles = StyleSheet.create({
     padding: 0,
     color: COLORS.text,
   },
+  clearIcon: {
+    padding: 8,
+    marginLeft: 4,
+  },
   eyeIcon: {
     padding: 8,
+    marginLeft: 4,
+  },
+  inputWithIconRight: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  clearIconRight: {
+    padding: 4,
     marginLeft: 8,
   },
   inputRight: {
