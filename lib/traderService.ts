@@ -302,3 +302,56 @@ export async function getTraderSignalTrend(
     throw error;
   }
 }
+
+/**
+ * 批量获取多个交易员的信号趋势数据（性能优化版本）
+ * @param traderIds 交易员ID数组
+ * @param days 天数（7, 30, 90）
+ * @returns Map<traderId, 每天的信号数量统计>
+ */
+export async function getMultipleTradersSignalTrend(
+  traderIds: string[],
+  days: number = 7
+): Promise<Map<string, Array<{ date: string; signal_count: number }>>> {
+  try {
+    if (traderIds.length === 0) {
+      return new Map();
+    }
+
+    console.log('🔵 [TraderService] 批量调用 RPC: get_multiple_traders_signal_trend', { 
+      count: traderIds.length, 
+      days 
+    });
+    
+    const { data, error } = await supabase.rpc('get_multiple_traders_signal_trend', {
+      p_trader_ids: traderIds,
+      p_days: days
+    });
+    
+    if (error) {
+      console.error('❌ [TraderService] 批量获取信号趋势失败:', error);
+      throw error;
+    }
+
+    // 将数据按 trader_id 分组
+    const trendMap = new Map<string, Array<{ date: string; signal_count: number }>>();
+    
+    if (data) {
+      data.forEach((row: { trader_id: string; date: string; signal_count: number }) => {
+        if (!trendMap.has(row.trader_id)) {
+          trendMap.set(row.trader_id, []);
+        }
+        trendMap.get(row.trader_id)!.push({
+          date: row.date,
+          signal_count: row.signal_count
+        });
+      });
+    }
+
+    console.log('✅ [TraderService] 成功获取', trendMap.size, '个交易员的趋势数据');
+    return trendMap;
+  } catch (error) {
+    console.error('❌ [TraderService] 批量获取信号趋势异常:', error);
+    throw error;
+  }
+}

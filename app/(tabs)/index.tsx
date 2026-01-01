@@ -11,7 +11,7 @@ import { SignalCard } from '../../components/SignalCard';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
 import { getFollowedTraders, getSubscribedTraders } from '../../lib/userTraderService';
-import { getTradersWithStats, TraderWithStats, getTraderSignalTrend } from '../../lib/traderService';
+import { getTradersWithStats, TraderWithStats, getMultipleTradersSignalTrend } from '../../lib/traderService';
 import type { Trader } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -629,31 +629,30 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   const [traderTrendData, setTraderTrendData] = useState<Map<string, Array<{ date: string; signal_count: number }>>>(new Map());
   const PAGE_SIZE = 20;
 
-  // 加载交易员的7天趋势数据
+  // 【优化】批量加载交易员的7天趋势数据 - 一次RPC调用替代N次
   const loadTrendDataForTraders = async (traders: TraderWithStats[]) => {
-    const trendMap = new Map<string, Array<{ date: string; signal_count: number }>>();
+    if (traders.length === 0) return;
     
-    // 并行加载所有交易员的趋势数据
-    await Promise.all(
-      traders.map(async (trader) => {
-        try {
-          const trendData = await getTraderSignalTrend(trader.id, 7);
-          trendMap.set(trader.id, trendData);
-        } catch (error) {
-          console.error(`加载交易员 ${trader.id} 趋势数据失败:`, error);
-          // 失败时设置为空数组
-          trendMap.set(trader.id, []);
-        }
-      })
-    );
-    
-    setTraderTrendData(prevMap => {
-      const newMap = new Map(prevMap);
-      trendMap.forEach((value, key) => {
-        newMap.set(key, value);
+    try {
+      // 提取所有交易员ID
+      const traderIds = traders.map(t => t.id);
+      
+      // 批量查询 - 只需1次RPC调用!
+      const trendMap = await getMultipleTradersSignalTrend(traderIds, 7);
+      
+      // 更新状态
+      setTraderTrendData(prevMap => {
+        const newMap = new Map(prevMap);
+        trendMap.forEach((value, key) => {
+          newMap.set(key, value);
+        });
+        return newMap;
       });
-      return newMap;
-    });
+      
+      console.log('✅ 成功批量加载', trendMap.size, '个交易员的趋势数据');
+    } catch (error) {
+      console.error('批量加载趋势数据失败:', error);
+    }
   };
 
   // 【优化】加载交易员数据和用户的订阅/关注状态
