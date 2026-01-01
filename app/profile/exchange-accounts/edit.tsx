@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Switch, StyleSheet, Platform, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Switch, StyleSheet, Platform, ActivityIndicator, Modal, KeyboardAvoidingView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
@@ -247,7 +247,11 @@ export default function EditExchangeAccount() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       <StatusBar style="light" />
       {/* Header */}
       <SafeAreaView style={styles.safeArea}>
@@ -275,7 +279,12 @@ export default function EditExchangeAccount() {
         </View>
       </SafeAreaView>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Exchange Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
@@ -643,7 +652,7 @@ export default function EditExchangeAccount() {
         type={toastType}
         onHide={() => setToastVisible(false)}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -688,6 +697,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
   section: {
     marginBottom: 24,
