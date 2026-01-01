@@ -33,7 +33,7 @@ const TraderDetailScreen = () => {
   const returnTab = params.returnTab as string | undefined;
   
   const { width: windowWidth } = useWindowDimensions();
-  const [activeTab, setActiveTab] = useState<'positions' | 'orders' | 'history'>('positions');
+  const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [timeFilter, setTimeFilter] = useState('近一周');
@@ -319,7 +319,6 @@ const TraderDetailScreen = () => {
               </View>
               <View style={styles.roiValues}>
                 <Text style={styles.roiPercent}>+21.23%</Text>
-                <Text style={styles.roiAmount}>+3,000.00 USD</Text>
               </View>
             </View>
 
@@ -371,332 +370,185 @@ const TraderDetailScreen = () => {
           </View>
         </View>
 
-        {/* Profit Trend Section */}
-        <View style={styles.card}>
+        {/* Profit Trend Section - 暂时隐藏 */}
+        {/* <View style={styles.card}>
           <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>收益走势</Text>
-          
-          <View style={styles.timeFilterContainer}>
-            {['近一周', '近一月', '近三月', '全部'].map((filter) => (
-              <TouchableOpacity 
-                key={filter}
-                style={timeFilter === filter ? styles.timeFilterBtnActive : styles.timeFilterBtn}
-                onPress={() => setTimeFilter(filter)}
-              >
-                <Text style={timeFilter === filter ? styles.timeFilterTextActive : styles.timeFilterText}>{filter}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          ... 
+        </View> */}
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 12, marginBottom: 12 }}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
-              <Text style={styles.legendText}>本组合</Text>
-            </View>
-          </View>
-
-          <View style={styles.chartHeader}>
-            <Text style={styles.chartLabel}>累计收益率(%)</Text>
-          </View>
-
-          <View style={styles.chartContainer}>
-            <View style={styles.yAxis}>
-              {/* Max Label */}
-              <Text style={[styles.axisText, { position: 'absolute', top: getY(yAxisMax) - 6 }]}>
-                {yAxisMax}%
-              </Text>
-
-              {/* Positive Intermediate Labels */}
-              {yAxisMax > 0 && (
-                <>
-                  <Text style={[styles.axisText, { position: 'absolute', top: getY(positiveStep2) - 6 }]}>
-                    {positiveStep2}%
-                  </Text>
-                  <Text style={[styles.axisText, { position: 'absolute', top: getY(positiveStep1) - 6 }]}>
-                    {positiveStep1}%
-                  </Text>
-                </>
-              )}
-              
-              {/* Zero Label */}
-              {yAxisMin < 0 && yAxisMax > 0 && (
-                <Text style={[styles.axisText, { position: 'absolute', top: getY(0) - 6, color: COLORS.textMain }]}>
-                  0%
-                </Text>
-              )}
-
-              {/* Negative Intermediate Labels */}
-              {yAxisMin < 0 && (
-                <>
-                  <Text style={[styles.axisText, { position: 'absolute', top: getY(negativeStep1) - 6 }]}>
-                    {negativeStep1}%
-                  </Text>
-                  <Text style={[styles.axisText, { position: 'absolute', top: getY(negativeStep2) - 6 }]}>
-                    {negativeStep2}%
-                  </Text>
-                </>
-              )}
-
-              {/* Min Label */}
-              <Text style={[styles.axisText, { position: 'absolute', top: getY(yAxisMin) - 6 }]}>
-                {yAxisMin}%
-              </Text>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chartContent}>
-              {/* SVG Chart */}
-              <View style={{ width: chartWidth, height: chartHeight }}>
-                <Svg height="100%" width="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
-                  <Defs>
-                    <LinearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0%" stopColor={COLORS.primary} stopOpacity="0.3" />
-                      <Stop offset="100%" stopColor={COLORS.primary} stopOpacity="0" />
-                    </LinearGradient>
-                  </Defs>
-
-                  {/* Zero Line */}
-                  {yAxisMin < 0 && (
-                    <Path
-                      d={`M 0 ${getY(0)} L ${chartWidth} ${getY(0)}`}
-                      stroke={COLORS.textSub}
-                      strokeWidth="1"
-                      strokeDasharray="5, 5"
-                      opacity="0.3"
-                    />
-                  )}
-
-                  {/* Line */}
-                  <Path 
-                    d={generatePath(chartData)} 
-                    fill="none" 
-                    stroke={COLORS.primary}
-                    strokeWidth="3" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
-
-                  {/* Avatar at the end */}
-                  {(() => {
-                    if (chartData.length === 0 || !trader) return null;
-                    const lastPoint = chartData[chartData.length - 1];
-                    const i = chartData.length - 1;
-                    const x = i * xStep;
-                    const y = getY(lastPoint.value);
-                    
-                    return (
-                      <G>
-                        {/* Avatar Border */}
-                        <Circle
-                          cx={x}
-                          cy={y}
-                          r={14}
-                          fill={COLORS.surface}
-                          stroke={COLORS.primary}
-                          strokeWidth={2}
-                        />
-                        
-                        {/* Avatar Image with ClipPath */}
-                        <Defs>
-                          <ClipPath id="clip-trader-detail">
-                            <Circle cx={x} cy={y} r={12} />
-                          </ClipPath>
-                        </Defs>
-                        <SvgImage
-                          x={x - 12}
-                          y={y - 12}
-                          width={24}
-                          height={24}
-                          href={{ uri: trader.avatar_url }}
-                          clipPath="url(#clip-trader-detail)"
-                          preserveAspectRatio="xMidYMid slice"
-                        />
-                      </G>
-                    );
-                  })()}
-
-                  {/* X Axis Labels inside ScrollView */}
-                  {chartData.map((point, i) => (
-                    <SvgText
-                      key={`label-${i}`}
-                      x={i * xStep}
-                      y={chartHeight - 5}
-                      fill={COLORS.textSub}
-                      fontSize="10"
-                      textAnchor={i === 0 ? "start" : i === chartData.length - 1 ? "end" : "middle"}
-                    >
-                      {point.date}
-                    </SvgText>
-                  ))}
-                </Svg>
-              </View>
-            </ScrollView>
-          </View>
-          {/* Removed external xAxis view since labels are now inside SVG */}
-        </View>
-
-        {/* Positions/Orders Section */}
+        {/* Signals Section - 信号列表 */}
         <View style={[styles.card, { padding: 0, overflow: 'hidden' }]}>
           <View style={styles.tabsHeader}>
             <TouchableOpacity 
               style={styles.tabItem} 
-              onPress={() => setActiveTab('positions')}
+              onPress={() => setActiveTab('current')}
             >
               <View style={styles.tabContent}>
-                <Text style={[styles.tabText, activeTab === 'positions' ? styles.tabTextActive : null]}>持仓</Text>
+                <Text style={[styles.tabText, activeTab === 'current' ? styles.tabTextActive : null]}>当前信号</Text>
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>3</Text>
                 </View>
               </View>
-              {activeTab === 'positions' && <View style={styles.activeIndicator} />}
+              {activeTab === 'current' && <View style={styles.activeIndicator} />}
             </TouchableOpacity>
             
-            <TouchableOpacity 
-              style={styles.tabItem}
-              onPress={() => setActiveTab('orders')}
-            >
-              <View style={styles.tabContent}>
-                <Text style={[styles.tabText, activeTab === 'orders' ? styles.tabTextActive : null]}>挂单</Text>
-                <View style={styles.badgeTransparent}>
-                  <Text style={styles.badgeTextTransparent}>2</Text>
-                </View>
-              </View>
-              {activeTab === 'orders' && <View style={styles.activeIndicator} />}
-            </TouchableOpacity>
-
             <TouchableOpacity 
               style={styles.tabItem}
               onPress={() => setActiveTab('history')}
             >
               <View style={styles.tabContent}>
-                <Text style={[styles.tabText, activeTab === 'history' ? styles.tabTextActive : null]}>历史</Text>
+                <Text style={[styles.tabText, activeTab === 'history' ? styles.tabTextActive : null]}>历史信号</Text>
               </View>
               {activeTab === 'history' && <View style={styles.activeIndicator} />}
             </TouchableOpacity>
           </View>
 
           <View style={styles.listContainer}>
-            {activeTab === 'positions' && (
+            {activeTab === 'current' && (
               <>
-                <View style={styles.listHeader}>
-                  <Text style={[styles.listHeaderLabel, { width: '35%' }]}>交易对 / 杠杆</Text>
-                  <Text style={[styles.listHeaderLabel, { width: '35%', textAlign: 'right' }]}>开仓 / 最新价</Text>
-                  <Text style={[styles.listHeaderLabel, { width: '30%', textAlign: 'right' }]}>未结盈亏 (U)</Text>
+                {/* 信号1 - 做多XPLUSDT */}
+                <View style={styles.signalCard}>
+                  <View style={styles.signalCardHeader}>
+                    <Text style={styles.signalPairText}>XPLUSDT 永续</Text>
+                    <View style={styles.signalStatusTag}>
+                      <Text style={styles.signalStatusText}>买入开多</Text>
+                    </View>
+                    <View style={styles.signalLeverageTag}>
+                      <Text style={styles.signalLeverageText}>全仓</Text>
+                    </View>
+                    <View style={styles.signalLeverageTag}>
+                      <Text style={styles.signalLeverageText}>5x</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>委托时间</Text>
+                      <Text style={styles.signalInfoValue}>2026/01/01 19:13:29</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>交易方向</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>买入开多</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>入场价</Text>
+                      <Text style={styles.signalInfoValue}>86,943.6 Ⓩ</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止盈价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>90,000 Ⓩ</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止损价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>85,000 Ⓩ</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>1.58:1</Text>
+                    </View>
+                  </View>
                 </View>
 
-                <View style={styles.listItem}>
-                  <View style={{ width: '35%' }}>
-                    <View style={styles.pairRow}>
-                      <Text style={styles.pairText}>BTC</Text>
-                      <View style={styles.leverageTagGreen}>
-                        <Text style={styles.leverageTextGreen}>多 20X</Text>
-                      </View>
+                {/* 信号2 - 做多BTC */}
+                <View style={styles.signalCard}>
+                  <View style={styles.signalCardHeader}>
+                    <Text style={styles.signalPairText}>BTC 永续</Text>
+                    <View style={styles.signalStatusTag}>
+                      <Text style={styles.signalStatusText}>买入开多</Text>
                     </View>
-                    <Text style={styles.amountText}>0.452 BTC</Text>
+                    <View style={styles.signalLeverageTag}>
+                      <Text style={styles.signalLeverageText}>全仓</Text>
+                    </View>
+                    <View style={styles.signalLeverageTag}>
+                      <Text style={styles.signalLeverageText}>20x</Text>
+                    </View>
                   </View>
-                  <View style={{ width: '35%', alignItems: 'flex-end' }}>
-                    <Text style={styles.priceText}>65,420.5</Text>
-                    <Text style={styles.subPriceText}>66,108.0</Text>
+
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>委托时间</Text>
+                      <Text style={styles.signalInfoValue}>2025/12/31 22:15:00</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>交易方向</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>买入开多</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>入场价</Text>
+                      <Text style={styles.signalInfoValue}>65,420 Ⓩ</Text>
+                    </View>
                   </View>
-                  <View style={{ width: '30%', alignItems: 'flex-end' }}>
-                    <Text style={styles.pnlTextGreen}>+310.85</Text>
-                    <Text style={styles.pnlPercentGreen}>+1.05%</Text>
+
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止盈价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>68,000 Ⓩ</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止损价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>64,000 Ⓩ</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>1.82:1</Text>
+                    </View>
                   </View>
                 </View>
-                <View style={styles.separator} />
 
-                <View style={styles.listItem}>
-                  <View style={{ width: '35%' }}>
-                    <View style={styles.pairRow}>
-                      <Text style={styles.pairText}>ETH</Text>
-                      <View style={styles.leverageTagRed}>
-                        <Text style={styles.leverageTextRed}>空 10X</Text>
-                      </View>
+                {/* 信号3 - 做空ETH */}
+                <View style={styles.signalCard}>
+                  <View style={styles.signalCardHeader}>
+                    <Text style={styles.signalPairText}>ETH 永续</Text>
+                    <View style={[styles.signalStatusTag, { backgroundColor: 'rgba(246, 70, 93, 0.15)' }]}>
+                      <Text style={[styles.signalStatusText, { color: COLORS.danger }]}>卖出开空</Text>
                     </View>
-                    <Text style={styles.amountText}>12.50 ETH</Text>
+                    <View style={styles.signalLeverageTag}>
+                      <Text style={styles.signalLeverageText}>全仓</Text>
+                    </View>
+                    <View style={styles.signalLeverageTag}>
+                      <Text style={styles.signalLeverageText}>10x</Text>
+                    </View>
                   </View>
-                  <View style={{ width: '35%', alignItems: 'flex-end' }}>
-                    <Text style={styles.priceText}>3,450.0</Text>
-                    <Text style={styles.subPriceText}>3,425.5</Text>
-                  </View>
-                  <View style={{ width: '30%', alignItems: 'flex-end' }}>
-                    <Text style={styles.pnlTextGreen}>+306.25</Text>
-                    <Text style={styles.pnlPercentGreen}>+0.71%</Text>
-                  </View>
-                </View>
-                <View style={styles.separator} />
 
-                <View style={styles.listItem}>
-                  <View style={{ width: '35%' }}>
-                    <View style={styles.pairRow}>
-                      <Text style={styles.pairText}>SOL</Text>
-                      <View style={styles.leverageTagGreen}>
-                        <Text style={styles.leverageTextGreen}>多 5X</Text>
-                      </View>
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>委托时间</Text>
+                      <Text style={styles.signalInfoValue}>2025/12/31 18:30:00</Text>
                     </View>
-                    <Text style={styles.amountText}>145.0 SOL</Text>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>交易方向</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>卖出开空</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>入场价</Text>
+                      <Text style={styles.signalInfoValue}>3,450.0 Ⓩ</Text>
+                    </View>
                   </View>
-                  <View style={{ width: '35%', alignItems: 'flex-end' }}>
-                    <Text style={styles.priceText}>148.50</Text>
-                    <Text style={styles.subPriceText}>146.20</Text>
-                  </View>
-                  <View style={{ width: '30%', alignItems: 'flex-end' }}>
-                    <Text style={styles.pnlTextRed}>-333.50</Text>
-                    <Text style={styles.pnlPercentRed}>-1.55%</Text>
+
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止盈价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>3,200 Ⓩ</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止损价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>3,550 Ⓩ</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>2.50:1</Text>
+                    </View>
                   </View>
                 </View>
               </>
             )}
 
-            {activeTab === 'orders' && (
-              <>
-                <View style={styles.listHeader}>
-                  <Text style={[styles.listHeaderLabel, { width: '40%' }]}>类型 / 交易对</Text>
-                  <Text style={[styles.listHeaderLabel, { width: '35%', textAlign: 'right' }]}>价格 / 数量</Text>
-                  <Text style={[styles.listHeaderLabel, { width: '25%', textAlign: 'right' }]}>状态</Text>
-                </View>
-
-                <View style={styles.listItem}>
-                  <View style={{ width: '40%' }}>
-                    <View style={styles.pairRow}>
-                      <Text style={[styles.typeText, { color: COLORS.primary }]}>买入</Text>
-                      <Text style={styles.pairText}>BNB</Text>
-                    </View>
-                    <Text style={styles.amountText}>限价委托</Text>
-                  </View>
-                  <View style={{ width: '35%', alignItems: 'flex-end' }}>
-                    <Text style={styles.priceText}>580.0</Text>
-                    <Text style={styles.subPriceText}>10.0 BNB</Text>
-                  </View>
-                  <View style={{ width: '25%', alignItems: 'flex-end' }}>
-                    <View style={styles.statusTag}>
-                      <Text style={styles.statusText}>挂单中</Text>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.separator} />
-
-                <View style={styles.listItem}>
-                  <View style={{ width: '40%' }}>
-                    <View style={styles.pairRow}>
-                      <Text style={[styles.typeText, { color: COLORS.danger }]}>卖出</Text>
-                      <Text style={styles.pairText}>XRP</Text>
-                    </View>
-                    <Text style={styles.amountText}>止损委托</Text>
-                  </View>
-                  <View style={{ width: '35%', alignItems: 'flex-end' }}>
-                    <Text style={styles.priceText}>0.4850</Text>
-                    <Text style={styles.subPriceText}>5,000 XRP</Text>
-                  </View>
-                  <View style={{ width: '25%', alignItems: 'flex-end' }}>
-                    <View style={styles.statusTag}>
-                      <Text style={styles.statusText}>触发中</Text>
-                    </View>
-                  </View>
-                </View>
-              </>
-            )}
-            
             {activeTab === 'history' && (
                <View style={{ padding: 20, alignItems: 'center' }}>
-                 <Text style={{ color: COLORS.textSub }}>暂无历史记录</Text>
+                 <Text style={{ color: COLORS.textSub }}>暂无历史信号</Text>
                </View>
             )}
           </View>
@@ -1206,6 +1058,76 @@ const styles = StyleSheet.create({
   statusText: {
     color: COLORS.yellow,
     fontSize: 10,
+    fontWeight: '500',
+  },
+  // Signal Card Styles
+  signalCard: {
+    backgroundColor: COLORS.surfaceLight,
+    marginLeft: 4,
+    marginRight: 0,
+    marginBottom: 12,
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(37, 37, 37, 0.5)',
+  },
+  signalCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  signalPairText: {
+    color: COLORS.textMain,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  signalStatusTag: {
+    backgroundColor: 'rgba(46, 189, 133, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  signalStatusText: {
+    color: COLORS.primary,
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  signalLeverageTag: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  signalLeverageText: {
+    color: COLORS.textMain,
+    fontSize: 11,
+  },
+  signalInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  signalInfoItem: {
+    flex: 1,
+  },
+  signalInfoGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  signalGridItem: {
+    flex: 1,
+  },
+  signalInfoLabel: {
+    color: COLORS.textSub,
+    fontSize: 11,
+    marginBottom: 4,
+  },
+  signalInfoValue: {
+    color: COLORS.textMain,
+    fontSize: 13,
     fontWeight: '500',
   },
 });
