@@ -14,6 +14,7 @@ const COLORS = {
   textSubDark: "#888888",
   borderDark: "#252525",
   accentOrange: "#F0B90B",
+  primary: "#ffffff",
 };
 
 export default function EditNicknamePage() {
@@ -124,9 +125,9 @@ export default function EditNicknamePage() {
               router.push('/profile');
             }
           }}
-          style={styles.backButton}
+          style={styles.iconButton}
         >
-          <Ionicons name="chevron-back" size={24} color={COLORS.textSubDark} />
+          <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>修改账户名称</Text>
         <TouchableOpacity 
@@ -199,10 +200,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255, 255, 255, 0.05)',
     backgroundColor: 'rgba(0, 0, 0, 0.95)',
   },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-    borderRadius: 20,
+  iconButton: {
+    padding: 4,
   },
   headerTitle: {
     fontSize: 16,

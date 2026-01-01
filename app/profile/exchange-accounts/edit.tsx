@@ -793,7 +793,6 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 4,
-    marginLeft: -8,
   },
   headerTitle: {
     fontSize: 17,

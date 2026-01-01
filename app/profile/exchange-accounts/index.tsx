@@ -163,7 +163,7 @@ export default function ExchangeAccountsList() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity 
-            onPress={() => router.back()}
+            onPress={() => router.push('/(tabs)/my')}
             style={styles.iconButton}
           >
             <Ionicons name="chevron-back" size={24} color={COLORS.primary} />

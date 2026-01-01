@@ -18,6 +18,7 @@ const COLORS = {
   textSubDark: "#888888",
   borderDark: "#252525",
   white: "#FFFFFF",
+  primary: "#ffffff",
 };
 
 export default function PersonalInfoPage() {
@@ -212,9 +213,9 @@ export default function PersonalInfoPage() {
       <View style={styles.header}>
         <TouchableOpacity 
           onPress={() => router.back()}
-          style={styles.backButton}
+          style={styles.iconButton}
         >
-          <Ionicons name="chevron-back" size={24} color={COLORS.textSubDark} />
+          <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>个人信息</Text>
         <View style={styles.headerRight} />
@@ -455,10 +456,8 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255, 255, 255, 0.05)',
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
   },
-  backButton: {
-    padding: 8,
-    marginLeft: -8,
-    borderRadius: 20,
+  iconButton: {
+    padding: 4,
   },
   headerTitle: {
     fontSize: 16,

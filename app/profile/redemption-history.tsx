@@ -13,7 +13,7 @@ const COLORS = {
   textMain: "#ffffff",
   textMuted: "#9ca3af",
   border: "#27272a",
-  primary: "#2ebd85",
+  primary: "#ffffff",
 };
 
 export default function RedemptionHistoryPage() {
@@ -69,8 +69,8 @@ export default function RedemptionHistoryPage() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#fff" />
+        <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+          <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>兑换记录</Text>
         <View style={{ width: 24 }} />
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
   },
-  backButton: {
+  iconButton: {
     padding: 4,
   },
   headerTitle: {
