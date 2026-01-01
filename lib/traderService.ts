@@ -271,3 +271,34 @@ export async function getTraderSignals(
     throw error;
   }
 }
+
+/**
+ * 获取交易员信号趋势数据（按天统计）
+ * @param traderId 交易员ID
+ * @param days 天数（7, 30, 90）
+ * @returns 每天的信号数量统计
+ */
+export async function getTraderSignalTrend(
+  traderId: string,
+  days: number = 7
+): Promise<Array<{ date: string; signal_count: number }>> {
+  try {
+    console.log('🔵 [TraderService] 调用 RPC: get_trader_signal_trend', { traderId, days });
+    
+    const { data, error } = await supabase.rpc('get_trader_signal_trend', {
+      p_trader_id: traderId,
+      p_days: days
+    });
+    
+    if (error) {
+      console.error('❌ [TraderService] 获取信号趋势失败:', error);
+      throw error;
+    }
+
+    console.log('✅ [TraderService] 成功获取', data?.length || 0, '天的信号趋势数据');
+    return data || [];
+  } catch (error) {
+    console.error('❌ [TraderService] 获取信号趋势异常:', error);
+    throw error;
+  }
+}

@@ -7,7 +7,7 @@ import Svg, { Path, Defs, LinearGradient, Stop, Circle, G, Image as SvgImage, Te
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 import { useAuth } from '../../contexts/AuthContext';
 import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../../lib/userTraderService';
-import { getTraderDetail, TraderDetail, getTraderSignals } from '../../lib/traderService';
+import { getTraderDetail, TraderDetail, getTraderSignals, getTraderSignalTrend } from '../../lib/traderService';
 import { Signal } from '../../lib/signalService';
 import type { Trader } from '../../types';
 import Toast from '../../components/Toast';
@@ -42,18 +42,29 @@ const TraderDetailScreen = () => {
   const [signalTrendPeriod, setSignalTrendPeriod] = useState<'7' | '30' | '90'>('7');
   const [trader, setTrader] = useState<TraderDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [subscribeLoading, setSubscribeLoading] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [currentSignals, setCurrentSignals] = useState<Signal[]>([]);
   const [historySignals, setHistorySignals] = useState<Signal[]>([]);
   const [signalsLoading, setSignalsLoading] = useState(false);
+  const [signalTrendData, setSignalTrendData] = useState<Array<{ date: string; signal_count: number }>>([]);
+  const [trendLoading, setTrendLoading] = useState(false);
 
   // 【优化】加载交易员数据 - 使用单次优化查询
   useEffect(() => {
     loadTraderData();
     loadSignals();
+    loadSignalTrend();
   }, [traderId]);
+
+  // 当时间周期改变时,重新加载趋势数据
+  useEffect(() => {
+    if (traderId) {
+      loadSignalTrend();
+    }
+  }, [signalTrendPeriod]);
 
   const loadTraderData = async () => {
     if (!traderId) return;
@@ -101,6 +112,27 @@ const TraderDetailScreen = () => {
     }
   };
 
+  const loadSignalTrend = async () => {
+    if (!traderId) return;
+    
+    try {
+      setTrendLoading(true);
+      const days = parseInt(signalTrendPeriod);
+      const trendData = await getTraderSignalTrend(traderId, days);
+      setSignalTrendData(trendData);
+      
+      console.log('✅ 成功加载信号趋势数据:', { 
+        period: signalTrendPeriod, 
+        dataPoints: trendData.length 
+      });
+    } catch (error) {
+      console.error('加载信号趋势失败:', error);
+      setSignalTrendData([]); // 出错时设置为空数组
+    } finally {
+      setTrendLoading(false);
+    }
+  };
+
   // 处理订阅/取消订阅
   const handleSubscriptionToggle = async () => {
     if (!user?.id || !trader) {
@@ -108,10 +140,10 @@ const TraderDetailScreen = () => {
       return;
     }
 
-    if (actionLoading) return;
+    if (subscribeLoading) return;
 
     try {
-      setActionLoading(true);
+      setSubscribeLoading(true);
       
       if (isSubscribed) {
         const result = await unsubscribeTrader(user.id, trader.id);
@@ -127,7 +159,7 @@ const TraderDetailScreen = () => {
     } catch (error) {
       console.error('订阅操作失败:', error);
     } finally {
-      setActionLoading(false);
+      setSubscribeLoading(false);
     }
   };
 
@@ -138,10 +170,10 @@ const TraderDetailScreen = () => {
       return;
     }
 
-    if (actionLoading) return;
+    if (favoriteLoading) return;
 
     try {
-      setActionLoading(true);
+      setFavoriteLoading(true);
       
       if (isFavorite) {
         const result = await unfollowTrader(user.id, trader.id);
@@ -157,13 +189,56 @@ const TraderDetailScreen = () => {
     } catch (error) {
       console.error('关注操作失败:', error);
     } finally {
-      setActionLoading(false);
+      setFavoriteLoading(false);
     }
   };
 
   const handleCopy = () => {
     setToastMessage('Copy成功');
     setToastVisible(true);
+  };
+
+  // 生成SVG图表路径
+  const generateChartPath = () => {
+    if (trendLoading) {
+      return "M 0,20 L 100,20"; // 加载中显示直线
+    }
+    
+    if (!signalTrendData || signalTrendData.length === 0) {
+      return "M 0,20 L 100,20"; // 无数据显示直线
+    }
+
+    // 找到最大值用于归一化
+    const maxCount = Math.max(...signalTrendData.map(d => d.signal_count), 1);
+    
+    // 计算每个点的坐标
+    const points = signalTrendData.map((data, index) => {
+      const x = (index / (signalTrendData.length - 1)) * 100;
+      // Y轴倒置(SVG坐标系),归一化到5-35范围(留出边距)
+      const y = 35 - (data.signal_count / maxCount) * 30;
+      return { x, y };
+    });
+
+    // 生成平滑曲线路径
+    if (points.length === 1) {
+      return `M ${points[0].x},${points[0].y} L ${points[0].x},${points[0].y}`;
+    }
+
+    let path = `M ${points[0].x},${points[0].y}`;
+    
+    for (let i = 0; i < points.length - 1; i++) {
+      const current = points[i];
+      const next = points[i + 1];
+      
+      // 使用二次贝塞尔曲线进行平滑
+      const controlX = (current.x + next.x) / 2;
+      const controlY = (current.y + next.y) / 2;
+      
+      path += ` Q ${controlX},${current.y} ${(current.x + next.x) / 2},${controlY}`;
+      path += ` T ${next.x},${next.y}`;
+    }
+    
+    return path;
   };
 
   // 渲染单个信号卡片
@@ -419,22 +494,30 @@ const TraderDetailScreen = () => {
                     <TouchableOpacity 
                       style={styles.starButton} 
                       onPress={handleFavoriteToggle}
-                      disabled={actionLoading}
+                      disabled={favoriteLoading}
                     >
-                      <MaterialIcons 
-                        name={isFavorite ? "star" : "star-border"} 
-                        size={24} 
-                        color={isFavorite ? COLORS.yellow : COLORS.textSub} 
-                      />
+                      {favoriteLoading ? (
+                        <ActivityIndicator size="small" color={COLORS.yellow} />
+                      ) : (
+                        <MaterialIcons 
+                          name={isFavorite ? "star" : "star-border"} 
+                          size={24} 
+                          color={isFavorite ? COLORS.yellow : COLORS.textSub} 
+                        />
+                      )}
                     </TouchableOpacity>
                     <TouchableOpacity 
                       style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
                       onPress={handleSubscriptionToggle}
-                      disabled={actionLoading}
+                      disabled={subscribeLoading}
                     >
-                      <Text style={styles.copyButtonText}>
-                        {actionLoading ? '...' : (isSubscribed ? '已订阅' : '订阅')}
-                      </Text>
+                      {subscribeLoading ? (
+                        <ActivityIndicator size="small" color={isSubscribed ? COLORS.textSub : COLORS.background} />
+                      ) : (
+                        <Text style={styles.copyButtonText}>
+                          {isSubscribed ? '已订阅' : '订阅'}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -475,16 +558,22 @@ const TraderDetailScreen = () => {
                   <Text style={styles.roiPercent}>{trader?.total_signals || 0}</Text>
                 </View>
                 <View style={styles.miniChartContainer}>
-                  <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
-                    <Path 
-                      d="M 0,20 Q 25,10 50,15 T 100,5" 
-                      fill="none" 
-                      stroke={COLORS.primary} 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
-                  </Svg>
+                  {trendLoading ? (
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                    </View>
+                  ) : (
+                    <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
+                      <Path 
+                        d={generateChartPath()} 
+                        fill="none" 
+                        stroke={COLORS.primary} 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      />
+                    </Svg>
+                  )}
                 </View>
               </View>
             </View>
