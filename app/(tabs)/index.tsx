@@ -1081,7 +1081,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
   return (
   <View style={{ flex: 1 }}>
     {/* Fixed Filter Bar - 移除了 borderBottomWidth 和 borderBottomColor */}
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 8, backgroundColor: COLORS.background }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, gap: 8, backgroundColor: COLORS.background }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }} style={{ flex: 1 }}>
         {filters.map((filter) => {
           const isActive = activeFilters.includes(filter);

@@ -661,7 +661,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     marginBottom: 16,
-    marginTop: 8,
+    marginTop: -8,
+    marginHorizontal: 16,
     gap: 24,
   },
   navItem: {
@@ -770,6 +771,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     marginBottom: 16,
+    marginHorizontal: 16,
     gap: 24,
   },
   positionCard: {

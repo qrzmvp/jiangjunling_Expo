@@ -314,22 +314,36 @@ const TraderDetailScreen = () => {
           <View style={styles.statsContainer}>
             <View style={styles.roiSection}>
               <View style={styles.roiHeader}>
-                <Text style={styles.roiLabel}>带单90日收益 (ROI)</Text>
+                <Text style={styles.roiLabel}>信号总数</Text>
                 <MaterialIcons name="info-outline" size={14} color="rgba(136, 136, 136, 0.5)" />
               </View>
-              <View style={styles.roiValues}>
-                <Text style={styles.roiPercent}>+21.23%</Text>
+              <View style={styles.roiRow}>
+                <View style={styles.roiValues}>
+                  <Text style={styles.roiPercent}>156</Text>
+                </View>
+                <View style={styles.miniChartContainer}>
+                  <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
+                    <Path 
+                      d="M 0,20 Q 25,10 50,15 T 100,5" 
+                      fill="none" 
+                      stroke={COLORS.primary} 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                    />
+                  </Svg>
+                </View>
               </View>
             </View>
 
             <View style={styles.gridStats}>
               <View style={styles.statItem}>
-                <Text style={styles.statLabel}>胜率</Text>
-                <Text style={styles.statValue}>68.5%</Text>
+                <Text style={styles.statLabel}>做多信号</Text>
+                <Text style={styles.statValue}>98</Text>
               </View>
               <View style={[styles.statItem, { alignItems: 'center' }]}>
-                <Text style={styles.statLabel}>AUM (USDT)</Text>
-                <Text style={styles.statValue}>1.98M</Text>
+                <Text style={styles.statLabel}>做空信号</Text>
+                <Text style={styles.statValue}>58</Text>
               </View>
               <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
                 <Text style={styles.statLabel}>交易天数</Text>
@@ -339,8 +353,8 @@ const TraderDetailScreen = () => {
           </View>
         </View>
 
-        {/* Rank Section */}
-        <View style={[styles.card, styles.rankCard]}>
+        {/* Rank Section - 暂时隐藏 */}
+        {/* <View style={[styles.card, styles.rankCard]}>
           <View style={[styles.rankItem, styles.borderRight]}>
             <Text style={styles.rankLabel}>日排行</Text>
             <View style={styles.rankValueRow}>
@@ -368,7 +382,7 @@ const TraderDetailScreen = () => {
           <View style={styles.rankArrow}>
             <MaterialIcons name="chevron-right" size={24} color={COLORS.textSub} />
           </View>
-        </View>
+        </View> */}
 
         {/* Profit Trend Section - 暂时隐藏 */}
         {/* <View style={styles.card}>
@@ -795,6 +809,11 @@ const styles = StyleSheet.create({
     color: COLORS.textSub,
     fontSize: 12,
   },
+  roiRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   roiValues: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -810,6 +829,10 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 14,
     fontWeight: '500',
+  },
+  miniChartContainer: {
+    width: 120,
+    height: 50,
   },
   gridStats: {
     flexDirection: 'row',
