@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../../lib/userTraderService';
 import { getTraders, getTraderByIdWithUserStatus } from '../../lib/traderService';
 import type { Trader } from '../../types';
+import Toast from '../../components/Toast';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -41,6 +42,8 @@ const TraderDetailScreen = () => {
   const [trader, setTrader] = useState<Trader | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // 【优化】加载交易员数据 - 使用单次优化查询
   useEffect(() => {
@@ -126,6 +129,11 @@ const TraderDetailScreen = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleCopy = () => {
+    setToastMessage('Copy成功');
+    setToastVisible(true);
   };
 
   // Mock Chart Data
@@ -308,7 +316,7 @@ const TraderDetailScreen = () => {
                     </TouchableOpacity>
                   </View>
                 </View>
-                <Text style={styles.description} numberOfLines={1}>{trader.bio || '暂无描述'}</Text>
+                <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">{trader.description || '暂无描述'}</Text>
               </View>
             </View>
 
@@ -453,7 +461,7 @@ const TraderDetailScreen = () => {
                     <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>5x</Text>
                     </View>
-                    <TouchableOpacity style={styles.signalCopyButton}>
+                    <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
                       <Text style={styles.signalCopyButtonText}>Copy</Text>
                     </TouchableOpacity>
                   </View>
@@ -499,7 +507,7 @@ const TraderDetailScreen = () => {
                     <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>20x</Text>
                     </View>
-                    <TouchableOpacity style={styles.signalCopyButton}>
+                    <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
                       <Text style={styles.signalCopyButtonText}>Copy</Text>
                     </TouchableOpacity>
                   </View>
@@ -545,7 +553,7 @@ const TraderDetailScreen = () => {
                     <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>10x</Text>
                     </View>
-                    <TouchableOpacity style={styles.signalCopyButton}>
+                    <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
                       <Text style={styles.signalCopyButtonText}>Copy</Text>
                     </TouchableOpacity>
                   </View>
@@ -595,7 +603,7 @@ const TraderDetailScreen = () => {
                     <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>5x</Text>
                     </View>
-                    <TouchableOpacity style={styles.signalCopyButton}>
+                    <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
                       <Text style={styles.signalCopyButtonText}>Copy</Text>
                     </TouchableOpacity>
                   </View>
@@ -641,7 +649,7 @@ const TraderDetailScreen = () => {
                     <View style={styles.signalLeverageTag}>
                       <Text style={styles.signalLeverageText}>10x</Text>
                     </View>
-                    <TouchableOpacity style={styles.signalCopyButton}>
+                    <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
                       <Text style={styles.signalCopyButtonText}>Copy</Text>
                     </TouchableOpacity>
                   </View>
@@ -683,6 +691,13 @@ const TraderDetailScreen = () => {
 
       </ScrollView>
       )}
+      <Toast 
+        visible={toastVisible} 
+        message={toastMessage} 
+        type="success" 
+        duration={1500}
+        onHide={() => setToastVisible(false)} 
+      />
     </SafeAreaView>
   );
 };
@@ -1268,14 +1283,14 @@ const styles = StyleSheet.create({
   },
   signalCopyButton: {
     backgroundColor: COLORS.white,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
     marginLeft: 'auto',
   },
   signalCopyButtonText: {
     color: COLORS.background,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   signalInfoRow: {

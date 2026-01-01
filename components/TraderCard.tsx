@@ -24,6 +24,7 @@ export const TraderCard = ({
   avatar, 
   followers, 
   maxFollowers, 
+  description,
   roi, 
   roiLabel = "Lead trader 90D PnL",
   pnl, 
@@ -44,6 +45,7 @@ export const TraderCard = ({
   avatar: string,
   followers: number,
   maxFollowers: number,
+  description?: string,
   roi: string,
   roiLabel?: string,
   pnl: string,
@@ -139,12 +141,11 @@ export const TraderCard = ({
               <View style={[styles.statusIndicator, { backgroundColor: statusColor }]} />
             </View>
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.traderName}>{name}</Text>
-            <View style={styles.followerInfo}>
-              <MaterialIcons name="group" size={10} color={COLORS.textMuted} style={{ marginRight: 4 }} />
-              <Text style={styles.followerText}>{followers}/{maxFollowers}</Text>
-            </View>
+            <Text style={styles.traderDescription} numberOfLines={1} ellipsizeMode="tail">
+              {description || '暂无描述'}
+            </Text>
           </View>
         </View>
         <View style={styles.cardActions}>
@@ -261,6 +262,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
     marginBottom: 2,
+  },
+  traderDescription: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    lineHeight: 16,
   },
   followerInfo: {
     flexDirection: 'row',

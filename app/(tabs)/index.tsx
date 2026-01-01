@@ -808,6 +808,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
                 roiLabel="信号总数" 
                 name={trader.name}
                 avatar={trader.avatar_url}
+                description={trader.description}
                 initialIsSubscribed={subscribedTraders.has(trader.id)}
                 initialIsFavorite={followedTraders.has(trader.id)}
                 onSubscriptionChange={handleSubscriptionChange}

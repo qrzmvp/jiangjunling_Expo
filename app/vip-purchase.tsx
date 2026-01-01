@@ -101,7 +101,7 @@ export default function VipPurchasePage() {
       <ScrollView style={styles.content}>
         <View style={styles.vipHeader}>
           <View style={styles.vipIconContainer}>
-            <Ionicons name="diamond" size={40} color={COLORS.gold} />
+            <Ionicons name="diamond" size={30} color={COLORS.gold} />
           </View>
           <Text style={styles.vipTitle}>尊享VIP会员权益</Text>
           <Text style={styles.vipSubtitle}>开启您的专属特权之旅</Text>
@@ -111,52 +111,52 @@ export default function VipPurchasePage() {
           <View style={styles.benefitsRow}>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
-                <Ionicons name="people" size={20} color={COLORS.gold} />
+                <Ionicons name="people" size={18} color={COLORS.gold} />
               </View>
               <Text style={styles.benefitText}>交易员集合</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
-                <Ionicons name="pie-chart" size={20} color={COLORS.gold} />
+                <Ionicons name="pie-chart" size={18} color={COLORS.gold} />
               </View>
               <Text style={styles.benefitText}>实时持仓</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
-                <Ionicons name="list" size={20} color={COLORS.gold} />
+                <Ionicons name="list" size={18} color={COLORS.gold} />
               </View>
               <Text style={styles.benefitText}>实时挂单</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
-                <Ionicons name="time" size={20} color={COLORS.gold} />
+                <Ionicons name="time" size={18} color={COLORS.gold} />
               </View>
               <Text style={styles.benefitText}>历史调仓</Text>
             </View>
           </View>
 
-          <View style={[styles.benefitsRow, { marginTop: 16 }]}>
+          <View style={[styles.benefitsRow, { marginTop: 12 }]}>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
-                <Ionicons name="flash" size={20} color={COLORS.gold} />
+                <Ionicons name="flash" size={18} color={COLORS.gold} />
               </View>
               <Text style={styles.benefitText}>极速交易</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
-                <Ionicons name="analytics" size={20} color={COLORS.gold} />
+                <Ionicons name="analytics" size={18} color={COLORS.gold} />
               </View>
               <Text style={styles.benefitText}>专业行情</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
-                <Ionicons name="headset" size={20} color={COLORS.gold} />
+                <Ionicons name="headset" size={18} color={COLORS.gold} />
               </View>
               <Text style={styles.benefitText}>专属客服</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
-                <Ionicons name="shield-checkmark" size={20} color={COLORS.gold} />
+                <Ionicons name="shield-checkmark" size={18} color={COLORS.gold} />
               </View>
               <Text style={styles.benefitText}>安全保障</Text>
             </View>
@@ -278,32 +278,32 @@ const styles = StyleSheet.create({
   },
   vipHeader: {
     alignItems: 'center',
-    marginBottom: 30,
-    marginTop: 10,
+    marginBottom: 20,
+    marginTop: 5,
   },
   vipIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   vipTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: COLORS.gold,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   vipSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textMuted,
   },
   benefitsContainer: {
-    marginBottom: 40,
+    marginBottom: 24,
     backgroundColor: COLORS.surface,
-    padding: 20,
+    padding: 16,
     borderRadius: 16,
   },
   benefitsRow: {
@@ -315,16 +315,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   benefitIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   benefitText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLORS.textMuted,
   },
   sectionTitle: {
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   description: {
-    marginTop: 20,
+    marginTop: 12,
   },
   descriptionText: {
     fontSize: 12,

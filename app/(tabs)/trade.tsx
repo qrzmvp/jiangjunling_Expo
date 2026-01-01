@@ -274,15 +274,15 @@ const TradePage: React.FC = () => {
 
       <ScrollView style={styles.scrollView}>
 
-        {/* Primary Navigation */}
-        <View style={styles.primaryNav}>
+        {/* Primary Navigation - 暂时隐藏 */}
+        {/* <View style={styles.primaryNav}>
           <TouchableOpacity style={styles.navItemActive}>
             <Text style={styles.navTextActive}>资产</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.navItem}>
             <Text style={styles.navText}>分析</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
         {/* Balance Card */}
         <View style={styles.balanceCard}>
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
   },
   mainBalance: {
     color: COLORS.textMain,
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 16,
   },
