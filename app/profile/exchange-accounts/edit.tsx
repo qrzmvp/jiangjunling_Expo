@@ -66,30 +66,54 @@ export default function EditExchangeAccount() {
   // 处理键盘事件，修复移动端浏览器键盘收起后的空白区域问题
   useEffect(() => {
     if (Platform.OS === 'web') {
-      // 监听窗口大小变化
-      const handleResize = () => {
+      // 强制页面滚动到顶部并重置视口
+      const resetViewport = () => {
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        
         // 强制重新计算视口高度
         const vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
+        
+        // 强制重绘
+        document.body.style.height = `${window.innerHeight}px`;
+        setTimeout(() => {
+          document.body.style.height = '';
+        }, 100);
+      };
+
+      // 监听输入框失焦事件
+      const handleBlur = () => {
+        setTimeout(resetViewport, 100);
+      };
+
+      // 监听窗口大小变化
+      const handleResize = () => {
+        resetViewport();
       };
 
       // 初始设置
-      handleResize();
+      resetViewport();
 
-      // 监听窗口大小变化和方向变化
+      // 监听所有可能触发键盘的事件
+      document.addEventListener('focusout', handleBlur);
       window.addEventListener('resize', handleResize);
       window.addEventListener('orientationchange', handleResize);
 
       // 监听视觉视口变化（更准确地检测键盘）
       if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', handleResize);
+        window.visualViewport.addEventListener('scroll', resetViewport);
       }
 
       return () => {
+        document.removeEventListener('focusout', handleBlur);
         window.removeEventListener('resize', handleResize);
         window.removeEventListener('orientationchange', handleResize);
         if (window.visualViewport) {
           window.visualViewport.removeEventListener('resize', handleResize);
+          window.visualViewport.removeEventListener('scroll', resetViewport);
         }
       };
     }
@@ -748,7 +772,10 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 30 : 0,
     ...(Platform.OS === 'web' && {
       minHeight: '100vh',
-      height: '100%',
+      height: '100vh',
+      maxHeight: '100vh',
+      overflow: 'hidden',
+      position: 'relative' as any,
     }),
   },
   safeArea: {
@@ -783,11 +810,18 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    ...(Platform.OS === 'web' && {
+      height: '100%',
+      overflow: 'auto' as any,
+    }),
   },
   scrollContent: {
     padding: 16,
     paddingBottom: Platform.OS === 'web' ? 100 : (Platform.OS === 'ios' ? 40 : 24),
     flexGrow: 1,
+    ...(Platform.OS === 'web' && {
+      minHeight: '100%',
+    }),
   },
   section: {
     marginBottom: 24,
