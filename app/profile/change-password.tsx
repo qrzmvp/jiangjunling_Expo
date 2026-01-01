@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, StatusBar, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, StatusBar, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
@@ -373,6 +373,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundDark,
+    ...(Platform.OS === 'web' && {
+      position: 'fixed' as any,
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+      touchAction: 'pan-y' as any,
+    }),
   },
   header: {
     flexDirection: 'row',

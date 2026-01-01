@@ -202,6 +202,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    ...(Platform.OS === 'web' && {
+      position: 'fixed' as any,
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+      touchAction: 'pan-y' as any,
+    }),
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

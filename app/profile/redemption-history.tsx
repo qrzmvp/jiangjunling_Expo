@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, ActivityIndicator, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
@@ -102,6 +102,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    ...(Platform.OS === 'web' && {
+      position: 'fixed' as any,
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+      touchAction: 'pan-y' as any,
+    }),
   },
   header: {
     flexDirection: 'row',
