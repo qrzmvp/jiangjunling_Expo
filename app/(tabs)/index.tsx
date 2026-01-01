@@ -11,7 +11,7 @@ import { SignalCard } from '../../components/SignalCard';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
 import { getFollowedTraders, getSubscribedTraders } from '../../lib/userTraderService';
-import { getTraders, getTradersWithUserStatus } from '../../lib/traderService';
+import { getTradersWithStats, TraderWithStats } from '../../lib/traderService';
 import type { Trader } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -578,7 +578,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   const router = useRouter();
   const { user } = useAuth();
   const filters = ['全部', '已订阅', '已关注'];
-  const [traders, setTraders] = useState<Trader[]>([]);
+  const [traders, setTraders] = useState<TraderWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -613,15 +613,17 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
       }
 
       const currentPage = reset ? 1 : page;
+      const offset = reset ? 0 : (currentPage - 1) * PAGE_SIZE;
       
-      // 使用优化后的函数：一次查询获取分页数据
-      const tradersWithStatus = await getTradersWithUserStatus(
+      // 使用新的 RPC 函数：getTradersWithStats
+      const tradersWithStatus = await getTradersWithStats(
         user?.id,
-        PAGE_SIZE * currentPage
+        PAGE_SIZE,
+        offset
       );
       
       // 判断是否还有更多数据
-      const hasMoreData = tradersWithStatus.length >= PAGE_SIZE * currentPage;
+      const hasMoreData = tradersWithStatus.length === PAGE_SIZE;
       setHasMore(hasMoreData);
 
       if (reset) {
@@ -638,8 +640,8 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
       const followed = new Set<string>();
       
       tradersWithStatus.forEach(trader => {
-        if (trader.isSubscribed) subscribed.add(trader.id);
-        if (trader.isFollowed) followed.add(trader.id);
+        if (trader.is_subscribed) subscribed.add(trader.id);
+        if (trader.is_followed) followed.add(trader.id);
       });
       
       setSubscribedTraders(subscribed);
@@ -813,21 +815,21 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
                 initialIsFavorite={followedTraders.has(trader.id)}
                 onSubscriptionChange={handleSubscriptionChange}
                 onFavoriteChange={handleFavoriteChange}
-                // 以下为模拟数据，后续可以从数据库获取
-                followers={Math.floor(Math.random() * 100) + 10}
+                // 使用真实数据库数据
+                followers={trader.followers_count || 0}
                 maxFollowers={100}
-                roi={`${Math.floor(Math.random() * 150) + 50}`}
+                roi={`${trader.total_signals || 0}`}
                 pnl=""
-                winRate={`${Math.floor(Math.random() * 80) + 20}`}
-                aum={`${Math.floor(Math.random() * 70) + 10}`}
-                days={Math.floor(Math.random() * 300) + 50}
+                winRate={`${trader.long_signals || 0}`}
+                aum={`${trader.short_signals || 0}`}
+                days={trader.signal_count || 0}
                 coins={[
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuATVNwivtQOZ2npc_w1PrcrX_4y17f4sOiNkn0PcY8zqp0YLkQ3QuxIkuDHNbTjM1ZyrnwY3GKd7UVSYfoETg68d3DNq3yliS1uwFDzri7UqYgzB5fN2Ju5KYY8plwkhuhEWVym03IBsLlyKhgTloiJKTujcHXIe_z-lpDvnkbxcYGocB5nfG-PQGKRLQ1b7pknYTUavPCwz1iU0-cRBaTMqb597A3OgbOCuT2YYwBSVl3V5yGQaMdwr6lBh9K9vzREuJyuOGn7Tg",
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuBqVLgtNIEpUr5EnOPS_CgkITlq0vVjaigO9jnxDPyQnAokTkWkEOTGXrlpCYF9sNvRwze7xjCTLCxaNfb3DiTbcvBgZhA5rJt4lyW5zxbfuPyai7ANHCgpXluqDnWr9ATykGdJ9X5sTLPyJND5T5bvWN7ciyMIvkT-OAUvZG8khWTSrhiGjPrSs-AL0ZpdNIzo2pRweRiGqFRbsmXXfg4024-qe1haFHvijyQhWvK--a2M_RHLjsnDeVusKni_aeEZwEa9cuvmxA",
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuAEcAV67993OCt0DPtM2p8O2VOufk16pTKp8rXdxYzZU8G7G59l0CDW4oL01HveVAtNT8Kh31Z9GKhffkuQDVAasrQHuE6ebVN23WctH5f7nUebYYIynGAqCZBHm1obLP8vwJwmcWrJZWa6EMfh2j2DJYl9_nwAh14I6lW2R3ZM_WibvUnRtI2a_v96J6JPW2yEh_yFxhIxz-NjuG02m8tjKWN6rti6CP0T5pyv_yhFsEtAHivwBNN7IhN3qg66P95nZngpHi5fcQ"
                 ]}
                 chartPath="M0,35 Q10,32 20,30 T40,20 T60,25 T80,10 L100,20"
-                statusColor={COLORS.yellow}
+                statusColor={trader.is_online ? COLORS.primary : COLORS.yellow}
                 onPress={() => router.push({
                   pathname: '/trader/detail',
                   params: { 
@@ -934,6 +936,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
       }
 
       const currentPage = reset ? 1 : page;
+      const offset = reset ? 0 : (currentPage - 1) * PAGE_SIZE;
       let data: Signal[] = [];
 
       // 检查筛选条件
@@ -956,31 +959,22 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
         followedTraderIds = followedTraders.map(item => item.trader_id);
       }
 
-      // 根据筛选条件获取信号
-      if (hasLong && hasShort) {
-        // 同时选择做多和做空，获取两者的并集
-        const [longSignals, shortSignals] = await Promise.all([
-          SignalService.getSignalsByDirection('long', PAGE_SIZE * currentPage),
-          SignalService.getSignalsByDirection('short', PAGE_SIZE * currentPage)
-        ]);
-        // 合并并去重（基于ID）
-        const signalMap = new Map();
-        [...longSignals, ...shortSignals].forEach(signal => {
-          signalMap.set(signal.id, signal);
-        });
-        data = Array.from(signalMap.values());
-        // 按信号时间倒序排序
-        data.sort((a, b) => new Date(b.signal_time).getTime() - new Date(a.signal_time).getTime());
-      } else if (hasLong) {
-        // 只选择做多
-        data = await SignalService.getSignalsByDirection('long', PAGE_SIZE * currentPage);
-      } else if (hasShort) {
-        // 只选择做空
-        data = await SignalService.getSignalsByDirection('short', PAGE_SIZE * currentPage);
-      } else {
-        // 全部或其他筛选条件
-        data = await SignalService.getActiveSignals(PAGE_SIZE * currentPage);
+      // 根据筛选条件获取信号 - 使用新的 RPC 函数
+      let direction: 'long' | 'short' | undefined = undefined;
+      if (hasLong && !hasShort) {
+        direction = 'long';
+      } else if (hasShort && !hasLong) {
+        direction = 'short';
       }
+
+      // 使用新的 getSignalsWithTraders RPC 函数
+      data = await SignalService.getSignalsWithTraders(
+        'active',
+        direction,
+        undefined, // signal_type
+        PAGE_SIZE,
+        offset
+      );
 
       // 根据已订阅/已关注筛选交易员
       if (hasSubscribed && subscribedTraderIds.length > 0) {
@@ -992,7 +986,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
       }
 
       // 判断是否还有更多数据
-      const hasMoreData = data.length >= PAGE_SIZE * currentPage;
+      const hasMoreData = data.length === PAGE_SIZE;
       setHasMore(hasMoreData);
 
       if (reset) {
@@ -1190,29 +1184,23 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
       ) : (
         <>
           {signals.map((signal) => {
-            // Supabase关联查询可能返回数组，需要处理
-            const trader = Array.isArray(signal.trader) ? signal.trader[0] : signal.trader;
-            
-            // 调试日志 - 帮助排查iOS头像显示问题
-            if (!trader?.avatar_url) {
-              console.log('Missing trader data for signal:', signal.id);
-              console.log('Signal trader:', JSON.stringify(signal.trader));
-            }
+            // RPC函数返回的是扁平化的数据结构，字段名为 trader_name, trader_avatar_url 等
+            const signalWithTrader = signal as any;
             
             return (
               <SignalCard 
                 key={signal.id}
                 traderId={signal.trader_id}
-                name={trader?.name || '未知交易员'}
-                avatar={trader?.avatar_url || DEFAULT_AVATAR}
-                description={trader?.description || ''}
+                name={signalWithTrader.trader_name || '未知交易员'}
+                avatar={signalWithTrader.trader_avatar_url || DEFAULT_AVATAR}
+                description={signalWithTrader.trader_description || ''}
                 currency={signal.currency}
                 entry={signal.entry_price}
                 direction={signal.direction}
                 stopLoss={signal.stop_loss}
                 takeProfit={signal.take_profit}
                 time={SignalService.formatSignalTime(signal.signal_time)}
-                signalCount={trader?.signal_count || 0}
+                signalCount={signalWithTrader.trader_signal_count || 0}
                 onPress={() => router.push({
                   pathname: '/trader/detail',
                   params: { 

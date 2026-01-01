@@ -7,7 +7,8 @@ import Svg, { Path, Defs, LinearGradient, Stop, Circle, G, Image as SvgImage, Te
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 import { useAuth } from '../../contexts/AuthContext';
 import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../../lib/userTraderService';
-import { getTraders, getTraderByIdWithUserStatus } from '../../lib/traderService';
+import { getTraderDetail, TraderDetail, getTraderSignals } from '../../lib/traderService';
+import { Signal } from '../../lib/signalService';
 import type { Trader } from '../../types';
 import Toast from '../../components/Toast';
 
@@ -39,15 +40,19 @@ const TraderDetailScreen = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [timeFilter, setTimeFilter] = useState('近一周');
   const [signalTrendPeriod, setSignalTrendPeriod] = useState<'7' | '30' | '90'>('7');
-  const [trader, setTrader] = useState<Trader | null>(null);
+  const [trader, setTrader] = useState<TraderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [currentSignals, setCurrentSignals] = useState<Signal[]>([]);
+  const [historySignals, setHistorySignals] = useState<Signal[]>([]);
+  const [signalsLoading, setSignalsLoading] = useState(false);
 
   // 【优化】加载交易员数据 - 使用单次优化查询
   useEffect(() => {
     loadTraderData();
+    loadSignals();
   }, [traderId]);
 
   const loadTraderData = async () => {
@@ -56,18 +61,43 @@ const TraderDetailScreen = () => {
     try {
       setLoading(true);
       
-      // 使用优化后的函数：一次查询获取交易员信息及用户状态
-      const traderWithStatus = await getTraderByIdWithUserStatus(traderId, user?.id);
+      // 使用新的 RPC 函数：getTraderDetail 获取完整的交易员信息及统计数据
+      const traderDetail = await getTraderDetail(traderId, user?.id);
       
-      if (traderWithStatus) {
-        setTrader(traderWithStatus);
-        setIsSubscribed(traderWithStatus.isSubscribed || false);
-        setIsFavorite(traderWithStatus.isFollowed || false);
+      if (traderDetail) {
+        setTrader(traderDetail);
+        setIsSubscribed(traderDetail.is_subscribed || false);
+        setIsFavorite(traderDetail.is_followed || false);
       }
     } catch (error) {
       console.error('加载交易员数据失败:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSignals = async () => {
+    if (!traderId) return;
+    
+    try {
+      setSignalsLoading(true);
+      
+      // 加载当天信号（active状态）
+      const activeSignals = await getTraderSignals(traderId, 'active', 20, 0);
+      setCurrentSignals(activeSignals);
+      
+      // 加载历史信号（closed状态）
+      const closedSignals = await getTraderSignals(traderId, 'closed', 20, 0);
+      setHistorySignals(closedSignals);
+      
+      console.log('✅ 成功加载信号数据:', { 
+        active: activeSignals.length, 
+        closed: closedSignals.length 
+      });
+    } catch (error) {
+      console.error('加载信号数据失败:', error);
+    } finally {
+      setSignalsLoading(false);
     }
   };
 
@@ -134,6 +164,98 @@ const TraderDetailScreen = () => {
   const handleCopy = () => {
     setToastMessage('Copy成功');
     setToastVisible(true);
+  };
+
+  // 渲染单个信号卡片
+  const renderSignalCard = (signal: Signal) => {
+    const isLong = signal.direction === 'long';
+    const statusBgColor = isLong ? 'rgba(46, 189, 133, 0.15)' : 'rgba(246, 70, 93, 0.15)';
+    const statusTextColor = isLong ? COLORS.primary : COLORS.danger;
+    
+    // 计算盈亏比
+    const entryPrice = parseFloat(signal.entry_price);
+    const takeProfit = parseFloat(signal.take_profit);
+    const stopLoss = parseFloat(signal.stop_loss);
+    
+    let profitLossRatio = '0:0';
+    if (isLong) {
+      const profit = takeProfit - entryPrice;
+      const loss = entryPrice - stopLoss;
+      if (loss > 0) {
+        profitLossRatio = `${(profit / loss).toFixed(2)}:1`;
+      }
+    } else {
+      const profit = entryPrice - takeProfit;
+      const loss = stopLoss - entryPrice;
+      if (loss > 0) {
+        profitLossRatio = `${(profit / loss).toFixed(2)}:1`;
+      }
+    }
+
+    // 格式化时间
+    const formatTime = (dateString: string) => {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+    };
+
+    // 信号类型显示
+    const signalTypeText = signal.signal_type === 'spot' ? '现货' : 
+                          signal.signal_type === 'futures' ? '永续' : '杠杆';
+
+    return (
+      <View key={signal.id} style={styles.signalCard}>
+        <View style={styles.signalCardHeader}>
+          <Text style={styles.signalPairText}>{signal.currency} {signalTypeText}</Text>
+          <View style={[styles.signalStatusTag, { backgroundColor: statusBgColor }]}>
+            <Text style={[styles.signalStatusText, { color: statusTextColor }]}>
+              {isLong ? '做多' : '做空'}
+            </Text>
+          </View>
+          <View style={styles.signalLeverageTag}>
+            <Text style={styles.signalLeverageText}>{signal.leverage}x</Text>
+          </View>
+          <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
+            <Text style={styles.signalCopyButtonText}>Copy</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.signalInfoGrid}>
+          <View style={styles.signalGridItem}>
+            <Text style={styles.signalInfoLabel}>入场价</Text>
+            <Text style={styles.signalInfoValue}>{signal.entry_price}</Text>
+          </View>
+          <View style={styles.signalGridItem}>
+            <Text style={styles.signalInfoLabel}>仓位模式</Text>
+            <Text style={styles.signalInfoValue}>全仓</Text>
+          </View>
+          <View style={styles.signalGridItem}>
+            <Text style={styles.signalInfoLabel}>委托时间</Text>
+            <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.signalInfoGrid}>
+          <View style={styles.signalGridItem}>
+            <Text style={styles.signalInfoLabel}>止盈价</Text>
+            <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.take_profit}</Text>
+          </View>
+          <View style={styles.signalGridItem}>
+            <Text style={styles.signalInfoLabel}>止损价</Text>
+            <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stop_loss}</Text>
+          </View>
+          <View style={styles.signalGridItem}>
+            <Text style={styles.signalInfoLabel}>盈亏比</Text>
+            <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
+          </View>
+        </View>
+      </View>
+    );
   };
 
   // Mock Chart Data
@@ -350,7 +472,7 @@ const TraderDetailScreen = () => {
               </View>
               <View style={styles.roiRow}>
                 <View style={styles.roiValues}>
-                  <Text style={styles.roiPercent}>156</Text>
+                  <Text style={styles.roiPercent}>{trader?.total_signals || 0}</Text>
                 </View>
                 <View style={styles.miniChartContainer}>
                   <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
@@ -370,15 +492,15 @@ const TraderDetailScreen = () => {
             <View style={styles.gridStats}>
               <View style={styles.statItem}>
                 <Text style={styles.statLabel}>做多信号</Text>
-                <Text style={styles.statValue}>98</Text>
+                <Text style={styles.statValue}>{trader?.long_signals || 0}</Text>
               </View>
               <View style={[styles.statItem, { alignItems: 'center' }]}>
                 <Text style={styles.statLabel}>做空信号</Text>
-                <Text style={styles.statValue}>58</Text>
+                <Text style={styles.statValue}>{trader?.short_signals || 0}</Text>
               </View>
               <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
                 <Text style={styles.statLabel}>交易天数</Text>
-                <Text style={styles.statValue}>428</Text>
+                <Text style={styles.statValue}>{trader?.signal_count || 0}</Text>
               </View>
             </View>
           </View>
@@ -431,7 +553,7 @@ const TraderDetailScreen = () => {
               <View style={styles.tabContent}>
                 <Text style={[styles.tabText, activeTab === 'current' ? styles.tabTextActive : null]}>当天信号</Text>
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>3</Text>
+                  <Text style={styles.badgeText}>{trader?.active_signals || 0}</Text>
                 </View>
               </View>
               {activeTab === 'current' && <View style={styles.activeIndicator} />}
@@ -449,241 +571,38 @@ const TraderDetailScreen = () => {
           </View>
 
           <View style={styles.listContainer}>
-            {activeTab === 'current' && (
+            {signalsLoading ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={{ color: COLORS.textSub, fontSize: 12, marginTop: 8 }}>
+                  加载信号数据...
+                </Text>
+              </View>
+            ) : (
               <>
-                {/* 信号1 - 做多XPLUSDT */}
-                <View style={styles.signalCard}>
-                  <View style={styles.signalCardHeader}>
-                    <Text style={styles.signalPairText}>XPLUSDT 永续</Text>
-                    <View style={styles.signalStatusTag}>
-                      <Text style={styles.signalStatusText}>做多</Text>
-                    </View>
-                    <View style={styles.signalLeverageTag}>
-                      <Text style={styles.signalLeverageText}>5x</Text>
-                    </View>
-                    <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
-                      <Text style={styles.signalCopyButtonText}>Copy</Text>
-                    </TouchableOpacity>
-                  </View>
+                {activeTab === 'current' && (
+                  <>
+                    {currentSignals.length === 0 ? (
+                      <View style={{ padding: 40, alignItems: 'center' }}>
+                        <Text style={{ color: COLORS.textSub, fontSize: 14 }}>暂无当天信号</Text>
+                      </View>
+                    ) : (
+                      currentSignals.map(signal => renderSignalCard(signal))
+                    )}
+                  </>
+                )}
 
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>入场价</Text>
-                      <Text style={styles.signalInfoValue}>86,943.6</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
-                      <Text style={styles.signalInfoValue}>全仓</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>委托时间</Text>
-                      <Text style={styles.signalInfoValue}>2026/01/01 19:13:29</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止盈价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>90,000</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止损价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>85,000</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>1.58:1</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* 信号2 - 做多BTC */}
-                <View style={styles.signalCard}>
-                  <View style={styles.signalCardHeader}>
-                    <Text style={styles.signalPairText}>BTC 永续</Text>
-                    <View style={styles.signalStatusTag}>
-                      <Text style={styles.signalStatusText}>做多</Text>
-                    </View>
-                    <View style={styles.signalLeverageTag}>
-                      <Text style={styles.signalLeverageText}>20x</Text>
-                    </View>
-                    <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
-                      <Text style={styles.signalCopyButtonText}>Copy</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>入场价</Text>
-                      <Text style={styles.signalInfoValue}>65,420</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
-                      <Text style={styles.signalInfoValue}>全仓</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>委托时间</Text>
-                      <Text style={styles.signalInfoValue}>2025/12/31 22:15:00</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止盈价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>68,000</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止损价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>64,000</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>1.82:1</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* 信号3 - 做空ETH */}
-                <View style={styles.signalCard}>
-                  <View style={styles.signalCardHeader}>
-                    <Text style={styles.signalPairText}>ETH 永续</Text>
-                    <View style={[styles.signalStatusTag, { backgroundColor: 'rgba(246, 70, 93, 0.15)' }]}>
-                      <Text style={[styles.signalStatusText, { color: COLORS.danger }]}>做空</Text>
-                    </View>
-                    <View style={styles.signalLeverageTag}>
-                      <Text style={styles.signalLeverageText}>10x</Text>
-                    </View>
-                    <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
-                      <Text style={styles.signalCopyButtonText}>Copy</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>入场价</Text>
-                      <Text style={styles.signalInfoValue}>3,450.0</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
-                      <Text style={styles.signalInfoValue}>全仓</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>委托时间</Text>
-                      <Text style={styles.signalInfoValue}>2025/12/31 18:30:00</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止盈价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>3,200</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止损价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>3,550</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>2.50:1</Text>
-                    </View>
-                  </View>
-                </View>
-              </>
-            )}
-
-            {activeTab === 'history' && (
-              <>
-                {/* 历史信号1 - 已完成做多 */}
-                <View style={styles.signalCard}>
-                  <View style={styles.signalCardHeader}>
-                    <Text style={styles.signalPairText}>SOL 永续</Text>
-                    <View style={styles.signalStatusTag}>
-                      <Text style={styles.signalStatusText}>做多</Text>
-                    </View>
-                    <View style={styles.signalLeverageTag}>
-                      <Text style={styles.signalLeverageText}>5x</Text>
-                    </View>
-                    <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
-                      <Text style={styles.signalCopyButtonText}>Copy</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>入场价</Text>
-                      <Text style={styles.signalInfoValue}>148.50</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
-                      <Text style={styles.signalInfoValue}>全仓</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>委托时间</Text>
-                      <Text style={styles.signalInfoValue}>2025/12/30 15:20:00</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止盈价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>155.00</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止损价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>145.00</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>1.86:1</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* 历史信号2 - 已完成做空 */}
-                <View style={styles.signalCard}>
-                  <View style={styles.signalCardHeader}>
-                    <Text style={styles.signalPairText}>LINK 永续</Text>
-                    <View style={[styles.signalStatusTag, { backgroundColor: 'rgba(246, 70, 93, 0.15)' }]}>
-                      <Text style={[styles.signalStatusText, { color: COLORS.danger }]}>做空</Text>
-                    </View>
-                    <View style={styles.signalLeverageTag}>
-                      <Text style={styles.signalLeverageText}>10x</Text>
-                    </View>
-                    <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
-                      <Text style={styles.signalCopyButtonText}>Copy</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>入场价</Text>
-                      <Text style={styles.signalInfoValue}>18.50</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
-                      <Text style={styles.signalInfoValue}>全仓</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>委托时间</Text>
-                      <Text style={styles.signalInfoValue}>2025/12/29 10:30:00</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止盈价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>17.00</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止损价</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>19.50</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>1.50:1</Text>
-                    </View>
-                  </View>
-                </View>
+                {activeTab === 'history' && (
+                  <>
+                    {historySignals.length === 0 ? (
+                      <View style={{ padding: 40, alignItems: 'center' }}>
+                        <Text style={{ color: COLORS.textSub, fontSize: 14 }}>暂无历史信号</Text>
+                      </View>
+                    ) : (
+                      historySignals.map(signal => renderSignalCard(signal))
+                    )}
+                  </>
+                )}
               </>
             )}
           </View>

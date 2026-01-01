@@ -13,93 +13,99 @@ export interface Signal {
   signal_type: 'spot' | 'futures' | 'margin';
   signal_time: string;
   created_at: string;
+  updated_at?: string;
   // 关联的交易员信息
   trader?: {
     id: string;
     name: string;
-    description: string;
+    description?: string;
     avatar_url: string;
-    signal_count: number;
-    is_online: boolean;
+    signal_count?: number;
+    is_online?: boolean;
+    is_online_today?: boolean;
+    followers_count?: number;
+    win_rate?: number;
   };
+}
+
+export interface SignalWithTrader extends Signal {
+  trader_name: string;
+  trader_description?: string;
+  trader_avatar_url: string;
+  trader_signal_count?: number;
+  trader_is_online?: boolean;
+  trader_is_online_today?: boolean;
+  trader_followers_count?: number;
+  trader_win_rate?: number;
 }
 
 export class SignalService {
   /**
-   * 获取所有活跃的信号列表
+   * 获取信号列表（使用RPC函数）
+   * @param status 信号状态
+   * @param direction 交易方向
+   * @param signalType 信号类型
+   * @param limit 限制返回数量
+   * @param offset 偏移量
    */
-  static async getActiveSignals(limit: number = 20): Promise<Signal[]> {
+  static async getSignalsWithTraders(
+    status: 'active' | 'closed' | 'cancelled' = 'active',
+    direction?: 'long' | 'short',
+    signalType?: 'spot' | 'futures' | 'margin',
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<SignalWithTrader[]> {
     try {
-      const { data, error } = await supabase
-        .from('signals')
-        .select(`
-          *,
-          trader:traders!inner (
-            id,
-            name,
-            description,
-            avatar_url,
-            signal_count,
-            is_online
-          )
-        `)
-        .eq('status', 'active')
-        .order('signal_time', { ascending: false })
-        .limit(limit);
+      console.log('🔵 [SignalService] 调用 RPC: get_signals_with_traders', { 
+        status, direction, signalType, limit, offset 
+      });
+      
+      const { data, error } = await supabase.rpc('get_signals_with_traders', {
+        p_status: status,
+        p_direction: direction || null,
+        p_signal_type: signalType || null,
+        p_limit: limit,
+        p_offset: offset
+      });
 
       if (error) {
-        console.error('获取信号失败:', error);
+        console.error('❌ [SignalService] 获取信号失败:', error);
         throw error;
       }
 
-      // 调试日志
-      if (data && data.length > 0) {
-        console.log('Signal data sample:', JSON.stringify(data[0], null, 2));
-      }
-
+      console.log('✅ [SignalService] 成功获取', data?.length || 0, '条信号数据');
       return data || [];
     } catch (error) {
-      console.error('获取信号异常:', error);
+      console.error('❌ [SignalService] 获取信号异常:', error);
       return [];
     }
   }
 
   /**
-   * 根据方向筛选信号
+   * 获取所有活跃的信号列表（使用新RPC）
+   */
+  static async getActiveSignals(limit: number = 20): Promise<SignalWithTrader[]> {
+    return this.getSignalsWithTraders('active', undefined, undefined, limit, 0);
+  }
+
+  /**
+   * 根据方向筛选信号（使用新RPC）
    */
   static async getSignalsByDirection(
     direction: 'long' | 'short',
     limit: number = 20
-  ): Promise<Signal[]> {
-    try {
-      const { data, error } = await supabase
-        .from('signals')
-        .select(`
-          *,
-          trader:traders!inner (
-            id,
-            name,
-            description,
-            avatar_url,
-            signal_count,
-            is_online
-          )
-        `)
-        .eq('status', 'active')
-        .eq('direction', direction)
-        .order('signal_time', { ascending: false })
-        .limit(limit);
+  ): Promise<SignalWithTrader[]> {
+    return this.getSignalsWithTraders('active', direction, undefined, limit, 0);
+  }
 
-      if (error) {
-        console.error('获取信号失败:', error);
-        throw error;
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('获取信号异常:', error);
-      return [];
-    }
+  /**
+   * 根据信号类型筛选（使用新RPC）
+   */
+  static async getSignalsByType(
+    signalType: 'spot' | 'futures' | 'margin',
+    limit: number = 20
+  ): Promise<SignalWithTrader[]> {
+    return this.getSignalsWithTraders('active', undefined, signalType, limit, 0);
   }
 
   /**

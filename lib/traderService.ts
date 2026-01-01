@@ -4,10 +4,38 @@ export interface Trader {
   id: string;
   name: string;
   avatar_url: string;
-  description?: string;  // 修改：bio -> description
+  description?: string;
+  is_online_today?: boolean;
+  is_online?: boolean;
+  signal_count?: number;
+  followers_count?: number;
+  win_rate?: number;
   created_at: string;
   updated_at: string;
-  // 后续可以添加其他字段
+}
+
+export interface TraderWithStats extends Trader {
+  total_signals?: number;
+  active_signals?: number;
+  closed_signals?: number;
+  long_signals?: number;
+  short_signals?: number;
+  is_subscribed?: boolean;
+  is_followed?: boolean;
+}
+
+export interface TraderDetail extends Trader {
+  total_signals?: number;
+  active_signals?: number;
+  closed_signals?: number;
+  cancelled_signals?: number;
+  long_signals?: number;
+  short_signals?: number;
+  spot_signals?: number;
+  futures_signals?: number;
+  margin_signals?: number;
+  is_subscribed?: boolean;
+  is_followed?: boolean;
 }
 
 export interface TraderWithUserStatus extends Trader {
@@ -16,23 +44,34 @@ export interface TraderWithUserStatus extends Trader {
 }
 
 /**
- * 获取所有交易员列表（按创建时间降序排序）
+ * 获取交易员列表及统计数据（使用RPC函数）
+ * @param userId 用户ID（可选）
+ * @param limit 限制返回数量
+ * @param offset 偏移量（用于分页）
  */
-export async function getTraders(): Promise<Trader[]> {
+export async function getTradersWithStats(
+  userId?: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<TraderWithStats[]> {
   try {
-    const { data, error } = await supabase
-      .from('traders')
-      .select('*')
-      .order('created_at', { ascending: false });
-
+    console.log('🔵 [TraderService] 调用 RPC: get_traders_with_stats', { userId, limit, offset });
+    
+    const { data, error } = await supabase.rpc('get_traders_with_stats', {
+      p_user_id: userId || null,
+      p_limit: limit,
+      p_offset: offset
+    });
+    
     if (error) {
-      console.error('获取交易员列表失败:', error);
+      console.error('❌ [TraderService] 获取交易员列表失败:', error);
       throw error;
     }
 
+    console.log('✅ [TraderService] 成功获取', data?.length || 0, '条交易员数据');
     return data || [];
   } catch (error) {
-    console.error('获取交易员列表异常:', error);
+    console.error('❌ [TraderService] 获取交易员列表异常:', error);
     throw error;
   }
 }
@@ -161,6 +200,74 @@ export async function getTraderByIdWithUserStatus(
     return trader;
   } catch (error) {
     console.error('获取交易员详情及状态异常:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取交易员详细信息（使用RPC函数）
+ * @param traderId 交易员ID
+ * @param userId 用户ID（可选，用于获取订阅/关注状态）
+ * @returns 交易员详细信息，包含完整统计数据
+ */
+export async function getTraderDetail(
+  traderId: string,
+  userId?: string
+): Promise<TraderDetail | null> {
+  try {
+    console.log('🔵 [TraderService] 调用 RPC: get_trader_detail', { traderId, userId });
+    
+    const { data, error } = await supabase.rpc('get_trader_detail', {
+      p_trader_id: traderId,
+      p_user_id: userId || null
+    });
+    
+    if (error) {
+      console.error('❌ [TraderService] 获取交易员详情失败:', error);
+      throw error;
+    }
+
+    console.log('✅ [TraderService] 成功获取交易员详情:', data);
+    // RPC 函数返回数组，取第一个元素
+    return data && data.length > 0 ? data[0] : null;
+  } catch (error) {
+    console.error('❌ [TraderService] 获取交易员详情异常:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取交易员的信号列表（使用RPC函数）
+ * @param traderId 交易员ID
+ * @param status 信号状态（可选）
+ * @param limit 限制返回数量
+ * @param offset 偏移量
+ */
+export async function getTraderSignals(
+  traderId: string,
+  status?: 'active' | 'closed' | 'cancelled',
+  limit: number = 20,
+  offset: number = 0
+) {
+  try {
+    console.log('🔵 [TraderService] 调用 RPC: get_trader_signals', { traderId, status, limit, offset });
+    
+    const { data, error } = await supabase.rpc('get_trader_signals', {
+      p_trader_id: traderId,
+      p_status: status || null,
+      p_limit: limit,
+      p_offset: offset
+    });
+    
+    if (error) {
+      console.error('❌ [TraderService] 获取交易员信号失败:', error);
+      throw error;
+    }
+
+    console.log('✅ [TraderService] 成功获取', data?.length || 0, '条信号数据');
+    return data || [];
+  } catch (error) {
+    console.error('❌ [TraderService] 获取交易员信号异常:', error);
     throw error;
   }
 }
