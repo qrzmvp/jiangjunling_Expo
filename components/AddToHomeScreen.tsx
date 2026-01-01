@@ -1,22 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Modal, ScrollView, Dimensions, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
+
+interface Step {
+  icon: string;
+  title: string;
+  description: string;
+  illustration?: string;
+}
 
 export const AddToHomeScreen = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const iosSteps: Step[] = [
+    {
+      icon: 'phone-portrait-outline',
+      title: '欢迎使用将军令',
+      description: '添加到主屏幕，获得更好的使用体验',
+    },
+    {
+      icon: 'share-outline',
+      title: '点击分享按钮',
+      description: '点击浏览器的三个点或者 + 号按钮找到【共享】按钮（向上箭头图标）',
+      illustration: 'arrow-down',
+    },
+    {
+      icon: 'add-circle-outline',
+      title: '添加到主屏幕',
+      description: '在弹出菜单中选择"添加到主屏幕"',
+    },
+    {
+      icon: 'checkmark-circle',
+      title: '完成！',
+      description: '现在可以像原生应用一样使用了',
+    },
+  ];
+
+  const androidSteps: Step[] = [
+    {
+      icon: 'phone-portrait-outline',
+      title: '欢迎使用将军令',
+      description: '添加到主屏幕，获得更好的使用体验',
+    },
+    {
+      icon: 'menu-outline',
+      title: '打开浏览器菜单',
+      description: '点击浏览器右上角的菜单按钮（三个点）',
+    },
+    {
+      icon: 'add-circle-outline',
+      title: '添加到主屏幕',
+      description: '在菜单中选择"安装应用"或"添加到主屏幕"',
+    },
+    {
+      icon: 'checkmark-circle',
+      title: '完成！',
+      description: '现在可以像原生应用一样使用了',
+    },
+  ];
+
+  const steps = isIOS ? iosSteps : androidSteps;
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
 
-    // 检查是否已经是 Standalone 模式
     // @ts-ignore
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     if (isStandalone) return;
 
-    // 检查是否已关闭过
-    const hasClosed = localStorage.getItem('hasClosedAddToHomeScreen_v3');
+    const hasClosed = localStorage.getItem('hasClosedAddToHomeScreen_v4');
     if (hasClosed) return;
 
     // @ts-ignore
@@ -24,137 +83,297 @@ export const AddToHomeScreen = () => {
     const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
     setIsIOS(isIosDevice);
 
-    // 延迟显示，确保页面加载完成
-    setTimeout(() => setIsVisible(true), 1000);
+    setTimeout(() => {
+      setIsVisible(true);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }, 1500);
   }, []);
 
   const handleClose = () => {
-    setIsVisible(false);
-    if (dontShowAgain) {
-      localStorage.setItem('hasClosedAddToHomeScreen_v3', 'true');
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsVisible(false);
+      if (dontShowAgain) {
+        localStorage.setItem('hasClosedAddToHomeScreen_v4', 'true');
+      }
+    });
+  };
+
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      scrollViewRef.current?.scrollTo({ x: nextStep * (width - 80), animated: true });
+    } else {
+      handleClose();
     }
+  };
+
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      const prevStep = currentStep - 1;
+      setCurrentStep(prevStep);
+      scrollViewRef.current?.scrollTo({ x: prevStep * (width - 80), animated: true });
+    }
+  };
+
+  const handleScroll = (event: any) => {
+    const slideIndex = Math.round(event.nativeEvent.contentOffset.x / (width - 80));
+    setCurrentStep(slideIndex);
   };
 
   if (!isVisible) return null;
 
   return (
-    <View style={[styles.container, isIOS ? styles.containerIOS : styles.containerAndroid]}>
-      <View style={styles.content}>
-        <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-          <Ionicons name="close" size={20} color="#9ca3af" />
-        </TouchableOpacity>
-        
-        <View style={styles.row}>
-          <View style={styles.iconContainer}>
-             <Ionicons name={isIOS ? "share-outline" : "add-circle-outline"} size={24} color="#2ebd85" />
-          </View>
-          <View style={styles.textContainer}>
-            <Text style={styles.title}>安装到手机</Text>
-            <Text style={styles.desc}>
-              {isIOS 
-                ? '点击底部工具栏的分享按钮\n然后选择“添加到主屏幕”' 
-                : '点击浏览器菜单\n选择“安装应用”或“添加到主屏幕”'}
-            </Text>
-          </View>
-        </View>
-
+    <Modal
+      visible={isVisible}
+      transparent
+      animationType="none"
+      onRequestClose={handleClose}
+    >
+      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
         <TouchableOpacity 
-          style={styles.checkboxContainer} 
-          activeOpacity={0.8}
-          onPress={() => setDontShowAgain(!dontShowAgain)}
+          style={styles.overlayTouchable} 
+          activeOpacity={1} 
+          onPress={handleClose}
+        />
+        
+        <Animated.View 
+          style={[
+            styles.modalContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{
+                translateY: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [50, 0],
+                }),
+              }],
+            },
+          ]}
         >
-          <Ionicons 
-            name={dontShowAgain ? "checkbox" : "square-outline"} 
-            size={16} 
-            color={dontShowAgain ? "#2ebd85" : "#9ca3af"} 
-          />
-          <Text style={styles.checkboxText}>不再提示</Text>
-        </TouchableOpacity>
+          <View style={styles.modalContent}>
+            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+              <Ionicons name="close" size={24} color="#9ca3af" />
+            </TouchableOpacity>
 
-        {isIOS && (
-          <View style={styles.arrowContainer}>
-             <Ionicons name="arrow-down" size={24} color="#2ebd85" />
+            <ScrollView
+              ref={scrollViewRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              style={styles.scrollView}
+            >
+              {steps.map((step, index) => (
+                <View key={index} style={styles.stepContainer}>
+                  <View style={styles.iconWrapper}>
+                    <Ionicons name={step.icon as any} size={48} color="#2ebd85" />
+                  </View>
+                  
+                  <Text style={styles.stepTitle}>{step.title}</Text>
+                  <Text style={styles.stepDescription}>{step.description}</Text>
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={styles.indicatorContainer}>
+              {steps.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.indicator,
+                    currentStep === index && styles.indicatorActive,
+                  ]}
+                />
+              ))}
+            </View>
+
+            <View style={styles.buttonContainer}>
+              {currentStep > 0 && (
+                <TouchableOpacity onPress={handlePrev} style={styles.btnSecondary}>
+                  <Text style={styles.btnSecondaryText}>上一步</Text>
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity 
+                onPress={handleNext} 
+                style={[styles.btnPrimary, currentStep === 0 && styles.btnPrimaryFull]}
+              >
+                <Text style={styles.btnPrimaryText}>
+                  {currentStep === steps.length - 1 ? '完成' : currentStep === 0 ? '开始' : '下一步'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.checkboxContainer} 
+              activeOpacity={0.8}
+              onPress={() => setDontShowAgain(!dontShowAgain)}
+            >
+              <Ionicons 
+                name={dontShowAgain ? "checkbox" : "square-outline"} 
+                size={18} 
+                color={dontShowAgain ? "#2ebd85" : "#9ca3af"} 
+              />
+              <Text style={styles.checkboxText}>不再提示</Text>
+            </TouchableOpacity>
           </View>
-        )}
-      </View>
-    </View>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  overlayTouchable: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    zIndex: 9999,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  containerIOS: {
-    bottom: 20, // 调整位置
+  modalContainer: {
+    width: width - 80,
+    maxWidth: 340,
+    zIndex: 10,
   },
-  containerAndroid: {
-    top: 16, // Android 通常在顶部提示，或者也可以放底部
-  },
-  content: {
+  modalContent: {
     backgroundColor: '#1c1c1e',
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 15,
     borderWidth: 1,
     borderColor: '#27272a',
   },
   closeBtn: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 12,
+    right: 12,
     padding: 4,
-    zIndex: 10,
+    zIndex: 20,
   },
-  row: {
-    flexDirection: 'row',
+  scrollView: {
+    marginTop: 8,
+  },
+  stepContainer: {
+    width: width - 120,
+    maxWidth: 300,
     alignItems: 'center',
+    paddingVertical: 16,
   },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  iconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: 'rgba(46, 189, 133, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginBottom: 16,
   },
-  textContainer: {
-    flex: 1,
-    marginRight: 20,
-  },
-  title: {
+  stepTitle: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  desc: {
+  stepDescription: {
     color: '#9ca3af',
     fontSize: 13,
     lineHeight: 18,
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  illustrationContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  illustrationText: {
+    color: '#2ebd85',
+    fontSize: 12,
+    marginTop: 6,
+    fontWeight: '600',
+  },
+  indicatorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  indicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#3f3f46',
+    marginHorizontal: 4,
+  },
+  indicatorActive: {
+    backgroundColor: '#2ebd85',
+    width: 24,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  btnPrimary: {
+    flex: 1,
+    backgroundColor: '#2ebd85',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  btnPrimaryFull: {
+    flex: 1,
+  },
+  btnPrimaryText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  btnSecondary: {
+    flex: 1,
+    backgroundColor: '#27272a',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#3f3f46',
+  },
+  btnSecondaryText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    paddingLeft: 52, // Align with text
+    justifyContent: 'center',
+    paddingVertical: 6,
   },
   checkboxText: {
     color: '#9ca3af',
-    fontSize: 12,
+    fontSize: 13,
     marginLeft: 6,
   },
-  arrowContainer: {
-    alignItems: 'center',
-    marginTop: 12,
-    marginBottom: -8,
-  }
 });
