@@ -32,7 +32,6 @@ const TraderDetailScreen = () => {
   const { user } = useAuth();
   const params = useLocalSearchParams();
   const traderId = params.traderId as string;
-  const returnTab = params.returnTab as string | undefined;
   
   const { width: windowWidth } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
@@ -441,16 +440,11 @@ const TraderDetailScreen = () => {
         <TouchableOpacity 
           style={styles.iconButton} 
           onPress={() => {
-            if (returnTab) {
-              // 如果有returnTab参数，返回首页并切换到对应标签
-              router.push({
-                pathname: '/(tabs)',
-                params: { returnTab }
-              });
-            } else {
-              // 否则使用默认返回
-              router.back();
-            }
+            // 返回到首页的 Traders tab
+            router.push({
+              pathname: '/(tabs)',
+              params: { tab: 'copy' }
+            });
           }}
         >
           <MaterialIcons name="arrow-back-ios" size={20} color={COLORS.textSub} />

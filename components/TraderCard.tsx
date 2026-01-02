@@ -66,6 +66,13 @@ export const TraderCard = ({
   const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
   const [loading, setLoading] = React.useState(false);
 
+  // 截断描述文字，最多15个字
+  const truncateDescription = (text: string | undefined, maxLength: number = 15): string => {
+    if (!text) return '暂无描述';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
   // 处理订阅/取消订阅
   const handleSubscriptionToggle = async () => {
     if (!user?.id) {
@@ -143,8 +150,8 @@ export const TraderCard = ({
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.traderName}>{name}</Text>
-            <Text style={styles.traderDescription} numberOfLines={1} ellipsizeMode="tail">
-              {description || '暂无描述'}
+            <Text style={styles.traderDescription}>
+              {truncateDescription(description)}
             </Text>
           </View>
         </View>

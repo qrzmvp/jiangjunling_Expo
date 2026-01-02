@@ -902,8 +902,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
                 onPress={() => router.push({
                   pathname: '/trader/detail',
                   params: { 
-                    traderId: trader.id,
-                    returnTab: currentTab
+                    traderId: trader.id
                   }
                 })}
               />
@@ -1273,8 +1272,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
                 onPress={() => router.push({
                   pathname: '/trader/detail',
                   params: { 
-                    traderId: signal.trader_id,
-                    returnTab: currentTab
+                    traderId: signal.trader_id
                   }
                 })}
                 onSubscribe={() => {}}
@@ -1348,20 +1346,15 @@ export default function HomePage() {
     }
   }, [activeTab]);
 
-  // 处理从详情页返回时恢复标签状态
+  // 处理从其他页面跳转到特定标签
   React.useEffect(() => {
-    if (params.returnTab) {
-      const returnTab = params.returnTab as 'overview' | 'copy' | 'signal';
-      if (returnTab !== activeTab) {
-        handleTabPress(returnTab);
-      }
-    } else if (params.tab === 'copy') {
+    if (params.tab === 'copy') {
       handleTabPress('copy');
       if (params.filter) {
         setActiveFilters([params.filter as string]);
       }
     }
-  }, [params.returnTab, params.tab, params.filter]);
+  }, [params.tab, params.filter]);
 
   const updateTabFromScroll = (offsetX: number) => {
     // 如果是手动触发的滚动动画，不更新状态

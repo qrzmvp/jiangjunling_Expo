@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TraderCard } from '../components/TraderCard';
 import { useProtectedRoute } from '../hooks/useProtectedRoute';
+import { useAuth } from '../contexts/AuthContext';
+import { searchTraders, TraderWithStats } from '../lib/traderService';
+import { getSearchHistory, addSearchHistory, clearSearchHistory } from '../lib/searchHistoryService';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -16,84 +19,101 @@ const COLORS = {
   border: "#27272a",
 };
 
-const MOCK_TRADERS = [
-  {
-    name: "zh138",
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCA6jm-quFFL4rGgnuqOTX6aa7ja62sdDdo3axzhQrnFedupfbhBgf-e6uQk2UJW6Fw_P6j3rE-Chdj1ROGQUydNYpLFiDKTnaRkds9OmErntL2HdtacO_UqSoB5ba2135lFtLoHiQHxZEScqx0miCEfAjnfV5_KSl5QyMd8yLi2gw_PLYz0wZiLCXKt2wdodUjdjvSKNgWzPDtwupJElJqhtE9RKBIQ9kS_wrdn6X3Mco8KWrf3EmG7376RFVDEW_ffsBfco13qw",
-    followers: 46,
-    maxFollowers: 100,
-    roi: "+7.56%",
-    pnl: "+$1,968.88",
-    winRate: "63.10%",
-    aum: "$7,029.75",
-    days: 290,
-    coins: [
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAEcAV67993OCt0DPtM2p8O2VOufk16pTKp8rXdxYzZU8G7G59l0CDW4oL01HveVAtNT8Kh31Z9GKhffkuQDVAasrQHuE6ebVN23WctH5f7nUebYYIynGAqCZBHm1obLP8vwJwmcWrJZWa6EMfh2j2DJYl9_nwAh14I6lW2R3ZM_WibvUnRtI2a_v96J6JPW2yEh_yFxhIxz-NjuG02m8tjKWN6rti6CP0T5pyv_yhFsEtAHivwBNN7IhN3qg66P95nZngpHi5fcQ"
-    ],
-    chartPath: "M0,35 Q10,32 20,30 T40,20 T60,25 T80,10 L100,20"
-  },
-  {
-    name: "BeyondHJJ",
-    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBzZa78G7eCvQ3Qfir53Hh3en0nyDyqTSQLbXpOwuGfgmNT5K8kK94gFtLZ9c4QsAjTMvLKoJG-ZohYppqv5hWBKiP8tms6JOyEYTUPB-D0glDcbsQTF4Ba9k1opWJScsAodRQkxc1KcoUOmvSt6CsC8FvXUvDGJruHwegzMFzTaFLM_eF5JWZK8HPtqhNbHRWnliPvTu693N4wpz-ZmEZFfhYTq1BUb9135nVBVxM59E0nYYPndbBJBhQkWX9zheGiN9QcioZyIg",
-    followers: 15,
-    maxFollowers: 100,
-    roi: "+32.26%",
-    pnl: "+$9,567.86",
-    winRate: "57.50%",
-    aum: "$3,432.94",
-    days: 397,
-    coins: [
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuB5BEa1eJ7RTyut5QDtbRnbcjJ5-mr3UyskhB1e5NMl50E8qS7We3bsUKyEIMd9uUgS6IzSdSYh38DU1f-CM1mrSVjDtKcr12vjB1N11w_IRwwb_qSeI7L7Au615sx-FmgHAe4pGkm5QGehKViamzP5_gH42rlQLtmbXs_KrVpfLkT_t4WSltoJsxFY8cPVAoSTwB2hjJW6pB5oiGWvNilSYsbx7hilCTwU9sm18uqe-77YRHFJXuW650Dsih0mOx40On2uZoG_mQ",
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDzQvuheaDEXO_pAahI2DC6OOoQh-GT4prgsNS4pMaa6kQ4GMH73HAbe3u1TlhasjEGVWIsF2UU8fuYTyv8R8dzueZC7CV4duhY2IdCp2JPldm1JhcnlB3TpdOL0C8DJsfs7YumHYJdDJxwKN6UsQpCwWksP6SYJDG1TK5jgvFMP2R8bPBy5PCiidhBsV66AOGKidRcrIknZBDi4bly-ZFhdSivj0pgi5Mu7paYKW66riciXUrk_eS6IRo0v3Cu7zsYrkMezFfjfQ",
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuBehiWHC50o_Y1I-9WK0ZLzs8_cE6ScQ3TJ1E5JRRZdnO80jNAB8sfhY_z4oBej5b7eciccGxm2UJ2wFkO4dI6lhot4C2P9FkdufN-NY_1TSQpxu96I4DZH7zlss4qPS2MCoYrUR9EFcaQHdeOo3EovWDe664NAuYPyyfVI_PsCd83nZGblwen4iHNSU3QyI6GtaFdOzYEIjlTmFaiBrNqwe8ykvFxsUVHfZT3bN-3IC1w9wdCpyrbohukhiWLvlsp2bveDEVvSpA"
-    ],
-    chartPath: "M0,38 Q20,35 30,28 T50,20 T70,10 L100,5"
-  },
-  {
-    name: "CryptoKing",
-    avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-    followers: 88,
-    maxFollowers: 100,
-    roi: "+15.40%",
-    pnl: "+$5,120.00",
-    winRate: "70.5%",
-    aum: "$12,500.00",
-    days: 150,
-    coins: [],
-    chartPath: "M0,30 Q25,25 50,15 T100,10"
-  }
-];
-
 export default function SearchScreen() {
-  useProtectedRoute(); // 保护路由
+  useProtectedRoute();
   const router = useRouter();
+  const { user } = useAuth();
+  
   const [query, setQuery] = useState('');
-  const [history, setHistory] = useState<string[]>(['zh138', 'BeyondHJJ', 'Bitcoin']);
-  const [results, setResults] = useState<typeof MOCK_TRADERS>([]);
+  const [history, setHistory] = useState<string[]>([]);
+  const [results, setResults] = useState<TraderWithStats[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
 
+  // 加载搜索历史
   useEffect(() => {
+    loadSearchHistory();
+  }, []);
+
+  const loadSearchHistory = async () => {
+    try {
+      const savedHistory = await getSearchHistory();
+      setHistory(savedHistory);
+    } catch (error) {
+      console.error('加载搜索历史失败:', error);
+    }
+  };
+
+  // 执行搜索
+  const performSearch = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      setResults([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const searchResults = await searchTraders(searchQuery, user?.id);
+      setResults(searchResults);
+    } catch (error) {
+      console.error('搜索失败:', error);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  // 输入变化时，使用防抖
+  useEffect(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
     if (query.trim() === '') {
       setResults([]);
+      setLoading(false);
     } else {
-      const filtered = MOCK_TRADERS.filter(t => 
-        t.name.toLowerCase().includes(query.toLowerCase())
-      );
-      setResults(filtered);
+      setLoading(true);
+      const timeout = setTimeout(() => {
+        performSearch(query);
+      }, 500); // 500ms 防抖
+      setSearchTimeout(timeout);
     }
+
+    return () => {
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+    };
   }, [query]);
 
   const handleSearch = (text: string) => {
     setQuery(text);
   };
 
-  const addToHistory = (text: string) => {
-    if (!history.includes(text)) {
-      setHistory([text, ...history].slice(0, 10));
-    }
+  const handleSelectHistory = async (text: string) => {
+    setQuery(text);
+    await addSearchHistory(text);
+    await loadSearchHistory();
   };
 
-  const clearHistory = () => {
+  const handleClearHistory = async () => {
+    await clearSearchHistory();
     setHistory([]);
+  };
+
+  const handleTraderPress = async (trader: TraderWithStats) => {
+    // 保存搜索历史
+    if (query.trim()) {
+      await addSearchHistory(query.trim());
+      await loadSearchHistory();
+    }
+    
+    // 跳转到交易员详情页
+    router.push({
+      pathname: '/trader/detail',
+      params: { traderId: trader.id }
+    });
   };
 
   return (
@@ -106,7 +126,7 @@ export default function SearchScreen() {
           <MaterialIcons name="search" size={20} color={COLORS.textMuted} />
           <TextInput
             style={styles.input}
-            placeholder="Search traders..."
+            placeholder="搜索交易员名称或描述..."
             placeholderTextColor={COLORS.textMuted}
             value={query}
             onChangeText={handleSearch}
@@ -123,40 +143,67 @@ export default function SearchScreen() {
       {query.trim() === '' ? (
         <View style={styles.historyContainer}>
           <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>Search History</Text>
-            <TouchableOpacity onPress={clearHistory}>
-              <MaterialIcons name="delete-outline" size={20} color={COLORS.textMuted} />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.historyTags}>
-            {history.map((item, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.historyTag}
-                onPress={() => setQuery(item)}
-              >
-                <Text style={styles.historyTagText}>{item}</Text>
+            <Text style={styles.historyTitle}>搜索历史</Text>
+            {history.length > 0 && (
+              <TouchableOpacity onPress={handleClearHistory}>
+                <MaterialIcons name="delete-outline" size={20} color={COLORS.textMuted} />
               </TouchableOpacity>
-            ))}
+            )}
           </View>
+          {history.length > 0 ? (
+            <View style={styles.historyTags}>
+              {history.map((item, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.historyTag}
+                  onPress={() => handleSelectHistory(item)}
+                >
+                  <Text style={styles.historyTagText}>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>暂无搜索历史</Text>
+            </View>
+          )}
+        </View>
+      ) : loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>搜索中...</Text>
         </View>
       ) : (
         <FlatList
           data={results}
-          keyExtractor={(item) => item.name}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.resultsList}
           renderItem={({ item }) => (
             <TraderCard
-              {...item}
-              onPress={() => {
-                addToHistory(item.name);
-                router.push('/trader/detail');
-              }}
+              traderId={item.id}
+              name={item.name}
+              avatar={item.avatar_url || ''}
+              followers={item.followers_count || 0}
+              maxFollowers={100}
+              description={item.description || ''}
+              roi={`${item.win_rate || 0}%`}
+              roiLabel="胜率"
+              pnl={`${item.total_signals || 0} 信号`}
+              winRate={`${item.win_rate || 0}%`}
+              aum={`${item.active_signals || 0} 活跃`}
+              days={0}
+              coins={[]}
+              chartPath="M0,35 Q10,32 20,30 T40,20 T60,25 T80,10 L100,20"
+              initialIsSubscribed={item.is_subscribed}
+              initialIsFavorite={item.is_followed}
+              onPress={() => handleTraderPress(item)}
             />
           )}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No traders found</Text>
+              <MaterialIcons name="search-off" size={48} color={COLORS.textMuted} />
+              <Text style={styles.emptyText}>未找到匹配的交易员</Text>
+              <Text style={styles.emptySubtext}>试试其他关键词</Text>
             </View>
           }
         />
@@ -244,9 +291,27 @@ const styles = StyleSheet.create({
   emptyState: {
     padding: 32,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyText: {
     color: COLORS.textMuted,
+    fontSize: 16,
+    marginTop: 12,
+  },
+  emptySubtext: {
+    color: COLORS.textMuted,
     fontSize: 14,
+    marginTop: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  loadingText: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    marginTop: 12,
   },
 });
