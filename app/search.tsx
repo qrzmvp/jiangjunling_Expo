@@ -105,7 +105,7 @@ export default function SearchScreen() {
         <View style={styles.searchBar}>
           <MaterialIcons name="search" size={20} color={COLORS.textMuted} />
           <TextInput
-            style={[styles.input, { outlineStyle: 'none' } as any]}
+            style={styles.input}
             placeholder="Search traders..."
             placeholderTextColor={COLORS.textMuted}
             value={query}
@@ -204,6 +204,9 @@ const styles = StyleSheet.create({
     color: COLORS.textMain,
     fontSize: 16,
     padding: 0,
+    ...(Platform.OS === 'web' && {
+      outlineStyle: 'none' as any,
+    }),
   },
   historyContainer: {
     padding: 16,

@@ -202,10 +202,7 @@ export default function LoginScreen() {
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
-                    autoComplete="password"
-                    textContentType="password"
                     autoCapitalize="none"
-                    autoCorrect={false}
                   />
                   {password.length > 0 && (
                     <TouchableOpacity
@@ -425,6 +422,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     fontSize: 16,
     zIndex: 1,
+    ...(Platform.OS === 'web' && {
+      outlineStyle: 'none' as any,
+    }),
   },
   clearButton: {
     position: 'absolute',

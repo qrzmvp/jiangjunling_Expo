@@ -902,6 +902,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     padding: 0,
     color: COLORS.text,
+    ...(Platform.OS === 'web' && {
+      outlineStyle: 'none' as any,
+    }),
   },
   inputWithIcon: {
     flexDirection: 'row',
@@ -913,6 +916,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     padding: 0,
     color: COLORS.text,
+    ...(Platform.OS === 'web' && {
+      outlineStyle: 'none' as any,
+    }),
   },
   clearIcon: {
     padding: 8,

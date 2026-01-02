@@ -446,6 +446,9 @@ const styles = StyleSheet.create({
     color: COLORS.textMain,
     borderWidth: 1,
     borderColor: COLORS.border,
+    ...(Platform.OS === 'web' && {
+      outlineStyle: 'none' as any,
+    }),
   },
   redeemButton: {
     height: 44,

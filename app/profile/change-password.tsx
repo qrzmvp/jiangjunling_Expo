@@ -444,6 +444,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.textMainDark,
     paddingVertical: 14,
+    ...(Platform.OS === 'web' && {
+      outlineStyle: 'none' as any,
+    }),
   },
   clearButton: {
     padding: 4,
