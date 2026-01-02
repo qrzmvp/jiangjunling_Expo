@@ -14,9 +14,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../contexts/AuthContext';
+import Toast from '../components/Toast';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -43,9 +44,12 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [isPasswordLogin, setIsPasswordLogin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'warning' | 'info'>('error');
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -59,38 +63,49 @@ export default function LoginScreen() {
 
   const handleSendCode = async () => {
     if (!email) {
-      setErrorMessage('请输入邮箱');
+      setToastMessage('请输入邮箱');
+      setToastType('warning');
+      setShowToast(true);
       return;
     }
-    setErrorMessage('');
     setLoading(true);
     const { error } = await signInWithOtp(email);
     setLoading(false);
     if (error) {
-      setErrorMessage(error.message);
+      setToastMessage(error.message);
+      setToastType('error');
+      setShowToast(true);
     } else {
       setCountdown(60);
+      setToastMessage('验证码已发送');
+      setToastType('success');
+      setShowToast(true);
     }
   };
 
   const handleLogin = async () => {
     if (!email) {
-      setErrorMessage('请输入邮箱');
+      setToastMessage('请输入邮箱');
+      setToastType('warning');
+      setShowToast(true);
       return;
     }
-    setErrorMessage('');
     setLoading(true);
     let result;
     if (isPasswordLogin) {
       if (!password) {
-        setErrorMessage('请输入密码');
+        setToastMessage('请输入密码');
+        setToastType('warning');
+        setShowToast(true);
         setLoading(false);
         return;
       }
       result = await signInWithPassword(email, password);
     } else {
       if (!code) {
-        setErrorMessage('请输入验证码');
+        setToastMessage('请输入验证码');
+        setToastType('warning');
+        setShowToast(true);
         setLoading(false);
         return;
       }
@@ -99,7 +114,9 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (result.error) {
-      setErrorMessage(result.error.message || '登录失败，请重试');
+      setToastMessage(result.error.message || '登录失败，请重试');
+      setToastType('error');
+      setShowToast(true);
     } else {
       // Success, navigate to home
       router.replace('/(tabs)');
@@ -167,7 +184,7 @@ export default function LoginScreen() {
                     onPress={() => setEmail('')}
                     style={styles.clearButton}
                   >
-                    <MaterialIcons name="cancel" size={20} color={COLORS.textMuted} />
+                    <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -187,13 +204,19 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
               {isPasswordLogin ? (
-                <View style={styles.inputWrapper}>
+                <View style={[
+                  styles.inputWrapper,
+                  styles.passwordInputContainer,
+                  {
+                    backgroundColor: theme.inputBg,
+                    borderColor: theme.inputBorder,
+                  }
+                ]}>
                   <TextInput
                     style={[
                       styles.input,
+                      styles.passwordInput,
                       {
-                        backgroundColor: theme.inputBg,
-                        borderColor: theme.inputBorder,
                         color: theme.text,
                       },
                     ]}
@@ -201,17 +224,27 @@ export default function LoginScreen() {
                     placeholderTextColor={theme.placeholder}
                     value={password}
                     onChangeText={setPassword}
-                    secureTextEntry
+                    secureTextEntry={!showPassword}
                     autoCapitalize="none"
                   />
                   {password.length > 0 && (
                     <TouchableOpacity
                       onPress={() => setPassword('')}
-                      style={styles.clearButton}
+                      style={styles.passwordClearButton}
                     >
-                      <MaterialIcons name="cancel" size={20} color={COLORS.textMuted} />
+                      <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
                     </TouchableOpacity>
                   )}
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.passwordEyeButton}
+                  >
+                    <Ionicons 
+                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                      size={20} 
+                      color={COLORS.textMuted} 
+                    />
+                  </TouchableOpacity>
                 </View>
               ) : (
                 <View style={styles.inputWrapper}>
@@ -237,7 +270,7 @@ export default function LoginScreen() {
                       onPress={() => setCode('')}
                       style={[styles.clearButton, { right: 90 }]}
                     >
-                      <MaterialIcons name="cancel" size={20} color={COLORS.textMuted} />
+                      <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity 
@@ -275,14 +308,6 @@ export default function LoginScreen() {
               </View>
             </View> */}
           </View>
-
-          {/* 错误提示 */}
-          {errorMessage ? (
-            <View style={styles.errorContainer}>
-              <MaterialIcons name="error-outline" size={20} color={COLORS.danger} />
-              <Text style={styles.errorText}>{errorMessage}</Text>
-            </View>
-          ) : null}
 
           <View style={styles.actionContainer}>
             <TouchableOpacity
@@ -348,6 +373,14 @@ export default function LoginScreen() {
           </Text>
         </View> */}
       </KeyboardAvoidingView>
+      
+      {/* Toast Notification */}
+      <Toast
+        visible={showToast}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setShowToast(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -432,6 +465,35 @@ const styles = StyleSheet.create({
     padding: 4,
     zIndex: 2,
   },
+  eyeButton: {
+    position: 'absolute',
+    right: 44,
+    padding: 4,
+    zIndex: 2,
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    position: 'relative',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingRight: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+  },
+  passwordClearButton: {
+    padding: 4,
+    marginLeft: 4,
+  },
+  passwordEyeButton: {
+    padding: 4,
+    marginLeft: 4,
+  },
   getCodeButton: {
     position: 'absolute',
     right: 8,
@@ -454,23 +516,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: COLORS.textMuted,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(246, 70, 93, 0.1)',
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.danger,
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 16,
-    gap: 8,
-  },
-  errorText: {
-    flex: 1,
-    color: COLORS.danger,
-    fontSize: 14,
-    lineHeight: 20,
   },
   actionContainer: {
     marginTop: 32,
