@@ -126,7 +126,9 @@ export default function PurchaseHistoryPage() {
       
       <View style={styles.row}>
         <Text style={styles.label}>订单号</Text>
-        <Text style={styles.value}>{item.orderNo}</Text>
+        <Text style={styles.value} numberOfLines={1} ellipsizeMode="middle">
+          {item.orderNo}
+        </Text>
       </View>
       
       <View style={styles.row}>
@@ -243,15 +245,20 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   label: {
     fontSize: 14,
     color: COLORS.textMuted,
+    flexShrink: 0,
   },
   value: {
     fontSize: 14,
     color: COLORS.textMain,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 8,
   },
   amount: {
     fontSize: 16,

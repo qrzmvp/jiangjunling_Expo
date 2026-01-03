@@ -109,12 +109,18 @@ serve(async (req) => {
         newVipExpiresAt,
       })
 
+      // 生成自定义订单号：日期(8位) + 随机数(6位) = 14位
+      const now = new Date()
+      const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '') // YYYYMMDD
+      const randomNum = Math.floor(100000 + Math.random() * 900000) // 6位随机数
+      const orderNo = `${dateStr}${randomNum}` // 14位订单号
+
       // 创建购买记录
       const { error: recordError } = await supabaseAdmin
         .from('purchase_records')
         .insert({
           user_id: userId,
-          order_no: session.id,
+          order_no: orderNo,
           package_name: metadata?.package_name || '未知套餐',
           package_type: packageType,
           amount: session.amount_total ? session.amount_total / 100 : 0,
