@@ -93,6 +93,7 @@ export default function VipPurchasePage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [packages, setPackages] = useState<PackageOption[]>(HARDCODED_PACKAGES);
   const [loading, setLoading] = useState(Platform.OS === 'web');
+  const [paying, setPaying] = useState(false);
 
   // 判断套餐是否可购买
   const canPurchasePackage = (packageId: string): { canPurchase: boolean; reason?: string } => {
@@ -195,6 +196,110 @@ export default function VipPurchasePage() {
       setShowToast(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 处理支付
+  const handlePayment = async () => {
+    // 限制：仅Web端支持Stripe支付
+    if (Platform.OS !== 'web') {
+      setToastType('error');
+      setToastMessage('移动端请使用应用内购买，Stripe支付仅支持Web端');
+      setShowToast(true);
+      return;
+    }
+
+    if (!user) {
+      setToastType('error');
+      setToastMessage('请先登录');
+      setShowToast(true);
+      return;
+    }
+
+    const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
+    if (!selectedPkg) {
+      setToastType('error');
+      setToastMessage('请选择套餐');
+      setShowToast(true);
+      return;
+    }
+
+    // 检查是否可购买
+    const purchaseCheck = canPurchasePackage(selectedPkg.id);
+    if (!purchaseCheck.canPurchase) {
+      setToastType('error');
+      setToastMessage(purchaseCheck.reason || '该套餐不可购买');
+      setShowToast(true);
+      return;
+    }
+
+    if (!selectedPkg.stripePriceId) {
+      setToastType('error');
+      setToastMessage('套餐配置错误，请联系客服');
+      setShowToast(true);
+      return;
+    }
+
+    setPaying(true);
+
+    try {
+      // 获取当前用户的 session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      console.log('Session check:', { 
+        hasSession: !!session, 
+        hasAccessToken: !!session?.access_token,
+        sessionError 
+      });
+
+      if (sessionError) {
+        throw new Error(`获取登录状态失败: ${sessionError.message}`);
+      }
+      
+      if (!session?.access_token) {
+        throw new Error('登录已过期，请重新登录');
+      }
+
+      console.log('Calling Stripe checkout with:', {
+        priceId: selectedPkg.stripePriceId,
+        packageType: selectedPkg.id,
+        packageName: selectedPkg.name,
+      });
+
+      // 调用 Supabase 云函数创建 Stripe Checkout Session
+      const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
+        body: {
+          priceId: selectedPkg.stripePriceId,
+          packageType: selectedPkg.id,
+          packageName: selectedPkg.name,
+          platform: 'web',
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      console.log('Stripe checkout response:', { data, error });
+
+      if (error) {
+        console.error('Invoke error:', error);
+        throw new Error(error.message || '调用支付服务失败');
+      }
+
+      if (!data?.url) {
+        throw new Error('获取支付链接失败');
+      }
+
+      console.log('Redirecting to:', data.url);
+      
+      // Web端：直接跳转到Stripe收银台
+      window.location.href = data.url;
+    } catch (error: any) {
+      console.error('创建Stripe支付会话失败:', error);
+      setToastType('error');
+      setToastMessage(error.message || '支付初始化失败，请重试');
+      setShowToast(true);
+      setPaying(false);
     }
   };
 
@@ -455,8 +560,16 @@ export default function VipPurchasePage() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.payButton}>
-          <Text style={styles.payButtonText}>立即开通</Text>
+        <TouchableOpacity 
+          style={[styles.payButton, paying && styles.payButtonDisabled]} 
+          onPress={handlePayment}
+          disabled={paying || loading}
+        >
+          {paying ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <Text style={styles.payButtonText}>立即开通</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -700,6 +813,9 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  payButtonDisabled: {
+    opacity: 0.6,
   },
   payButtonText: {
     fontSize: 16,

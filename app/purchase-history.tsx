@@ -1,8 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, SafeAreaView, Platform, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useProtectedRoute } from '../hooks/useProtectedRoute';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 const COLORS = {
   background: "#000000",
@@ -19,40 +21,11 @@ interface PurchaseRecord {
   packageName: string;
   orderNo: string;
   date: string;
-  status: 'completed' | 'pending' | 'failed';
+  status: 'completed' | 'pending' | 'failed' | 'refunded';
   amount: string;
   paymentMethod: string;
+  currency: string;
 }
-
-const MOCK_DATA: PurchaseRecord[] = [
-  {
-    id: '1',
-    packageName: '年度会员',
-    orderNo: 'ORDER20251220001',
-    date: '2025-12-20 14:30:00',
-    status: 'completed',
-    amount: '299.9 USDT',
-    paymentMethod: 'USDT',
-  },
-  {
-    id: '2',
-    packageName: '月度会员',
-    orderNo: 'ORDER20251120001',
-    date: '2025-11-20 10:15:00',
-    status: 'completed',
-    amount: '29.9 USDT',
-    paymentMethod: 'USDT',
-  },
-  {
-    id: '3',
-    packageName: '季度会员',
-    orderNo: 'ORDER20250820001',
-    date: '2025-08-20 09:00:00',
-    status: 'failed',
-    amount: '79.9 USDT',
-    paymentMethod: 'USDT',
-  }
-];
 
 const StatusBadge = ({ status }: { status: PurchaseRecord['status'] }) => {
   let color = COLORS.textMuted;
@@ -71,6 +44,10 @@ const StatusBadge = ({ status }: { status: PurchaseRecord['status'] }) => {
       color = COLORS.danger;
       text = '支付失败';
       break;
+    case 'refunded':
+      color = '#f97316';
+      text = '已退款';
+      break;
   }
 
   return (
@@ -82,6 +59,61 @@ const StatusBadge = ({ status }: { status: PurchaseRecord['status'] }) => {
 
 export default function PurchaseHistoryPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const [records, setRecords] = useState<PurchaseRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPurchaseRecords();
+  }, []);
+
+  const fetchPurchaseRecords = async () => {
+    try {
+      setLoading(true);
+      
+      if (!user?.id) {
+        console.log('No user ID available');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('purchase_records')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('purchased_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching purchase records:', error);
+        return;
+      }
+
+      // 转换数据格式
+      const formattedRecords: PurchaseRecord[] = (data || []).map(record => ({
+        id: record.id,
+        packageName: record.package_name,
+        orderNo: record.order_no,
+        date: new Date(record.purchased_at).toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }).replace(/\//g, '-'),
+        status: record.status as 'completed' | 'pending' | 'failed' | 'refunded',
+        amount: `${record.amount} ${record.currency || 'USD'}`,
+        paymentMethod: record.payment_method || 'Stripe',
+        currency: record.currency || 'USD',
+      }));
+
+      setRecords(formattedRecords);
+    } catch (error) {
+      console.error('Error in fetchPurchaseRecords:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderItem = ({ item }: { item: PurchaseRecord }) => (
     <View style={styles.card}>
@@ -124,19 +156,25 @@ export default function PurchaseHistoryPage() {
         <View style={{ width: 24 }} />
       </View>
 
-      <FlatList
-        data={MOCK_DATA}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="receipt-outline" size={64} color={COLORS.textMuted} />
-            <Text style={styles.emptyText}>暂无购买记录</Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.textMuted} />
+        </View>
+      ) : (
+        <FlatList
+          data={records}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="receipt-outline" size={64} color={COLORS.textMuted} />
+              <Text style={styles.emptyText}>暂无购买记录</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -229,5 +267,10 @@ const styles = StyleSheet.create({
     marginTop: 16,
     color: COLORS.textMuted,
     fontSize: 14,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
