@@ -84,7 +84,7 @@ export default function VipPurchasePage() {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
   const navigation = useNavigation();
-  const { user, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState('yearly');
   const [redemptionCode, setRedemptionCode] = useState('');
   const [redeeming, setRedeeming] = useState(false);
@@ -93,6 +93,47 @@ export default function VipPurchasePage() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [packages, setPackages] = useState<PackageOption[]>(HARDCODED_PACKAGES);
   const [loading, setLoading] = useState(Platform.OS === 'web');
+
+  // 判断套餐是否可购买
+  const canPurchasePackage = (packageId: string): { canPurchase: boolean; reason?: string } => {
+    if (!profile?.vip_status) {
+      return { canPurchase: true };
+    }
+
+    const currentVipStatus = profile.vip_status.toLowerCase();
+    
+    // 检查VIP是否已过期
+    const vipActive = profile.vip_expires_at && new Date(profile.vip_expires_at) > new Date();
+    
+    // 如果VIP已过期，视为免费用户
+    if (!vipActive) {
+      return { canPurchase: true };
+    }
+
+    // 根据当前VIP等级判断可购买的套餐
+    switch (currentVipStatus) {
+      case 'free':
+        return { canPurchase: true };
+      
+      case 'monthly':
+        if (packageId === 'monthly') {
+          return { canPurchase: false, reason: '您已是月度会员，请选择季度或年度升级' };
+        }
+        return { canPurchase: true };
+      
+      case 'quarterly':
+        if (packageId === 'monthly' || packageId === 'quarterly') {
+          return { canPurchase: false, reason: '您已是季度会员，请选择年度升级' };
+        }
+        return { canPurchase: true };
+      
+      case 'yearly':
+        return { canPurchase: false, reason: '您已是年度会员，无需升级' };
+      
+      default:
+        return { canPurchase: true };
+    }
+  };
 
   // Web端：从Stripe获取产品和价格信息
   useEffect(() => {
@@ -305,28 +346,48 @@ export default function VipPurchasePage() {
             <Text style={styles.sectionTitle}>选择套餐</Text>
             
             <View style={styles.packagesContainer}>
-              {packages.map((pkg) => (
+              {packages.map((pkg) => {
+                const purchaseCheck = canPurchasePackage(pkg.id);
+                const isDisabled = !purchaseCheck.canPurchase;
+                
+                return (
             <TouchableOpacity 
               key={pkg.id} 
               style={[
                 styles.packageCard, 
-                selectedPackage === pkg.id && styles.selectedPackageCard
+                selectedPackage === pkg.id && styles.selectedPackageCard,
+                isDisabled && styles.disabledPackageCard
               ]}
-              onPress={() => setSelectedPackage(pkg.id)}
+              onPress={() => {
+                if (isDisabled) {
+                  setToastType('error');
+                  setToastMessage(purchaseCheck.reason || '该套餐不可购买');
+                  setShowToast(true);
+                } else {
+                  setSelectedPackage(pkg.id);
+                }
+              }}
+              disabled={isDisabled}
             >
               {pkg.recommend && (
                 <View style={styles.recommendBadge}>
                   <Text style={styles.recommendText}>推荐</Text>
                 </View>
               )}
-              <Text style={[styles.packageName, selectedPackage === pkg.id && styles.selectedText]}>{pkg.name}</Text>
+              {isDisabled && (
+                <View style={styles.disabledBadge}>
+                  <Ionicons name="lock-closed" size={10} color="#666" />
+                </View>
+              )}
+              <Text style={[styles.packageName, selectedPackage === pkg.id && styles.selectedText, isDisabled && styles.disabledText]}>{pkg.name}</Text>
               <View style={styles.priceContainer}>
-              <Text style={[styles.price, selectedPackage === pkg.id && styles.selectedText]}>{pkg.price}</Text>
-                <Text style={[styles.currency, selectedPackage === pkg.id && styles.selectedText, { marginLeft: 4 }]}>{(pkg.currency || 'usd').toUpperCase()}</Text>
+              <Text style={[styles.price, selectedPackage === pkg.id && styles.selectedText, isDisabled && styles.disabledText]}>{pkg.price}</Text>
+                <Text style={[styles.currency, selectedPackage === pkg.id && styles.selectedText, isDisabled && styles.disabledText, { marginLeft: 4 }]}>{(pkg.currency || 'usd').toUpperCase()}</Text>
               </View>
-              <Text style={styles.originalPrice}>{pkg.originalPrice} {(pkg.currency || 'usd').toUpperCase()}</Text>
+              <Text style={[styles.originalPrice, isDisabled && styles.disabledText]}>{pkg.originalPrice} {(pkg.currency || 'usd').toUpperCase()}</Text>
             </TouchableOpacity>
-              ))}
+                );
+              })}
             </View>
 
         {/* 兑换码区域 - 暂时隐藏 */}
@@ -357,12 +418,37 @@ export default function VipPurchasePage() {
         </View> */}
 
             <View style={styles.description}>
+              <Text style={styles.descriptionTitle}>购买说明</Text>
               <Text style={styles.descriptionText}>
                 1. 会员权益将在支付成功后立即生效。
               </Text>
               <Text style={styles.descriptionText}>
                 2. 如有任何疑问，请联系客服。
               </Text>
+            </View>
+
+            <View style={styles.rulesContainer}>
+              <Text style={styles.rulesTitle}>会员升级规则</Text>
+              <View style={styles.ruleItem}>
+                <Ionicons name="checkmark-circle" size={14} color={COLORS.primary} />
+                <Text style={styles.ruleText}>免费用户：可购买任意套餐</Text>
+              </View>
+              <View style={styles.ruleItem}>
+                <Ionicons name="checkmark-circle" size={14} color={COLORS.primary} />
+                <Text style={styles.ruleText}>月度会员：可升级至季度或年度会员</Text>
+              </View>
+              <View style={styles.ruleItem}>
+                <Ionicons name="checkmark-circle" size={14} color={COLORS.primary} />
+                <Text style={styles.ruleText}>季度会员：可升级至年度会员</Text>
+              </View>
+              <View style={styles.ruleItem}>
+                <Ionicons name="close-circle" size={14} color={COLORS.textMuted} />
+                <Text style={styles.ruleText}>年度会员：已是最高等级，无法升级</Text>
+              </View>
+              <View style={styles.ruleItem}>
+                <Ionicons name="information-circle" size={14} color="#f59e0b" />
+                <Text style={styles.ruleText}>不支持降级购买（如季度→月度）</Text>
+              </View>
             </View>
           </>
         )}
@@ -499,6 +585,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.gold,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
+  disabledPackageCard: {
+    opacity: 0.4,
+    backgroundColor: COLORS.surface,
+    borderColor: '#333',
+  },
   recommendBadge: {
     position: 'absolute',
     top: -10,
@@ -511,6 +602,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     color: '#000',
+  },
+  disabledBadge: {
+    position: 'absolute',
+    top: -10,
+    right: 8,
+    backgroundColor: '#333',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  disabledText: {
+    color: '#666',
   },
   packageName: {
     fontSize: 14,
@@ -546,12 +651,43 @@ const styles = StyleSheet.create({
   },
   description: {
     marginTop: 12,
+    marginBottom: 16,
+  },
+  descriptionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textMain,
+    marginBottom: 8,
   },
   descriptionText: {
     fontSize: 12,
     color: COLORS.textMuted,
     marginBottom: 4,
     lineHeight: 18,
+  },
+  rulesContainer: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  rulesTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.textMain,
+    marginBottom: 12,
+  },
+  ruleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  ruleText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginLeft: 8,
+    flex: 1,
   },
   footer: {
     padding: 20,
