@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useProtectedRoute } from '../hooks/useProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
@@ -27,6 +27,7 @@ const PACKAGES = [
 export default function VipPurchasePage() {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
+  const navigation = useNavigation();
   const { user, refreshProfile } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState('yearly');
   const [redemptionCode, setRedemptionCode] = useState('');
@@ -83,7 +84,16 @@ export default function VipPurchasePage() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity 
+          onPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              router.replace('/(tabs)/my');
+            }
+          }} 
+          style={styles.backButton}
+        >
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>开通会员</Text>
