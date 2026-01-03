@@ -357,7 +357,8 @@ export async function getMultipleTradersSignalTrend(
 }
 
 /**
- * 搜索交易员（支持模糊搜索名称和描述）
+ * 【优化版】搜索交易员（支持模糊搜索名称和描述）
+ * 性能提升：使用数据库 RPC 函数，从 3-4 个查询优化为 1 个 RPC 调用
  * @param query 搜索关键词
  * @param userId 用户ID（可选，用于获取订阅/关注状态）
  * @param limit 限制返回数量
@@ -374,95 +375,27 @@ export async function searchTraders(
     }
 
     const trimmedQuery = query.trim();
-    console.log('🔍 [TraderService] 搜索交易员:', trimmedQuery, 'userId:', userId);
+    console.log('🔍 [TraderService] 搜索交易员 (RPC):', trimmedQuery, 'userId:', userId);
 
-    // 使用 ilike 进行模糊搜索（不区分大小写）
-    // 搜索名称或描述包含关键词的交易员
-    let queryBuilder = supabase
-      .from('traders')
-      .select(`
-        id,
-        name,
-        description,
-        avatar_url,
-        is_online_today,
-        is_online,
-        signal_count,
-        followers_count,
-        win_rate,
-        created_at,
-        updated_at
-      `)
-      .or(`name.ilike.%${trimmedQuery}%,description.ilike.%${trimmedQuery}%`)
-      .order('followers_count', { ascending: false })
-      .limit(limit);
-
-    const { data: traders, error } = await queryBuilder;
+    // 使用优化的数据库 RPC 函数，一次性获取所有数据
+    const { data, error } = await supabase.rpc('search_traders_with_stats', {
+      p_query: trimmedQuery,
+      p_user_id: userId || null,
+      p_limit: limit
+    });
 
     if (error) {
       console.error('❌ [TraderService] 搜索交易员失败:', error);
       throw error;
     }
 
-    if (!traders || traders.length === 0) {
+    if (!data || data.length === 0) {
       console.log('🔍 [TraderService] 未找到匹配的交易员');
       return [];
     }
 
-    console.log('✅ [TraderService] 找到', traders.length, '个匹配的交易员');
-
-    // 获取每个交易员的统计数据
-    const traderIds = traders.map(t => t.id);
-    
-    // 获取信号统计
-    const { data: signalStats } = await supabase
-      .from('signals')
-      .select('trader_id, status, direction')
-      .in('trader_id', traderIds);
-
-    // 如果提供了用户ID，获取订阅和关注状态
-    let subscriptions: Set<string> = new Set();
-    let follows: Set<string> = new Set();
-    
-    if (userId) {
-      const { data: subs } = await supabase
-        .from('user_subscriptions')
-        .select('trader_id')
-        .eq('user_id', userId)
-        .in('trader_id', traderIds);
-      
-      const { data: fols } = await supabase
-        .from('user_follows')
-        .select('trader_id')
-        .eq('user_id', userId)
-        .in('trader_id', traderIds);
-      
-      subscriptions = new Set(subs?.map(s => s.trader_id) || []);
-      follows = new Set(fols?.map(f => f.trader_id) || []);
-    }
-
-    // 组装结果
-    const results: TraderWithStats[] = traders.map(trader => {
-      const traderSignals = signalStats?.filter(s => s.trader_id === trader.id) || [];
-      const activeSignals = traderSignals.filter(s => s.status === 'active').length;
-      const closedSignals = traderSignals.filter(s => s.status === 'closed').length;
-      const longSignals = traderSignals.filter(s => s.direction === 'long').length;
-      const shortSignals = traderSignals.filter(s => s.direction === 'short').length;
-
-      return {
-        ...trader,
-        total_signals: traderSignals.length,
-        active_signals: activeSignals,
-        closed_signals: closedSignals,
-        long_signals: longSignals,
-        short_signals: shortSignals,
-        is_subscribed: userId ? subscriptions.has(trader.id) : false,
-        is_followed: userId ? follows.has(trader.id) : false,
-      };
-    });
-
-    console.log('✅ [TraderService] 搜索完成，返回', results.length, '条结果');
-    return results;
+    console.log('✅ [TraderService] 搜索完成，返回', data.length, '条结果');
+    return data || [];
   } catch (error) {
     console.error('❌ [TraderService] 搜索交易员异常:', error);
     throw error;
