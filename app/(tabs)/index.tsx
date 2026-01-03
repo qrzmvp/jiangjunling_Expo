@@ -10,8 +10,9 @@ import { TraderCard } from '../../components/TraderCard';
 import { SignalCard } from '../../components/SignalCard';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
-import { getFollowedTraders, getSubscribedTraders, subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../../lib/userTraderService';
+import { getFollowedTraders, getSubscribedTraders, subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader, getUserStats } from '../../lib/userTraderService';
 import { getTradersWithStats, TraderWithStats, getMultipleTradersSignalTrend, getLeaderboard, LeaderboardTrader } from '../../lib/traderService';
+import { getPlatformStats, PlatformStats } from '../../lib/platformStatsService';
 import type { Trader } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -186,7 +187,6 @@ const LeaderboardItem = ({
           <Text style={[styles.nameText, isTop && { color: COLORS.yellowText }]} numberOfLines={1}>{name}</Text>
         </View>
         <View style={styles.roiRow}>
-          <Text style={styles.roiLabel}>ROI</Text>
           <Text style={[styles.roiValue, isTop && { fontSize: 16 }]}>{roi}</Text>
         </View>
       </View>
@@ -220,6 +220,15 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
   const [hiddenTraders, setHiddenTraders] = React.useState<string[]>([]);
   const [leaderboardData, setLeaderboardData] = React.useState<LeaderboardTrader[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = React.useState(true);
+  
+  // 平台统计数据
+  const [platformStats, setPlatformStats] = React.useState<PlatformStats>({
+    todaySignalCount: 0,
+    longSignalCount: 0,
+    shortSignalCount: 0,
+    activeTraderCount: 0,
+    tradingPairCount: 0,
+  });
 
   const toggleTrader = (name: string) => {
     setHiddenTraders(prev => 
@@ -229,7 +238,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     );
   };
 
-  // 加载排行榜数据和用户订阅关注状态
+  // 加载排行榜数据和平台统计数据
   const loadData = React.useCallback(async () => {
     try {
       // 初始加载时loading为true，后续focus时静默更新，不设置loading为true以避免闪烁
@@ -237,8 +246,12 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
       // 直接传入 user.id，获取带有状态的排行榜数据
       const data = await getLeaderboard(user?.id);
       setLeaderboardData(data);
+      
+      // 加载平台统计数据
+      const stats = await getPlatformStats();
+      setPlatformStats(stats);
     } catch (error) {
-      console.error('加载排行榜失败:', error);
+      console.error('加载数据失败:', error);
     } finally {
       setLeaderboardLoading(false);
     }
@@ -474,18 +487,33 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
 
   return (
   <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-    {/* Statistics Section */}
+    {/* Platform Statistics Section */}
+    <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+      <View style={styles.sectionHeader}>
+        <Text style={[styles.sectionTitle, { fontSize: 14, fontWeight: '600' }]}>平台概览</Text>
+      </View>
+    </View>
+    
+    {/* Statistics Section - 3 columns 2 rows */}
     <View style={styles.statsContainer}>
-      <View style={styles.statItem}>
-        <Text style={styles.statValue}>36</Text>
+      <View style={styles.statItemGrid}>
+        <Text style={styles.statValue}>{platformStats.todaySignalCount}</Text>
         <Text style={styles.statLabelSmall}>今日信号</Text>
       </View>
-      <View style={styles.statItem}>
-        <Text style={styles.statValue}>5</Text>
+      <View style={styles.statItemGrid}>
+        <Text style={styles.statValue}>{platformStats.longSignalCount}</Text>
+        <Text style={styles.statLabelSmall}>做多信号</Text>
+      </View>
+      <View style={styles.statItemGrid}>
+        <Text style={styles.statValue}>{platformStats.shortSignalCount}</Text>
+        <Text style={styles.statLabelSmall}>做空信号</Text>
+      </View>
+      <View style={styles.statItemGrid}>
+        <Text style={styles.statValue}>{platformStats.activeTraderCount}</Text>
         <Text style={styles.statLabelSmall}>活跃博主</Text>
       </View>
-      <View style={styles.statItem}>
-        <Text style={styles.statValue}>16</Text>
+      <View style={styles.statItemGrid}>
+        <Text style={styles.statValue}>{platformStats.tradingPairCount}</Text>
         <Text style={styles.statLabelSmall}>交易币种</Text>
       </View>
     </View>
@@ -672,7 +700,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     {/* Leaderboard Section */}
     <View style={{ paddingHorizontal: 16, paddingBottom: 20, paddingTop: 24 }}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { fontSize: 14, fontWeight: '600' }]}>排行榜（近一周）</Text>
+        <Text style={[styles.sectionTitle, { fontSize: 14, fontWeight: '600' }]}>排行榜</Text>
         <TouchableOpacity onPress={onMorePress}>
           <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>更多 {'>'}</Text>
         </TouchableOpacity>
@@ -2264,16 +2292,24 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexWrap: 'wrap',
     backgroundColor: COLORS.surfaceLight,
     marginHorizontal: 16,
-    marginBottom: 16,
-    paddingVertical: 20,
+    marginBottom: 24,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     borderRadius: 12,
+    gap: 16,
   },
   statItem: {
     alignItems: 'center',
     gap: 8,
+  },
+  statItemGrid: {
+    width: '30%',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
   },
   statValue: {
     color: COLORS.textMain,
