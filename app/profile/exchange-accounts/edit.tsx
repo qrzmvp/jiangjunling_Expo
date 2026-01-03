@@ -288,7 +288,7 @@ export default function EditExchangeAccount() {
         <StatusBar style="light" />
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/my')} style={styles.iconButton}>
               <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>加载中...</Text>
@@ -314,7 +314,7 @@ export default function EditExchangeAccount() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <TouchableOpacity 
-            onPress={() => router.back()}
+            onPress={() => router.push('/(tabs)/my')}
             style={styles.iconButton}
           >
             <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
