@@ -468,3 +468,34 @@ export async function searchTraders(
     throw error;
   }
 }
+
+/**
+ * 获取排行榜前5名交易员
+ * 按信号总数排序，相同则按创建时间排序
+ */
+export interface LeaderboardTrader {
+  id: string;
+  name: string;
+  avatar_url: string;
+  signal_count: number;
+  created_at: string;
+}
+
+export async function getLeaderboard(): Promise<LeaderboardTrader[]> {
+  try {
+    console.log('🔵 [TraderService] 调用 RPC: get_leaderboard');
+    
+    const { data, error } = await supabase.rpc('get_leaderboard');
+
+    if (error) {
+      console.error('❌ [TraderService] 获取排行榜失败:', error);
+      throw error;
+    }
+
+    console.log('✅ [TraderService] 获取排行榜成功，返回', data?.length || 0, '条数据');
+    return data || [];
+  } catch (error) {
+    console.error('❌ [TraderService] 获取排行榜异常:', error);
+    throw error;
+  }
+}

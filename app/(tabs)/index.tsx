@@ -10,8 +10,8 @@ import { TraderCard } from '../../components/TraderCard';
 import { SignalCard } from '../../components/SignalCard';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
-import { getFollowedTraders, getSubscribedTraders } from '../../lib/userTraderService';
-import { getTradersWithStats, TraderWithStats, getMultipleTradersSignalTrend } from '../../lib/traderService';
+import { getFollowedTraders, getSubscribedTraders, subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../../lib/userTraderService';
+import { getTradersWithStats, TraderWithStats, getMultipleTradersSignalTrend, getLeaderboard, LeaderboardTrader } from '../../lib/traderService';
 import type { Trader } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -51,8 +51,106 @@ class ChartErrorBoundary extends React.Component<{children: React.ReactNode}, {h
 }
 
 // 排行榜列表项组件
-const LeaderboardItem = ({ rank, name, roi, avatar, isTop = false }: { rank: number, name: string, roi: string, avatar: string, isTop?: boolean }) => {
-  const [isSubscribed, setIsSubscribed] = React.useState(false);
+const LeaderboardItem = ({ 
+  rank, 
+  traderId,
+  name, 
+  roi, 
+  avatar, 
+  isTop = false,
+  initialIsSubscribed = false,
+  initialIsFavorite = false,
+  onSubscriptionChange,
+  onFavoriteChange
+}: { 
+  rank: number, 
+  traderId: string,
+  name: string, 
+  roi: string, 
+  avatar: string, 
+  isTop?: boolean,
+  initialIsSubscribed?: boolean,
+  initialIsFavorite?: boolean,
+  onSubscriptionChange?: () => void,
+  onFavoriteChange?: () => void
+}) => {
+  const { user } = useAuth();
+  const [isSubscribed, setIsSubscribed] = React.useState(initialIsSubscribed);
+  const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
+  const [loading, setLoading] = React.useState(false);
+
+  // 当外部状态改变时更新本地状态
+  React.useEffect(() => {
+    setIsSubscribed(initialIsSubscribed);
+  }, [initialIsSubscribed]);
+
+  React.useEffect(() => {
+    setIsFavorite(initialIsFavorite);
+  }, [initialIsFavorite]);
+
+  // 处理订阅/取消订阅
+  const handleSubscriptionToggle = async () => {
+    if (!user?.id) {
+      console.log('请先登录');
+      return;
+    }
+
+    if (loading) return;
+
+    try {
+      setLoading(true);
+      
+      if (isSubscribed) {
+        const result = await unsubscribeTrader(user.id, traderId);
+        if (result.success) {
+          setIsSubscribed(false);
+          onSubscriptionChange?.();
+        }
+      } else {
+        const result = await subscribeTrader(user.id, traderId);
+        if (result.success) {
+          setIsSubscribed(true);
+          onSubscriptionChange?.();
+        }
+      }
+    } catch (error) {
+      console.error('订阅操作失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 处理关注/取消关注
+  const handleFavoriteToggle = async () => {
+    if (!user?.id) {
+      console.log('请先登录');
+      return;
+    }
+
+    if (loading) return;
+
+    try {
+      setLoading(true);
+      
+      if (isFavorite) {
+        const result = await unfollowTrader(user.id, traderId);
+        if (result.success) {
+          setIsFavorite(false);
+          onFavoriteChange?.();
+        }
+      } else {
+        const result = await followTrader(user.id, traderId);
+        if (result.success) {
+          setIsFavorite(true);
+          onFavoriteChange?.();
+        }
+      }
+    } catch (error) {
+      console.error('关注操作失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={[styles.leaderboardItem, isTop && styles.topLeaderboardItem]}>
@@ -93,15 +191,23 @@ const LeaderboardItem = ({ rank, name, roi, avatar, isTop = false }: { rank: num
         </View>
       </View>
 
-      <TouchableOpacity>
-        <MaterialIcons name="star-border" size={24} color={COLORS.textMuted} />
+      <TouchableOpacity
+        onPress={handleFavoriteToggle}
+        disabled={loading}
+      >
+        <MaterialIcons 
+          name={isFavorite ? "star" : "star-border"} 
+          size={24} 
+          color={isFavorite ? COLORS.yellow : COLORS.textMuted} 
+        />
       </TouchableOpacity>
 
       <TouchableOpacity 
         style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
-        onPress={() => setIsSubscribed(!isSubscribed)}
+        onPress={handleSubscriptionToggle}
+        disabled={loading}
       >
-        <Text style={styles.copyButtonText}>{isSubscribed ? '已copy' : 'Copy'}</Text>
+        <Text style={styles.copyButtonText}>{loading ? '...' : (isSubscribed ? '已订阅' : '订阅')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -109,8 +215,13 @@ const LeaderboardItem = ({ rank, name, roi, avatar, isTop = false }: { rank: num
 
 const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
   const { width: windowWidth } = useWindowDimensions();
+  const { user } = useAuth();
   const [timeFilter, setTimeFilter] = React.useState('近一周');
   const [hiddenTraders, setHiddenTraders] = React.useState<string[]>([]);
+  const [leaderboardData, setLeaderboardData] = React.useState<LeaderboardTrader[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = React.useState(true);
+  const [subscribedTraders, setSubscribedTraders] = React.useState<Set<string>>(new Set());
+  const [followedTraders, setFollowedTraders] = React.useState<Set<string>>(new Set());
 
   const toggleTrader = (name: string) => {
     setHiddenTraders(prev => 
@@ -118,6 +229,57 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
         ? prev.filter(n => n !== name)
         : [...prev, name]
     );
+  };
+
+  // 加载排行榜数据和用户订阅关注状态
+  React.useEffect(() => {
+    const loadLeaderboard = async () => {
+      try {
+        setLeaderboardLoading(true);
+        const data = await getLeaderboard();
+        setLeaderboardData(data);
+
+        // 如果用户已登录，加载订阅和关注状态
+        if (user?.id) {
+          const [subscribed, followed] = await Promise.all([
+            getSubscribedTraders(user.id),
+            getFollowedTraders(user.id)
+          ]);
+          setSubscribedTraders(new Set(subscribed.map(t => t.id)));
+          setFollowedTraders(new Set(followed.map(t => t.id)));
+        }
+      } catch (error) {
+        console.error('加载排行榜失败:', error);
+      } finally {
+        setLeaderboardLoading(false);
+      }
+    };
+
+    loadLeaderboard();
+  }, [user?.id]);
+
+  // 当用户订阅/取消订阅后刷新状态（不重新加载排行榜）
+  const handleSubscriptionChange = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const subscribed = await getSubscribedTraders(user.id);
+      setSubscribedTraders(new Set(subscribed.map(t => t.id)));
+    } catch (error) {
+      console.error('刷新订阅状态失败:', error);
+    }
+  };
+
+  // 当用户关注/取消关注后刷新状态（不重新加载排行榜）
+  const handleFavoriteChange = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const followed = await getFollowedTraders(user.id);
+      setFollowedTraders(new Set(followed.map(t => t.id)));
+    } catch (error) {
+      console.error('刷新关注状态失败:', error);
+    }
   };
 
   // Mock Chart Data
@@ -530,37 +692,31 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
       </View>
 
       <View style={styles.leaderboardList}>
-        <LeaderboardItem 
-          rank={1}
-          name="Average-Moon..."
-          roi="+107.70%"
-          avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuB_YJoFtmSgqjEYM2tsRwwH6OcbxEzQ0rOaBPiJTZ4kKmIvaq0Whpfn4QNXrDoxYbqYTbsxrudPSci0vqyxrfvX5NmUtQlekhCyT7-wQDutN-2ZxMOpAvUeEwTkwiZt1NsTnXYQeiDjq55arRKjL8FCa3t0cxXr0bvH7NV1Wo8KBsbV8ddGD1USqDJU2_1BtHf6qmsHmXN0_TGvvZFwElGBKxyPrp7TnUPf9H6emqbfpZBteQl9GvFy3Hm8KvITkQ6I01WLW7MLXQ"
-          isTop={true}
-        />
-        <LeaderboardItem 
-          rank={2}
-          name="BeyondHJJ"
-          roi="+32.26%"
-          avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuBzZa78G7eCvQ3Qfir53Hh3en0nyDyqTSQLbXpOwuGfgmNT5K8kK94gFtLZ9c4QsAjTMvLKoJG-ZohYppqv5hWBKiP8tms6JOyEYTUPB-D0glDcbsQTF4Ba9k1opWJScsAodRQkxc1KcoUOmvSt6CsC8FvXUvDGJruHwegzMFzTaFLM_eF5JWZK8HPtqhNbHRWnliPvTu693N4wpz-ZmEZFfhYTq1BUb9135nVBVxM59E0nYYPndbBJBhQkWX9zheGiN9QcioZyIg"
-        />
-        <LeaderboardItem 
-          rank={3}
-          name="zh138"
-          roi="+7.56%"
-          avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuCA6jm-quFFL4rGgnuqOTX6aa7ja62sdDdo3axzhQrnFedupfbhBgf-e6uQk2UJW6Fw_P6j3rE-Chdj1ROGQUydNYpLFiDKTnaRkds9OmErntL2HdtacO_UqSoB5ba2135lFtLoHiQHxZEScqx0miCEfAjnfV5_KSl5QyMd8yLi2gw_PLYz0wZiLCXKt2wdodUjdjvSKNgWzPDtwupJElJqhtE9RKBIQ9kS_wrdn6X3Mco8KWrf3EmG7376RFVDEW_ffsBfco13qw"
-        />
-        <LeaderboardItem 
-          rank={4}
-          name="CryptoKing"
-          roi="+5.12%"
-          avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuDVXm3a-fpXh5zQN3sNH5-qNsQXC7nIZEIBDBl5DS-_f8dCCU7lM0nnHc9NopUGzSoFU82lsG915VOGMfQ5OqF_w12XEnoc66ZsMChKilE-8sn7rt5TSjarqbfC_-RnU6WIarPlvl6UQOjBUhsWZVRewlBxOyqDifftOdQ7nbs-SYQf8ueAclFocUQNE1f3s3iPwU89cVXi5pVvpkb4UrIO9BvmlgYP5vECM0CfXkb_DG9zLwr140WUke8skQb38aPzkxGic2604A"
-        />
-        <LeaderboardItem 
-          rank={5}
-          name="EtherWhale"
-          roi="+4.80%"
-          avatar="https://lh3.googleusercontent.com/aida-public/AB6AXuChG2uLZ1MGBu_JRnsIhReRPPHSGAWTi7TRNPzW89GNTfSDJHzQCj5YF8CEbcvYGQAJcKFVuKWXTwvNOuWYgsHeb81R3G3mvkRN9qhax5qRcsSEx-D7XrfphssVslqZ_ATs93L10qAIHIaalReVoPZ5r8e4BhdBeQU4fhaJIIHQ_QVUERg1SAXP-wiUbUt5rKMcEod6NUnJSy3WvohDdC8BwYZ6ppsr3ifIxubBxcpIZLg2I46Ub8yPmUxgza3gZ4YyRvkgRVoC6w"
-        />
+        {leaderboardLoading ? (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+          </View>
+        ) : leaderboardData.length > 0 ? (
+          leaderboardData.map((trader, index) => (
+            <LeaderboardItem
+              key={trader.id}
+              rank={index + 1}
+              traderId={trader.id}
+              name={trader.name}
+              roi={`${trader.signal_count || 0}个信号`}
+              avatar={trader.avatar_url || 'https://randomuser.me/api/portraits/men/1.jpg'}
+              isTop={index === 0}
+              initialIsSubscribed={subscribedTraders.has(trader.id)}
+              initialIsFavorite={followedTraders.has(trader.id)}
+              onSubscriptionChange={handleSubscriptionChange}
+              onFavoriteChange={handleFavoriteChange}
+            />
+          ))
+        ) : (
+          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+            <Text style={{ color: COLORS.textMuted }}>暂无数据</Text>
+          </View>
+        )}
       </View>
     </View>
   </ScrollView>
