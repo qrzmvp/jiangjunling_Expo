@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +6,36 @@ import { useProtectedRoute } from '../hooks/useProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
 import { redeemCode } from '../lib/redemptionService';
 import Toast from '../components/Toast';
+import { supabase } from '../lib/supabase';
+
+interface PriceInfo {
+  id: string;
+  amount: number;
+  currency: string;
+  type: string;
+  recurring: {
+    interval: string;
+    interval_count: number;
+  } | null;
+}
+
+interface ProductInfo {
+  id: string;
+  name: string;
+  description: string;
+  prices: PriceInfo[];
+}
+
+interface PackageOption {
+  id: string;
+  name: string;
+  price: string;
+  originalPrice: string;
+  recommend?: boolean;
+  stripeProductId?: string;
+  stripePriceId?: string;
+  currency?: string;
+}
 
 const COLORS = {
   primary: "#2ebd85",
@@ -18,10 +48,36 @@ const COLORS = {
   border: "#27272a",
 };
 
-const PACKAGES = [
-  { id: 'monthly', name: '月度会员', price: '29.9', originalPrice: '39.9' },
-  { id: 'quarterly', name: '季度会员', price: '79.9', originalPrice: '119.7' },
-  { id: 'yearly', name: '年度会员', price: '299.9', originalPrice: '478.8', recommend: true },
+// 硬编码数据（用于移动端）
+const HARDCODED_PACKAGES: PackageOption[] = [
+  { 
+    id: 'monthly', 
+    name: '月度会员', 
+    price: '9.99', 
+    originalPrice: '19.99',
+    stripeProductId: 'prod_TiZg6JMSWBqjnJ',
+    stripePriceId: 'price_1Sl8XqCsOgdwU6DQtB1V6h0M',
+    currency: 'usd'
+  },
+  { 
+    id: 'quarterly', 
+    name: '季度会员', 
+    price: '24.99', 
+    originalPrice: '49.99',
+    stripeProductId: 'prod_TiZgY1wcR0zPqN',
+    stripePriceId: 'price_1Sl8XsCsOgdwU6DQCExHCkgf',
+    currency: 'usd'
+  },
+  { 
+    id: 'yearly', 
+    name: '年度会员', 
+    price: '89.99', 
+    originalPrice: '199.99', 
+    recommend: true,
+    stripeProductId: 'prod_TiZgDpYCzRrCdF',
+    stripePriceId: 'price_1Sl8XsCsOgdwU6DQnThbTY5R',
+    currency: 'usd'
+  },
 ];
 
 export default function VipPurchasePage() {
@@ -35,6 +91,71 @@ export default function VipPurchasePage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [packages, setPackages] = useState<PackageOption[]>(HARDCODED_PACKAGES);
+  const [loading, setLoading] = useState(Platform.OS === 'web');
+
+  // Web端：从Stripe获取产品和价格信息
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      fetchStripeProducts();
+    }
+  }, []);
+
+  const fetchStripeProducts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('get-stripe-products');
+      
+      if (error) throw error;
+      
+      if (data?.products) {
+        // 将Stripe产品数据映射为套餐数据
+        const mappedPackages: PackageOption[] = data.products.map((product: ProductInfo) => {
+          const price = product.prices[0];
+          const amount = price?.amount ? (price.amount / 100).toFixed(2) : '0.00';
+          
+          // 根据产品名称确定套餐类型和推荐状态
+          let id = 'monthly';
+          let recommend = false;
+          let originalPrice = (parseFloat(amount) * 2).toFixed(2);
+          
+          if (product.name.includes('年度')) {
+            id = 'yearly';
+            recommend = true;
+            originalPrice = (parseFloat(amount) * 2.2).toFixed(2);
+          } else if (product.name.includes('季度')) {
+            id = 'quarterly';
+            originalPrice = (parseFloat(amount) * 2).toFixed(2);
+          }
+          
+          return {
+            id,
+            name: product.name,
+            price: amount,
+            originalPrice,
+            recommend,
+            stripeProductId: product.id,
+            stripePriceId: price?.id,
+            currency: price?.currency || 'usd',
+          };
+        });
+        
+        // 按照月度、季度、年度排序
+        const sortOrder = { monthly: 1, quarterly: 2, yearly: 3 };
+        mappedPackages.sort((a, b) => sortOrder[a.id as keyof typeof sortOrder] - sortOrder[b.id as keyof typeof sortOrder]);
+        
+        setPackages(mappedPackages);
+      }
+    } catch (error: any) {
+      console.error('获取Stripe产品失败:', error);
+      // 失败时使用硬编码数据
+      setToastType('error');
+      setToastMessage('加载产品信息失败，使用默认数据');
+      setShowToast(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRedeem = async () => {
     if (!redemptionCode.trim()) {
@@ -109,13 +230,20 @@ export default function VipPurchasePage() {
       </View>
 
       <ScrollView style={styles.content}>
-        <View style={styles.vipHeader}>
-          <View style={styles.vipIconContainer}>
-            <Ionicons name="diamond" size={30} color={COLORS.gold} />
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.gold} />
+            <Text style={styles.loadingText}>加载中...</Text>
           </View>
-          <Text style={styles.vipTitle}>尊享VIP会员权益</Text>
-          <Text style={styles.vipSubtitle}>开启您的专属特权之旅</Text>
-        </View>
+        ) : (
+          <>
+            <View style={styles.vipHeader}>
+              <View style={styles.vipIconContainer}>
+                <Ionicons name="diamond" size={30} color={COLORS.gold} />
+              </View>
+              <Text style={styles.vipTitle}>尊享VIP会员权益</Text>
+              <Text style={styles.vipSubtitle}>开启您的专属特权之旅</Text>
+            </View>
 
         <View style={styles.benefitsContainer}>
           <View style={styles.benefitsRow}>
@@ -174,10 +302,10 @@ export default function VipPurchasePage() {
 
         </View>
 
-        <Text style={styles.sectionTitle}>选择套餐</Text>
-        
-        <View style={styles.packagesContainer}>
-          {PACKAGES.map((pkg) => (
+            <Text style={styles.sectionTitle}>选择套餐</Text>
+            
+            <View style={styles.packagesContainer}>
+              {packages.map((pkg) => (
             <TouchableOpacity 
               key={pkg.id} 
               style={[
@@ -193,13 +321,13 @@ export default function VipPurchasePage() {
               )}
               <Text style={[styles.packageName, selectedPackage === pkg.id && styles.selectedText]}>{pkg.name}</Text>
               <View style={styles.priceContainer}>
-                <Text style={[styles.price, selectedPackage === pkg.id && styles.selectedText]}>{pkg.price}</Text>
-                <Text style={[styles.currency, selectedPackage === pkg.id && styles.selectedText, { marginLeft: 4 }]}>USDT</Text>
+              <Text style={[styles.price, selectedPackage === pkg.id && styles.selectedText]}>{pkg.price}</Text>
+                <Text style={[styles.currency, selectedPackage === pkg.id && styles.selectedText, { marginLeft: 4 }]}>{(pkg.currency || 'usd').toUpperCase()}</Text>
               </View>
-              <Text style={styles.originalPrice}>{pkg.originalPrice} USDT</Text>
+              <Text style={styles.originalPrice}>{pkg.originalPrice} {(pkg.currency || 'usd').toUpperCase()}</Text>
             </TouchableOpacity>
-          ))}
-        </View>
+              ))}
+            </View>
 
         {/* 兑换码区域 - 暂时隐藏 */}
         {/* <View style={styles.redemptionContainer}>
@@ -228,14 +356,16 @@ export default function VipPurchasePage() {
           </View>
         </View> */}
 
-        <View style={styles.description}>
-          <Text style={styles.descriptionText}>
-            1. 会员权益将在支付成功后立即生效。
-          </Text>
-          <Text style={styles.descriptionText}>
-            2. 如有任何疑问，请联系客服。
-          </Text>
-        </View>
+            <View style={styles.description}>
+              <Text style={styles.descriptionText}>
+                1. 会员权益将在支付成功后立即生效。
+              </Text>
+              <Text style={styles.descriptionText}>
+                2. 如有任何疑问，请联系客服。
+              </Text>
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -477,5 +607,25 @@ const styles = StyleSheet.create({
   redeemButtonText: {
     color: COLORS.gold,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: COLORS.textMuted,
+  },
+  platformBadge: {
+    marginTop: 8,
+    fontSize: 11,
+    color: COLORS.primary,
+    backgroundColor: 'rgba(46, 189, 133, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
 });
