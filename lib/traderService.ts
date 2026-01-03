@@ -479,9 +479,11 @@ export interface LeaderboardTrader {
   avatar_url: string;
   signal_count: number;
   created_at: string;
+  is_subscribed?: boolean;
+  is_followed?: boolean;
 }
 
-export async function getLeaderboard(): Promise<LeaderboardTrader[]> {
+export async function getLeaderboard(userId?: string): Promise<LeaderboardTrader[]> {
   try {
     console.log('🔵 [TraderService] 调用 RPC: get_leaderboard');
     
@@ -492,8 +494,37 @@ export async function getLeaderboard(): Promise<LeaderboardTrader[]> {
       throw error;
     }
 
-    console.log('✅ [TraderService] 获取排行榜成功，返回', data?.length || 0, '条数据');
-    return data || [];
+    let leaderboardData: LeaderboardTrader[] = data || [];
+
+    // 如果提供了 userId，获取订阅和关注状态并合并
+    if (userId && leaderboardData.length > 0) {
+      const traderIds = leaderboardData.map(t => t.id);
+      
+      const [subscriptions, follows] = await Promise.all([
+        supabase
+          .from('user_subscriptions')
+          .select('trader_id')
+          .eq('user_id', userId)
+          .in('trader_id', traderIds),
+        supabase
+          .from('user_follows')
+          .select('trader_id')
+          .eq('user_id', userId)
+          .in('trader_id', traderIds)
+      ]);
+
+      const subscribedSet = new Set(subscriptions.data?.map(s => s.trader_id));
+      const followedSet = new Set(follows.data?.map(f => f.trader_id));
+
+      leaderboardData = leaderboardData.map(trader => ({
+        ...trader,
+        is_subscribed: subscribedSet.has(trader.id),
+        is_followed: followedSet.has(trader.id)
+      }));
+    }
+
+    console.log('✅ [TraderService] 获取排行榜成功，返回', leaderboardData.length, '条数据');
+    return leaderboardData;
   } catch (error) {
     console.error('❌ [TraderService] 获取排行榜异常:', error);
     throw error;

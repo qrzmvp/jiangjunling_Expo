@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../contexts/AuthContext';
 import { Platform } from 'react-native';
 
+
 export default function RootLayout() {
   // 在 web 平台设置页面标题
   if (Platform.OS === 'web' && typeof document !== 'undefined') {

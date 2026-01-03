@@ -213,15 +213,13 @@ const LeaderboardItem = ({
   );
 };
 
-const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
+const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => void, currentTab?: string }) => {
   const { width: windowWidth } = useWindowDimensions();
   const { user } = useAuth();
   const [timeFilter, setTimeFilter] = React.useState('近一周');
   const [hiddenTraders, setHiddenTraders] = React.useState<string[]>([]);
   const [leaderboardData, setLeaderboardData] = React.useState<LeaderboardTrader[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = React.useState(true);
-  const [subscribedTraders, setSubscribedTraders] = React.useState<Set<string>>(new Set());
-  const [followedTraders, setFollowedTraders] = React.useState<Set<string>>(new Set());
 
   const toggleTrader = (name: string) => {
     setHiddenTraders(prev => 
@@ -232,54 +230,43 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
   };
 
   // 加载排行榜数据和用户订阅关注状态
-  React.useEffect(() => {
-    const loadLeaderboard = async () => {
-      try {
-        setLeaderboardLoading(true);
-        const data = await getLeaderboard();
-        setLeaderboardData(data);
-
-        // 如果用户已登录，加载订阅和关注状态
-        if (user?.id) {
-          const [subscribed, followed] = await Promise.all([
-            getSubscribedTraders(user.id),
-            getFollowedTraders(user.id)
-          ]);
-          setSubscribedTraders(new Set(subscribed.map(t => t.id)));
-          setFollowedTraders(new Set(followed.map(t => t.id)));
-        }
-      } catch (error) {
-        console.error('加载排行榜失败:', error);
-      } finally {
-        setLeaderboardLoading(false);
-      }
-    };
-
-    loadLeaderboard();
+  const loadData = React.useCallback(async () => {
+    try {
+      // 初始加载时loading为true，后续focus时静默更新，不设置loading为true以避免闪烁
+      
+      // 直接传入 user.id，获取带有状态的排行榜数据
+      const data = await getLeaderboard(user?.id);
+      setLeaderboardData(data);
+    } catch (error) {
+      console.error('加载排行榜失败:', error);
+    } finally {
+      setLeaderboardLoading(false);
+    }
   }, [user?.id]);
 
-  // 当用户订阅/取消订阅后刷新状态（不重新加载排行榜）
-  const handleSubscriptionChange = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const subscribed = await getSubscribedTraders(user.id);
-      setSubscribedTraders(new Set(subscribed.map(t => t.id)));
-    } catch (error) {
-      console.error('刷新订阅状态失败:', error);
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  // 当切换回Overview标签时刷新数据
+  React.useEffect(() => {
+    if (currentTab === 'overview') {
+      loadData();
     }
+  }, [currentTab, loadData]);
+
+  // 当用户订阅/取消订阅后刷新状态
+  const handleSubscriptionChange = async () => {
+    // 重新加载数据以更新状态
+    loadData();
   };
 
-  // 当用户关注/取消关注后刷新状态（不重新加载排行榜）
+  // 当用户关注/取消关注后刷新状态
   const handleFavoriteChange = async () => {
-    if (!user?.id) return;
-    
-    try {
-      const followed = await getFollowedTraders(user.id);
-      setFollowedTraders(new Set(followed.map(t => t.id)));
-    } catch (error) {
-      console.error('刷新关注状态失败:', error);
-    }
+    // 重新加载数据以更新状态
+    loadData();
   };
 
   // Mock Chart Data
@@ -706,8 +693,8 @@ const OverviewTabContent = ({ onMorePress }: { onMorePress: () => void }) => {
               roi={`${trader.signal_count || 0}个信号`}
               avatar={trader.avatar_url || 'https://randomuser.me/api/portraits/men/1.jpg'}
               isTop={index === 0}
-              initialIsSubscribed={subscribedTraders.has(trader.id)}
-              initialIsFavorite={followedTraders.has(trader.id)}
+              initialIsSubscribed={!!trader.is_subscribed}
+              initialIsFavorite={!!trader.is_followed}
               onSubscriptionChange={handleSubscriptionChange}
               onFavoriteChange={handleFavoriteChange}
             />
@@ -1611,7 +1598,7 @@ export default function HomePage() {
             const height = e.nativeEvent.layout.height;
             setHeights(h => ({ ...h, overview: height }));
           }}>
-            <OverviewTabContent onMorePress={handleMorePress} />
+            <OverviewTabContent onMorePress={handleMorePress} currentTab={activeTab} />
           </View>
           <View style={{ width: containerWidth, height: '100%' }} onLayout={(e) => {
             const height = e.nativeEvent.layout.height;
