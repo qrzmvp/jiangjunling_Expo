@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { ExchangeAccountService } from '../../lib/exchangeAccountService';
 import { ExchangeAccount } from '../../types';
 
@@ -67,115 +69,121 @@ const NumberTicker = ({ value, style, duration = 1000 }: { value: string, style?
 
 const TradePage: React.FC = () => {
   const router = useRouter();
+  const { session } = useAuth();
   const [activeTab, setActiveTab] = useState<'position' | 'order' | 'history'>('position');
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [exchangeAccounts, setExchangeAccounts] = useState<ExchangeAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<ExchangeAccount | null>(null);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
 
-  // 模拟持仓数据
-  const positionData = [
-    {
-      id: 1,
-      symbol: 'BTC/USD',
-      name: 'Bitcoin',
-      shares: 0.5,
-      avgPrice: 98000.00,
-      currentPrice: 109384.00,
-      marketValue: 54692.00,
-      profit: 5692.00,
-      profitRate: 11.61,
-      isProfit: true,
-    },
-    {
-      id: 2,
-      symbol: 'ETH/USD',
-      name: 'Ethereum',
-      shares: 10,
-      avgPrice: 3650.00,
-      currentPrice: 3580.00,
-      marketValue: 35800.00,
-      profit: -700.00,
-      profitRate: -1.92,
-      isProfit: false,
-    },
-  ];
+  // Real Data State
+  const [balance, setBalance] = useState<any>(null);
+  const [positions, setPositions] = useState<any[]>([]);
+  const [openOrders, setOpenOrders] = useState<any[]>([]);
+  const [historyOrders, setHistoryOrders] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
 
-  // 模拟挂单数据
-  const orderData = [
-    {
-      id: 1,
-      symbol: 'BTC/USD',
-      name: 'Bitcoin',
-      type: 'buy',
-      orderType: '限价单',
-      shares: 0.2,
-      orderPrice: 108000.00,
-      status: '未成交',
-      time: '2025-12-15 09:30',
-    },
-    {
-      id: 2,
-      symbol: 'ETH/USD',
-      name: 'Ethereum',
-      type: 'sell',
-      orderType: '限价单',
-      shares: 5,
-      orderPrice: 3700.00,
-      status: '部分成交',
-      filledShares: 2,
-      time: '2025-12-15 10:15',
-    },
-    {
-      id: 3,
-      symbol: 'SOL/USD',
-      name: 'Solana',
-      type: 'buy',
-      orderType: '市价单',
-      shares: 15,
-      status: '未成交',
-      time: '2025-12-15 11:05',
-    },
-  ];
+  // Aliases for compatibility
+  const positionData = positions;
 
-  // 模拟历史数据
-  const historyData = [
-    {
-      id: 1,
-      symbol: 'BTC/USD',
-      name: 'Bitcoin',
-      type: 'buy',
-      orderType: '限价单',
-      shares: 0.1,
-      orderPrice: 95000.00,
-      avgPrice: 95000.00,
-      status: '已成交',
-      time: '2025-12-14 14:20',
-    },
-    {
-      id: 2,
-      symbol: 'ETH/USD',
-      name: 'Ethereum',
-      type: 'sell',
-      orderType: '限价单',
-      shares: 2,
-      orderPrice: 3800.00,
-      avgPrice: 3800.00,
-      status: '已成交',
-      time: '2025-12-13 09:15',
-    },
-    {
-      id: 3,
-      symbol: 'SOL/USD',
-      name: 'Solana',
-      type: 'buy',
-      orderType: '限价单',
-      shares: 10,
-      orderPrice: 140.00,
-      status: '已撤单',
-      time: '2025-12-12 16:45',
-    },
-  ];
+  const fetchExchangeData = async () => {
+    if (!selectedAccount) return;
+    
+    if (!session?.access_token) {
+      console.log('No access token available');
+      return;
+    }
+
+    setLoadingData(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-exchange-data', {
+        body: { exchangeAccountId: selectedAccount.id },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (error) {
+        console.error('Supabase function error:', error);
+        return;
+      }
+      
+      // Process Balance
+      if (data.balance && !data.balance.error) {
+          setBalance(data.balance);
+      }
+      
+      // Process Positions
+      if (data.positions && !data.positions.error) {
+          const mappedPositions = Array.isArray(data.positions) ? data.positions.map((pos: any, index: number) => ({
+              id: index,
+              symbol: pos.symbol,
+              name: pos.symbol.split('/')[0],
+              shares: pos.contracts || pos.amount || 0,
+              avgPrice: pos.entryPrice || 0,
+              currentPrice: pos.markPrice || pos.lastPrice || 0,
+              marketValue: (pos.contracts || pos.amount || 0) * (pos.markPrice || pos.lastPrice || 0),
+              profit: pos.unrealizedPnl || 0,
+              profitRate: pos.percentage || 0,
+              isProfit: (pos.unrealizedPnl || 0) >= 0
+          })) : [];
+          setPositions(mappedPositions);
+      } else {
+          setPositions([]);
+      }
+
+      // Process Open Orders
+      if (data.openOrders && !data.openOrders.error) {
+           const mappedOrders = Array.isArray(data.openOrders) ? data.openOrders.map((order: any) => ({
+               id: order.id,
+               symbol: order.symbol,
+               name: order.symbol.split('/')[0],
+               type: order.side,
+               orderType: order.type,
+               shares: order.amount,
+               orderPrice: order.price,
+               status: order.status,
+               time: order.datetime
+           })) : [];
+           setOpenOrders(mappedOrders);
+      } else {
+          setOpenOrders([]);
+      }
+
+      // Process History Orders
+      if (data.historyOrders && !data.historyOrders.error) {
+           const mappedHistory = Array.isArray(data.historyOrders) ? data.historyOrders.map((order: any) => ({
+               id: order.id,
+               symbol: order.symbol,
+               name: order.symbol.split('/')[0],
+               type: order.side,
+               orderType: order.type,
+               shares: order.amount,
+               orderPrice: order.price,
+               avgPrice: order.average,
+               status: order.status,
+               time: order.datetime
+           })) : [];
+           setHistoryOrders(mappedHistory);
+      } else {
+          setHistoryOrders([]);
+      }
+
+    } catch (err) {
+      console.error('Error fetching exchange data:', err);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedAccount && session?.access_token) {
+      fetchExchangeData();
+    }
+  }, [selectedAccount, session]);
+
+  const orderData = openOrders;
+  const historyData = historyOrders;
 
   // 加载交易所账户
   useEffect(() => {
@@ -224,6 +232,7 @@ const TradePage: React.FC = () => {
     const lowerName = name.toLowerCase();
     const icons: { [key: string]: { icon: string; bg: string; color: string } } = {
       'binance': { icon: 'B', bg: '#FCD535', color: '#000000' },
+      'bitget': { icon: 'Bg', bg: '#00F0E6', color: '#000000' },
       'okx': { icon: 'O', bg: '#FFFFFF', color: '#000000' },
       'bybit': { icon: 'B', bg: '#F7A600', color: '#000000' },
       'coinbase': { icon: 'C', bg: '#0052FF', color: '#FFFFFF' },
@@ -290,41 +299,59 @@ const TradePage: React.FC = () => {
             <View style={styles.assetLabel}>
               <Text style={styles.assetLabelText}>资产净值</Text>
               <View style={styles.currencyBadge}>
-                <Text style={styles.currencyText}>HKD</Text>
+                <Text style={styles.currencyText}>USDT</Text>
               </View>
             </View>
             <Text style={styles.arrow}>›</Text>
           </View>
           
-          <NumberTicker value="2,019,899.00" style={styles.mainBalance} />
+          <NumberTicker 
+            value={balance?.total?.USDT ? (parseFloat(balance.total.USDT) + positions.reduce((sum, p) => sum + (p.marketValue || 0), 0)).toFixed(2) : "0.00"} 
+            style={styles.mainBalance} 
+          />
           
           <View style={styles.metricsGrid}>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>持仓市值</Text>
-              <NumberTicker value="1,019,899.00" style={styles.metricValue} />
+              <NumberTicker 
+                value={positions.reduce((sum, p) => sum + (p.marketValue || 0), 0).toFixed(2)} 
+                style={styles.metricValue} 
+              />
             </View>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>持仓盈亏</Text>
-              <NumberTicker value="+15,987.09" style={[styles.metricValue, styles.greenText]} />
+              <NumberTicker 
+                value={(positions.reduce((sum, p) => sum + (p.profit || 0), 0) > 0 ? "+" : "") + positions.reduce((sum, p) => sum + (p.profit || 0), 0).toFixed(2)} 
+                style={[styles.metricValue, positions.reduce((sum, p) => sum + (p.profit || 0), 0) >= 0 ? styles.greenText : {color: COLORS.danger}]} 
+              />
             </View>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>今日盈亏</Text>
               <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <NumberTicker value="+1,987.09" style={[styles.metricValue, styles.greenText]} />
-                <Text style={[styles.metricValue, styles.greenText]}>/0.14%</Text>
+                <NumberTicker value="---" style={[styles.metricValue, styles.greenText]} />
+                <Text style={[styles.metricValue, styles.greenText]}>/---%</Text>
               </View>
             </View>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>冻结资金</Text>
-              <NumberTicker value="9,899.00" style={styles.metricValue} />
+              <NumberTicker 
+                value={balance?.used?.USDT ? parseFloat(balance.used.USDT).toFixed(2) : "0.00"} 
+                style={styles.metricValue} 
+              />
             </View>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>可用资金</Text>
-              <NumberTicker value="1,000,899.00" style={styles.metricValue} />
+              <NumberTicker 
+                value={balance?.free?.USDT ? parseFloat(balance.free.USDT).toFixed(2) : "0.00"} 
+                style={styles.metricValue} 
+              />
             </View>
             <View style={styles.metricItem}>
               <Text style={styles.metricLabel}>可提资金</Text>
-              <NumberTicker value="5,899.00" style={styles.metricValue} />
+              <NumberTicker 
+                value={balance?.free?.USDT ? parseFloat(balance.free.USDT).toFixed(2) : "0.00"} 
+                style={styles.metricValue} 
+              />
             </View>
           </View>
         </View>
