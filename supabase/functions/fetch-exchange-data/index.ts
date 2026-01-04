@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import ccxt from 'https://esm.sh/ccxt@4.2.71'
+import ccxt from 'https://esm.sh/ccxt@4.2.71?target=deno'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,17 +50,25 @@ serve(async (req) => {
     })
 
     // Proxy configuration
-    const proxyUrl = Deno.env.get('CCXT_PROXY_URL')
+    // Hardcoded fallback as requested. Ideally set this in Supabase Secrets.
+    const proxyUrl = Deno.env.get('CCXT_PROXY_URL') ?? "http://x8kuh7re546o:soJsMLwj1zrR1Rnj@proxy.smartproxycn.com:1000"
     if (proxyUrl) {
-      // CCXT supports setting a proxy URL directly
-      // Note: The proxy must support CORS if called from a browser, but here we are server-side.
-      // Format usually: http://user:pass@host:port or just http://host:port
-      exchange.proxy = proxyUrl
       console.log(`Using proxy: ${proxyUrl}`)
+      // For Deno, we need to use a custom fetch client for forward proxies
+      // @ts-ignore: Deno.createHttpClient might not be in standard types
+      if (typeof Deno.createHttpClient === 'function') {
+          // @ts-ignore
+          const client = Deno.createHttpClient({ proxy: { url: proxyUrl } })
+          exchange.fetchImplementation = (url: string, options: any) => {
+              return fetch(url, { ...options, client })
+          }
+      } else {
+          console.warn('Deno.createHttpClient not found, cannot configure forward proxy correctly.')
+      }
     }
 
     // Set sandbox mode if needed
-    if (account.account_mode === 'sandbox' || account.account_mode === 'test') {
+    if (account.account_mode === 'sandbox' || account.account_mode === 'test' || account.account_mode === 'demo') {
       exchange.setSandboxMode(true)
       console.log('Enabled sandbox mode')
     } 

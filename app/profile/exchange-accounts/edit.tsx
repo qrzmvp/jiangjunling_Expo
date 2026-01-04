@@ -201,6 +201,13 @@ export default function EditExchangeAccount() {
       return;
     }
 
+    // Check if passphrase is required
+    const exchangesRequiringPassphrase = ['bitget', 'okx', 'kucoin'];
+    if (selectedExchange && exchangesRequiringPassphrase.includes(selectedExchange.name.toLowerCase()) && !passphrase.trim()) {
+      showToast(`${selectedExchange.display_name || selectedExchange.name} 需要输入 Passphrase`, 'warning');
+      return;
+    }
+
     try {
       setSaving(true);
       if (accountId) {
@@ -457,7 +464,15 @@ export default function EditExchangeAccount() {
             {/* Passphrase */}
             <View style={styles.inputRowNoBorder}>
               <Text style={[styles.inputLabel, { marginBottom: 8 }]}>
-                Passphrase <Text style={styles.optionalText}>(选填)</Text>
+                Passphrase <Text style={
+                  selectedExchange && ['bitget', 'okx', 'kucoin'].includes(selectedExchange.name.toLowerCase())
+                    ? styles.requiredText
+                    : styles.optionalText
+                }>
+                  {selectedExchange && ['bitget', 'okx', 'kucoin'].includes(selectedExchange.name.toLowerCase())
+                    ? '(必填)'
+                    : '(选填)'}
+                </Text>
               </Text>
               <View style={styles.inputWithIcon}>
                 <TextInput 
@@ -895,6 +910,11 @@ const styles = StyleSheet.create({
   },
   optionalText: {
     color: COLORS.textSecondary,
+    fontWeight: '400',
+    fontSize: 12,
+  },
+  requiredText: {
+    color: COLORS.danger,
     fontWeight: '400',
     fontSize: 12,
   },
