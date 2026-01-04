@@ -49,8 +49,21 @@ serve(async (req) => {
       // enableRateLimit: true, 
     })
 
-    // Set sandbox mode if needed (you might want to add a flag in your DB for this)
-    // exchange.setSandboxMode(true) 
+    // Proxy configuration
+    const proxyUrl = Deno.env.get('CCXT_PROXY_URL')
+    if (proxyUrl) {
+      // CCXT supports setting a proxy URL directly
+      // Note: The proxy must support CORS if called from a browser, but here we are server-side.
+      // Format usually: http://user:pass@host:port or just http://host:port
+      exchange.proxy = proxyUrl
+      console.log(`Using proxy: ${proxyUrl}`)
+    }
+
+    // Set sandbox mode if needed
+    if (account.account_mode === 'sandbox' || account.account_mode === 'test') {
+      exchange.setSandboxMode(true)
+      console.log('Enabled sandbox mode')
+    } 
 
     // 3. Fetch data
     const promises: Promise<any>[] = []
