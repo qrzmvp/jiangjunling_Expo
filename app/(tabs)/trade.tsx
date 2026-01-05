@@ -297,62 +297,45 @@ const TradePage: React.FC = () => {
         <View style={styles.balanceCard}>
           <View style={styles.cardHeader}>
             <View style={styles.assetLabel}>
-              <Text style={styles.assetLabelText}>资产净值</Text>
-              <View style={styles.currencyBadge}>
-                <Text style={styles.currencyText}>USDT</Text>
-              </View>
+              <Text style={styles.assetLabelText}>累计跟单收益 (USDT)</Text>
+              <Ionicons name="eye-outline" size={16} color="#666" style={{ marginLeft: 8 }} />
             </View>
-            <Text style={styles.arrow}>›</Text>
           </View>
           
-          <NumberTicker 
-            value={balance?.total?.USDT ? (parseFloat(balance.total.USDT) + positions.reduce((sum, p) => sum + (p.marketValue || 0), 0)).toFixed(2) : "0.00"} 
-            style={styles.mainBalance} 
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 8 }}>
+            <NumberTicker 
+              value="0.00" 
+              style={styles.mainBalance} 
+            />
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            <Text style={{ color: '#999', fontSize: 14 }}>跟单收益率</Text>
+            <Text style={{ color: '#2ebd85', fontSize: 14, marginLeft: 8 }}>+0.00%</Text>
+            <Ionicons name="chevron-forward" size={14} color="#666" style={{ marginLeft: 4 }} />
+          </View>
           
-          <View style={styles.metricsGrid}>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>持仓市值</Text>
+          <View style={{ flexDirection: 'row', marginTop: 24, justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#999', fontSize: 12, marginBottom: 4 }}>总跟单金额</Text>
               <NumberTicker 
-                value={positions.reduce((sum, p) => sum + (p.marketValue || 0), 0).toFixed(2)} 
-                style={styles.metricValue} 
+                value={balance?.total?.USDT ? parseFloat(balance.total.USDT).toFixed(2) : "0.00"} 
+                style={{ color: '#fff', fontSize: 16, fontWeight: '600' }} 
               />
             </View>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>持仓盈亏</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#999', fontSize: 12, marginBottom: 4 }}>累计跟单笔数</Text>
               <NumberTicker 
-                value={(positions.reduce((sum, p) => sum + (p.profit || 0), 0) > 0 ? "+" : "") + positions.reduce((sum, p) => sum + (p.profit || 0), 0).toFixed(2)} 
-                style={[styles.metricValue, positions.reduce((sum, p) => sum + (p.profit || 0), 0) >= 0 ? styles.greenText : {color: COLORS.danger}]} 
+                value="0" 
+                style={{ color: '#fff', fontSize: 16, fontWeight: '600' }} 
               />
             </View>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>今日盈亏</Text>
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <NumberTicker value="---" style={[styles.metricValue, styles.greenText]} />
-                <Text style={[styles.metricValue, styles.greenText]}>/---%</Text>
-              </View>
-            </View>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>冻结资金</Text>
-              <NumberTicker 
-                value={balance?.used?.USDT ? parseFloat(balance.used.USDT).toFixed(2) : "0.00"} 
-                style={styles.metricValue} 
-              />
-            </View>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>可用资金</Text>
-              <NumberTicker 
-                value={balance?.free?.USDT ? parseFloat(balance.free.USDT).toFixed(2) : "0.00"} 
-                style={styles.metricValue} 
-              />
-            </View>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricLabel}>可提资金</Text>
-              <NumberTicker 
-                value={balance?.free?.USDT ? parseFloat(balance.free.USDT).toFixed(2) : "0.00"} 
-                style={styles.metricValue} 
-              />
-            </View>
+          </View>
+
+          <View style={{ marginTop: 16 }}>
+            <Text style={{ color: '#666', fontSize: 12 }}>
+              胜率: <Text style={{ color: '#999' }}>0%</Text>  <Text style={{ color: '#666', marginHorizontal: 4 }}>|</Text>  盈亏比: <Text style={{ color: '#999' }}>0.0</Text>
+            </Text>
           </View>
         </View>
 
