@@ -295,47 +295,51 @@ const TradePage: React.FC = () => {
 
         {/* Balance Card */}
         <View style={styles.balanceCard}>
-          <View style={styles.cardHeader}>
+          <View style={[styles.cardHeader, { marginBottom: 4 }]}>
             <View style={styles.assetLabel}>
               <Text style={styles.assetLabelText}>累计跟单收益 (USDT)</Text>
               <Ionicons name="eye-outline" size={16} color="#666" style={{ marginLeft: 8 }} />
             </View>
           </View>
           
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 0 }}>
             <NumberTicker 
               value="0.00" 
-              style={styles.mainBalance} 
+              style={[styles.mainBalance, { marginBottom: 4 }]} 
             />
           </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 0 }}>
             <Text style={{ color: '#999', fontSize: 14 }}>跟单收益率</Text>
             <Text style={{ color: '#2ebd85', fontSize: 14, marginLeft: 8 }}>+0.00%</Text>
             <Ionicons name="chevron-forward" size={14} color="#666" style={{ marginLeft: 4 }} />
           </View>
           
-          <View style={{ flexDirection: 'row', marginTop: 24, justifyContent: 'space-between' }}>
-            <View style={{ flex: 1 }}>
+          <View style={{ height: 1, backgroundColor: '#2A2A2A', marginVertical: 12 }} />
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+            <View style={{ width: '50%', marginBottom: 16 }}>
               <Text style={{ color: '#999', fontSize: 12, marginBottom: 4 }}>总跟单金额</Text>
               <NumberTicker 
                 value={balance?.total?.USDT ? parseFloat(balance.total.USDT).toFixed(2) : "0.00"} 
                 style={{ color: '#fff', fontSize: 16, fontWeight: '600' }} 
               />
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ width: '50%', marginBottom: 16 }}>
               <Text style={{ color: '#999', fontSize: 12, marginBottom: 4 }}>累计跟单笔数</Text>
               <NumberTicker 
                 value="0" 
                 style={{ color: '#fff', fontSize: 16, fontWeight: '600' }} 
               />
             </View>
-          </View>
-
-          <View style={{ marginTop: 16 }}>
-            <Text style={{ color: '#666', fontSize: 12 }}>
-              胜率: <Text style={{ color: '#999' }}>0%</Text>  <Text style={{ color: '#666', marginHorizontal: 4 }}>|</Text>  盈亏比: <Text style={{ color: '#999' }}>0.0</Text>
-            </Text>
+            <View style={{ width: '50%' }}>
+              <Text style={{ color: '#999', fontSize: 12, marginBottom: 4 }}>胜率</Text>
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>0%</Text>
+            </View>
+            <View style={{ width: '50%' }}>
+              <Text style={{ color: '#999', fontSize: 12, marginBottom: 4 }}>盈亏比</Text>
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>0.0</Text>
+            </View>
           </View>
         </View>
 
