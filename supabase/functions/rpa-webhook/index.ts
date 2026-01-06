@@ -132,8 +132,6 @@ function convertOctopusToSignals(octopusData: OctopusData): SignalData {
           if (value === '做多') value = 'long';
           else if (value === '做空') value = 'short';
           else if (value === '现货') value = 'spot';
-        } else if (mappedField === 'currency') {
-          value = value?.replace('/', '') || '';
         } else if (mappedField === 'signal_time') {
           if (value && !value.includes('-')) {
             const today = new Date();
