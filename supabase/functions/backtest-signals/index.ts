@@ -48,7 +48,6 @@ Deno.serve(async (req) => {
       .select('*')
       .eq('status', 'active')
       .order('created_at', { ascending: true })
-      .limit(20); // Process oldest first, limit batch size
 
     if (fetchError) throw fetchError;
     
@@ -82,14 +81,14 @@ Deno.serve(async (req) => {
     }
 
     // Query remaining active signals
-    const { data: remainingSignals } = await supabase
+    const { count: remainingActiveCount } = await supabase
       .from('signals')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .eq('status', 'active');
     
-    const remainingActiveCount = remainingSignals?.length || 0;
+    const triggeredCount = initialActiveCount - (remainingActiveCount || 0);
     
-    console.log(`原激活中信号：${initialActiveCount}，已更新信号：${processedCount}条，现激活中信号：${remainingActiveCount}条`)
+    console.log(`原激活中信号：${initialActiveCount}，已触发信号：${triggeredCount}条，现激活中信号：${remainingActiveCount || 0}条`)
     console.log('Backtest worker end...')
     
     const duration = Math.round((performance.now() - startTime) / 1000);
