@@ -70,7 +70,7 @@ const NumberTicker = ({ value, style, duration = 1000 }: { value: string, style?
 const TradePage: React.FC = () => {
   const router = useRouter();
   const { session } = useAuth();
-  const [activeTab, setActiveTab] = useState<'position' | 'order' | 'history'>('position');
+  const [activeTab, setActiveTab] = useState<'current_signals' | 'history_signals'>('current_signals');
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [exchangeAccounts, setExchangeAccounts] = useState<ExchangeAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<ExchangeAccount | null>(null);
@@ -359,176 +359,136 @@ const TradePage: React.FC = () => {
         {/* Secondary Navigation */}
         <View style={styles.secondaryNav}>
           <TouchableOpacity 
-            style={activeTab === 'position' ? styles.navItemActive : styles.navItem}
-            onPress={() => setActiveTab('position')}
+            style={activeTab === 'current_signals' ? styles.navItemActive : styles.navItem}
+            onPress={() => setActiveTab('current_signals')}
           >
-            <Text style={activeTab === 'position' ? styles.navTextActive : styles.navText}>持仓(2)</Text>
+            <Text style={activeTab === 'current_signals' ? styles.navTextActive : styles.navText}>当前跟单</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={activeTab === 'order' ? styles.navItemActive : styles.navItem}
-            onPress={() => setActiveTab('order')}
+            style={activeTab === 'history_signals' ? styles.navItemActive : styles.navItem}
+            onPress={() => setActiveTab('history_signals')}
           >
-            <Text style={activeTab === 'order' ? styles.navTextActive : styles.navText}>挂单(3)</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={activeTab === 'history' ? styles.navItemActive : styles.navItem}
-            onPress={() => setActiveTab('history')}
-          >
-            <Text style={activeTab === 'history' ? styles.navTextActive : styles.navText}>历史</Text>
+            <Text style={activeTab === 'history_signals' ? styles.navTextActive : styles.navText}>历史跟单</Text>
           </TouchableOpacity>
         </View>
 
-        {/* 持仓列表 */}
-        {activeTab === 'position' && positionData.map((position) => (
-          <View key={position.id} style={styles.positionCard}>
-            <View style={styles.cardTitleRow}>
-              <Text style={styles.symbolTitle}>
-                {position.symbol} <Text style={styles.symbolSubtitle}>{position.name}</Text>
-              </Text>
-              <Text style={[styles.profitText, position.isProfit ? styles.greenText : styles.redText]}>
-                {position.isProfit ? '+' : ''}{position.profit.toFixed(2)}
-              </Text>
-            </View>
-
-            <View style={styles.dividerLine} />
-
-            <View style={styles.positionMetrics}>
-              <View style={styles.metricRowContainer}>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>持仓</Text>
-                  <Text style={styles.metricValue}>{position.shares}</Text>
-                </View>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>成本价</Text>
-                  <Text style={styles.metricValue}>{position.avgPrice.toFixed(2)}</Text>
-                </View>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>现价</Text>
-                  <Text style={styles.metricValue}>{position.currentPrice.toFixed(2)}</Text>
-                </View>
-              </View>
-
-              <View style={styles.metricRowContainer}>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>市值</Text>
-                  <Text style={styles.metricValue}>{position.marketValue.toFixed(2)}</Text>
-                </View>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>盈亏比例</Text>
-                  <Text style={[styles.metricValue, position.isProfit ? styles.greenText : styles.redText]}>
-                    {position.isProfit ? '+' : ''}{position.profitRate.toFixed(2)}%
+        {/* 当前跟单信号列表 (模拟数据) */}
+        {activeTab === 'current_signals' && [
+          { id: 1, symbol: 'BTC/USDT', type: 'long', entryPrice: 98000, currentPrice: 98500, pnl: 500, pnlRate: 0.51, time: '2026-01-05 10:00', leverage: 20, takeProfit: 100000, stopLoss: 95000 },
+          { id: 2, symbol: 'ETH/USDT', type: 'short', entryPrice: 3500, currentPrice: 3480, pnl: 20, pnlRate: 0.57, time: '2026-01-05 11:30', leverage: 10, takeProfit: 3300, stopLoss: 3600 },
+        ].map((signal) => {
+          const isLong = signal.type === 'long';
+          const statusBgColor = isLong ? 'rgba(46, 189, 133, 0.15)' : 'rgba(246, 70, 93, 0.15)';
+          const statusTextColor = isLong ? COLORS.primary : COLORS.danger;
+          
+          return (
+            <View key={signal.id} style={styles.signalCard}>
+              <View style={styles.signalCardHeader}>
+                <Text style={styles.signalPairText}>{signal.symbol} 永续</Text>
+                <View style={[styles.signalStatusTag, { backgroundColor: statusBgColor }]}>
+                  <Text style={[styles.signalStatusText, { color: statusTextColor }]}>
+                    {isLong ? '做多' : '做空'}
                   </Text>
                 </View>
-                <View style={styles.metricCol} />
-              </View>
-            </View>
-          </View>
-        ))}
-
-        {/* 挂单列表 */}
-        {activeTab === 'order' && orderData.map((order) => (
-          <View key={order.id} style={styles.orderCard}>
-            <View style={styles.cardTitleRow}>
-              <Text style={styles.symbolTitle}>
-                {order.symbol} <Text style={styles.symbolSubtitle}>{order.name}</Text>
-              </Text>
-              <View style={styles.orderTypeBadge}>
-                <Text style={[styles.orderTypeText, order.type === 'buy' ? styles.greenText : styles.redText]}>
-                  {order.type === 'buy' ? '买入' : '卖出'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.dividerLine} />
-
-            <View style={styles.orderMetrics}>
-              <View style={styles.metricRowContainer}>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>类型</Text>
-                  <Text style={styles.metricValue}>{order.orderType}</Text>
+                <View style={styles.signalLeverageTag}>
+                  <Text style={styles.signalLeverageText}>{signal.leverage}x</Text>
                 </View>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>数量</Text>
-                  <Text style={styles.metricValue}>{order.shares}</Text>
+                <TouchableOpacity style={styles.signalCopyButton}>
+                  <Text style={styles.signalCopyButtonText}>Copy</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.signalInfoGrid}>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>入场价</Text>
+                  <Text style={styles.signalInfoValue}>{signal.entryPrice}</Text>
                 </View>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>状态</Text>
-                  <Text style={styles.metricValue}>{order.status}</Text>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>仓位模式</Text>
+                  <Text style={styles.signalInfoValue}>全仓</Text>
+                </View>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>委托时间</Text>
+                  <Text style={styles.signalInfoValue}>{signal.time.split(' ')[1]}</Text>
                 </View>
               </View>
 
-              <View style={styles.metricRowContainer}>
-                {order.orderPrice && (
-                  <View style={styles.metricCol}>
-                    <Text style={styles.metricLabel}>委托价</Text>
-                    <Text style={styles.metricValue}>{order.orderPrice.toFixed(2)}</Text>
-                  </View>
-                )}
-                {order.filledShares && (
-                  <View style={styles.metricCol}>
-                    <Text style={styles.metricLabel}>已成交</Text>
-                    <Text style={styles.metricValue}>{order.filledShares}</Text>
-                  </View>
-                )}
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>时间</Text>
-                  <Text style={styles.metricValue}>{order.time}</Text>
+              <View style={styles.signalInfoGrid}>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>止盈价</Text>
+                  <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.takeProfit}</Text>
+                </View>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>止损价</Text>
+                  <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stopLoss}</Text>
+                </View>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>盈亏比</Text>
+                  <Text style={[styles.signalInfoValue, { color: '#F0B90B' }]}>2.5:1</Text>
                 </View>
               </View>
             </View>
+          );
+        })}
 
-            <TouchableOpacity style={styles.cancelButton}>
-              <Text style={styles.cancelButtonText}>撤单</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+        {/* 历史跟单信号列表 (模拟数据) */}
+        {activeTab === 'history_signals' && [
+          { id: 3, symbol: 'SOL/USDT', type: 'long', entryPrice: 190, exitPrice: 195, pnl: 5, pnlRate: 2.63, time: '2026-01-04 14:00', status: '已平仓', leverage: 20, takeProfit: 200, stopLoss: 180 },
+          { id: 4, symbol: 'XRP/USDT', type: 'short', entryPrice: 2.55, exitPrice: 2.54, pnl: 0.01, pnlRate: 0.39, time: '2026-01-03 09:15', status: '已平仓', leverage: 10, takeProfit: 2.4, stopLoss: 2.6 },
+        ].map((signal) => {
+          const isLong = signal.type === 'long';
+          const statusBgColor = isLong ? 'rgba(46, 189, 133, 0.15)' : 'rgba(246, 70, 93, 0.15)';
+          const statusTextColor = isLong ? COLORS.primary : COLORS.danger;
 
-        {/* 历史列表 */}
-        {activeTab === 'history' && historyData.map((history) => (
-          <View key={history.id} style={styles.orderCard}>
-            <View style={styles.cardTitleRow}>
-              <Text style={styles.symbolTitle}>
-                {history.symbol} <Text style={styles.symbolSubtitle}>{history.name}</Text>
-              </Text>
-              <View style={styles.orderTypeBadge}>
-                <Text style={[styles.orderTypeText, history.type === 'buy' ? styles.greenText : styles.redText]}>
-                  {history.type === 'buy' ? '买入' : '卖出'}
-                </Text>
+          return (
+            <View key={signal.id} style={styles.signalCard}>
+              <View style={styles.signalCardHeader}>
+                <Text style={styles.signalPairText}>{signal.symbol} 永续</Text>
+                <View style={[styles.signalStatusTag, { backgroundColor: statusBgColor }]}>
+                  <Text style={[styles.signalStatusText, { color: statusTextColor }]}>
+                    {isLong ? '做多' : '做空'}
+                  </Text>
+                </View>
+                <View style={styles.signalLeverageTag}>
+                  <Text style={styles.signalLeverageText}>{signal.leverage}x</Text>
+                </View>
+                <TouchableOpacity style={styles.signalCopyButton}>
+                  <Text style={styles.signalCopyButtonText}>Copy</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.signalInfoGrid}>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>入场价</Text>
+                  <Text style={styles.signalInfoValue}>{signal.entryPrice}</Text>
+                </View>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>仓位模式</Text>
+                  <Text style={styles.signalInfoValue}>全仓</Text>
+                </View>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>委托时间</Text>
+                  <Text style={styles.signalInfoValue}>{signal.time.split(' ')[1]}</Text>
+                </View>
+              </View>
+
+              <View style={styles.signalInfoGrid}>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>止盈价</Text>
+                  <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.takeProfit}</Text>
+                </View>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>止损价</Text>
+                  <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stopLoss}</Text>
+                </View>
+                <View style={styles.signalGridItem}>
+                  <Text style={styles.signalInfoLabel}>盈亏比</Text>
+                  <Text style={[styles.signalInfoValue, { color: '#F0B90B' }]}>2.5:1</Text>
+                </View>
               </View>
             </View>
-
-            <View style={styles.dividerLine} />
-
-            <View style={styles.positionMetrics}>
-              <View style={styles.metricRowContainer}>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>委托价格</Text>
-                  <Text style={styles.metricValue}>{history.orderPrice ? history.orderPrice.toFixed(2) : '市价'}</Text>
-                </View>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>委托数量</Text>
-                  <Text style={styles.metricValue}>{history.shares}</Text>
-                </View>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>状态</Text>
-                  <Text style={styles.metricValue}>{history.status}</Text>
-                </View>
-              </View>
-              
-              <View style={styles.metricRowContainer}>
-                 <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>成交均价</Text>
-                  <Text style={styles.metricValue}>{history.avgPrice ? history.avgPrice.toFixed(2) : '-'}</Text>
-                </View>
-                <View style={styles.metricCol}>
-                  <Text style={styles.metricLabel}>时间</Text>
-                  <Text style={styles.metricValue}>{history.time}</Text>
-                </View>
-                 <View style={styles.metricCol} />
-              </View>
-            </View>
-          </View>
-        ))}
+          );
+        })}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -1015,6 +975,78 @@ const styles = StyleSheet.create({
   exchangeIconTextSmall: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // Signal Card Styles
+  signalCard: {
+    backgroundColor: COLORS.surfaceLight,
+    marginBottom: 12,
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(37, 37, 37, 0.5)',
+  },
+  signalCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+    flexWrap: 'wrap',
+  },
+  signalPairText: {
+    color: COLORS.textMain,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  signalStatusTag: {
+    backgroundColor: 'rgba(46, 189, 133, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  signalStatusText: {
+    color: COLORS.primary,
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  signalLeverageTag: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  signalLeverageText: {
+    color: COLORS.textMain,
+    fontSize: 11,
+  },
+  signalCopyButton: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 16,
+    marginLeft: 'auto',
+  },
+  signalCopyButtonText: {
+    color: '#000000',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  signalInfoGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  signalGridItem: {
+    flex: 1,
+  },
+  signalInfoLabel: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    marginBottom: 4,
+  },
+  signalInfoValue: {
+    color: COLORS.textMain,
+    fontSize: 13,
+    fontWeight: '500',
   },
 });
 
