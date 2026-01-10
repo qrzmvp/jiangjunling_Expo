@@ -2478,7 +2478,7 @@ const styles = StyleSheet.create({
   },
   roiText: {
     color: COLORS.primary,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 2,
   },
