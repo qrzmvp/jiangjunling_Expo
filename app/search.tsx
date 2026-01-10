@@ -191,6 +191,7 @@ export default function SearchScreen() {
               pnl={`${item.total_signals || 0} 信号`}
               winRate={`${item.win_rate || 0}%`}
               aum={`${item.active_signals || 0} 活跃`}
+              aumLabel="活跃信号"
               days={0}
               coins={[]}
               chartPath="M0,35 Q10,32 20,30 T40,20 T60,25 T80,10 L100,20"

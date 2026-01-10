@@ -210,7 +210,7 @@ export const TraderCard = ({
           <Text style={[styles.footerValue, { color: parseFloat(winRate) >= 50 ? COLORS.primary : COLORS.textMain }]}>{winRate}</Text>
         </View>
         <View style={[styles.footerStatItem, { alignItems: 'center' }]}>
-          <Text style={styles.footerLabel}>{aumLabel || "平均盈亏比"}</Text>
+          <Text style={styles.footerLabel}>{aumLabel || "总盈亏比"}</Text>
           <Text style={styles.footerValue}>{aum}</Text>
         </View>
         <View style={[styles.footerStatItem, { alignItems: 'flex-end' }]}>

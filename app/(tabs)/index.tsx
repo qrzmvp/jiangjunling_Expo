@@ -1197,7 +1197,8 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
                 roi={trader.total_roi !== undefined && trader.total_roi !== null ? `${trader.total_roi > 0 ? '+' : ''}${trader.total_roi.toFixed(2)}%` : '0.00%'}
                 pnl=""
                 winRate={trader.win_rate !== undefined && trader.win_rate !== null ? `${trader.win_rate.toFixed(1)}%` : '-'}
-                aum={trader.avg_pnl_ratio ? `1 : ${trader.avg_pnl_ratio.toFixed(2)}` : '0'}
+                aum={trader.profit_factor ? trader.profit_factor.toFixed(2) : '0'}
+                aumLabel="总盈亏比"
                 days={trader.trading_days || 0}
                 coins={[
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuATVNwivtQOZ2npc_w1PrcrX_4y17f4sOiNkn0PcY8zqp0YLkQ3QuxIkuDHNbTjM1ZyrnwY3GKd7UVSYfoETg68d3DNq3yliS1uwFDzri7UqYgzB5fN2Ju5KYY8plwkhuhEWVym03IBsLlyKhgTloiJKTujcHXIe_z-lpDvnkbxcYGocB5nfG-PQGKRLQ1b7pknYTUavPCwz1iU0-cRBaTMqb597A3OgbOCuT2YYwBSVl3V5yGQaMdwr6lBh9K9vzREuJyuOGn7Tg",
@@ -1729,21 +1730,21 @@ export default function HomePage() {
               style={styles.tabItem} 
               onPress={() => handleTabPress('overview')}
             >
-              <Text style={activeTab === 'overview' ? styles.tabTextActive : styles.tabText}>Overview</Text>
+              <Text style={activeTab === 'overview' ? styles.tabTextActive : styles.tabText}>总览</Text>
               {activeTab === 'overview' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.tabItem}
               onPress={() => handleTabPress('signal')}
             >
-              <Text style={activeTab === 'signal' ? styles.tabTextActive : styles.tabText}>Signals</Text>
+              <Text style={activeTab === 'signal' ? styles.tabTextActive : styles.tabText}>信号</Text>
               {activeTab === 'signal' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.tabItem}
               onPress={() => handleTabPress('copy')}
             >
-              <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>Traders</Text>
+              <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>交易员</Text>
               {activeTab === 'copy' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
           </View>
