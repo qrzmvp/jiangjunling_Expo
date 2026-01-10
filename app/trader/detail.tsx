@@ -51,6 +51,7 @@ const TraderDetailScreen = () => {
   const [signalsLoading, setSignalsLoading] = useState(false);
   const [signalTrendData, setSignalTrendData] = useState<Array<{ date: string; signal_count: number }>>([]);
   const [trendLoading, setTrendLoading] = useState(false);
+  const [showStats, setShowStats] = useState(true);
 
   // 监听 Supabase Realtime 变更 (实时更新交易员统计数据)
   useEffect(() => {
@@ -617,37 +618,53 @@ const TraderDetailScreen = () => {
               </View>
             </View>
 
-            <View style={styles.gridStats}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>胜率 (Win Rate)</Text>
-                <Text style={[styles.statValue, { color: (trader?.win_rate || 0) >= 50 ? COLORS.primary : COLORS.textMain }]}>
-                  {trader?.win_rate !== undefined ? `${trader.win_rate.toFixed(1)}%` : '-'}
-                </Text>
-              </View>
-              <View style={[styles.statItem, { alignItems: 'center' }]}>
-                <Text style={styles.statLabel}>平均盈亏比</Text>
-                <Text style={styles.statValue}>{trader?.avg_pnl_ratio ? `1 : ${trader.avg_pnl_ratio.toFixed(2)}` : '-'}</Text>
-              </View>
-              <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
-                <Text style={styles.statLabel}>交易天数</Text>
-                <Text style={styles.statValue}>{trader?.trading_days !== undefined && trader?.trading_days !== null ? trader.trading_days : '-'}</Text>
-              </View>
-            </View>
+            {/* 展开/收起按钮 */}
+            <TouchableOpacity 
+              style={{ alignItems: 'center', paddingVertical: 4, marginTop: -8 }}
+              onPress={() => setShowStats(!showStats)}
+            >
+              <MaterialIcons 
+                name={showStats ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+                size={24} 
+                color={COLORS.textSub} 
+              />
+            </TouchableOpacity>
 
-            <View style={[styles.gridStats, { marginTop: 4, paddingTop: 0, borderTopWidth: 0 }]}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>信号总数</Text>
-                <Text style={styles.statValue}>{trader?.total_signals || 0}</Text>
-              </View>
-              <View style={[styles.statItem, { alignItems: 'center' }]}>
-                <Text style={styles.statLabel}>做多信号</Text>
-                <Text style={styles.statValue}>{trader?.long_signals || 0}</Text>
-              </View>
-              <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
-                <Text style={styles.statLabel}>做空信号</Text>
-                <Text style={styles.statValue}>{trader?.short_signals || 0}</Text>
-              </View>
-            </View>
+            {showStats && (
+              <>
+                <View style={[styles.gridStats, { paddingTop: 4, borderTopColor: 'transparent' }]}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>胜率 (Win Rate)</Text>
+                    <Text style={[styles.statValue, { color: (trader?.win_rate || 0) >= 50 ? COLORS.primary : COLORS.textMain }]}>
+                      {trader?.win_rate !== undefined ? `${trader.win_rate.toFixed(1)}%` : '-'}
+                    </Text>
+                  </View>
+                  <View style={[styles.statItem, { alignItems: 'center' }]}>
+                    <Text style={styles.statLabel}>平均盈亏比</Text>
+                    <Text style={styles.statValue}>{trader?.avg_pnl_ratio ? `1 : ${trader.avg_pnl_ratio.toFixed(2)}` : '-'}</Text>
+                  </View>
+                  <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
+                    <Text style={styles.statLabel}>交易天数</Text>
+                    <Text style={styles.statValue}>{trader?.trading_days !== undefined && trader?.trading_days !== null ? trader.trading_days : '-'}</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.gridStats, { marginTop: 4, paddingTop: 0, borderTopWidth: 0 }]}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statLabel}>信号总数</Text>
+                    <Text style={styles.statValue}>{trader?.total_signals || 0}</Text>
+                  </View>
+                  <View style={[styles.statItem, { alignItems: 'center' }]}>
+                    <Text style={styles.statLabel}>做多信号</Text>
+                    <Text style={styles.statValue}>{trader?.long_signals || 0}</Text>
+                  </View>
+                  <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
+                    <Text style={styles.statLabel}>做空信号</Text>
+                    <Text style={styles.statValue}>{trader?.short_signals || 0}</Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
