@@ -641,7 +641,7 @@ const TraderDetailScreen = () => {
                   </View>
                   <View style={[styles.statItem, { alignItems: 'center' }]}>
                     <Text style={styles.statLabel}>平均盈亏比</Text>
-                    <Text style={styles.statValue}>{trader?.avg_pnl_ratio ? `1 : ${trader.avg_pnl_ratio.toFixed(2)}` : '-'}</Text>
+                    <Text style={styles.statValue}>{trader?.avg_pnl_ratio ? `1 : ${trader.avg_pnl_ratio.toFixed(2)}` : '0'}</Text>
                   </View>
                   <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
                     <Text style={styles.statLabel}>交易天数</Text>
