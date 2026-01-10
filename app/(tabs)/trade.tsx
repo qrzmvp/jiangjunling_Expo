@@ -426,9 +426,6 @@ const TradePage: React.FC = () => {
                 <View style={styles.signalLeverageTag}>
                   <Text style={styles.signalLeverageText}>{signal.leverage}x</Text>
                 </View>
-                <TouchableOpacity style={styles.signalCopyButton}>
-                  <Text style={styles.signalCopyButtonText}>Copy</Text>
-                </TouchableOpacity>
               </View>
 
               <View style={styles.signalInfoGrid}>
@@ -485,9 +482,6 @@ const TradePage: React.FC = () => {
                 <View style={styles.signalLeverageTag}>
                   <Text style={styles.signalLeverageText}>{signal.leverage}x</Text>
                 </View>
-                <TouchableOpacity style={styles.signalCopyButton}>
-                  <Text style={styles.signalCopyButtonText}>Copy</Text>
-                </TouchableOpacity>
               </View>
 
               <View style={styles.signalInfoGrid}>
