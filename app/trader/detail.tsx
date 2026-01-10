@@ -136,12 +136,26 @@ const TraderDetailScreen = () => {
     try {
       setSignalsLoading(true);
       
-      // 加载当天信号（active状态）
-      const activeSignals = await getTraderSignals(traderId, 'active', 20, 0);
-      setCurrentSignals(activeSignals);
+      // 加载历史信号（包含 closed, closed_profit, closed_loss）
+      // 注意：这里我们为了兼容多种 closed 状态，不传入 status 筛选，而是在前端或通过传 null 获取所有非 active 
+      // 或者我们可以修改 getTraderSignals 支持数组，但 RPC 目前只支持单字符串。
+      // 临时方案：这里暂时通过不传状态（获取所有）然后在前端过滤，或者依赖后端 RPC 的模糊匹配。
+      // 更优方案是：前端传 'closed'，后端 RPC 将 'closed%' 视为包含 'closed_profit', 'closed_loss'
+      // 让我们先检查 get_trader_signals 的 RPC 实现。
       
-      // 加载历史信号（closed状态）
-      const closedSignals = await getTraderSignals(traderId, 'closed', 20, 0); 
+      // 实际上，如果后端 RPC 是精确匹配 'closed'，那就会漏掉 'closed_profit'。
+      // 我们在前端暂时尝试获取所有，然后过滤。
+      const allSignals = await getTraderSignals(traderId, undefined, 50, 0); 
+      
+      const activeSignals = allSignals.filter(s => s.status === 'active');
+      const closedSignals = allSignals.filter(s => 
+        s.status === 'closed' || 
+        s.status === 'closed_profit' || 
+        s.status === 'closed_loss' || 
+        s.status === 'cancelled'
+      );
+      
+      setCurrentSignals(activeSignals);
       setHistorySignals(closedSignals);
       
       console.log('✅ 成功加载信号数据:', { 
@@ -326,8 +340,73 @@ const TraderDetailScreen = () => {
     const signalTypeText = signal.signal_type === 'spot' ? '现货' : 
                           signal.signal_type === 'futures' ? '永续' : '杠杆';
 
+    // 判断是否为历史信号
+    const isHistory = signal.status !== 'active';
+    let resultText = '';
+    let resultColor = COLORS.textSub;
+    let resultBgColor = 'rgba(255,255,255,0.1)';
+
+    if (signal.status === 'closed_profit') {
+      resultText = '止盈';
+      resultColor = COLORS.primary;
+      resultBgColor = 'rgba(46, 189, 133, 0.15)';
+    } else if (signal.status === 'closed_loss') {
+      resultText = '止损';
+      resultColor = COLORS.danger;
+      resultBgColor = 'rgba(246, 70, 93, 0.15)';
+    } else if (signal.status === 'closed') {
+       resultText = '平价';
+       resultColor = COLORS.textSub;
+    } else if (signal.status === 'cancelled') {
+        resultText = '已取消';
+    }
+
+    // 计算信号时长
+    const getDuration = () => {
+        if (!isHistory || !signal.closed_at) return '-';
+        const start = new Date(signal.signal_time).getTime();
+        const end = new Date(signal.closed_at).getTime();
+        const diffMs = end - start;
+        if (diffMs < 0) return '-';
+        
+        const diffSecs = Math.floor(diffMs / 1000);
+        const hours = Math.floor(diffSecs / 3600);
+        const minutes = Math.floor((diffSecs % 3600) / 60);
+        const seconds = diffSecs % 60;
+
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    };
+
+    const roiValue = signal.roi ? (signal.roi * 100).toFixed(2) + '%' : '-';
+    // 根据 ROI 正负决定显示颜色
+    const roiColor = (signal.roi && signal.roi > 0) ? COLORS.primary : 
+                     (signal.roi && signal.roi < 0) ? COLORS.danger : COLORS.textMain;
+
     return (
-      <View key={signal.id} style={styles.signalCard}>
+      <View key={signal.id} style={[styles.signalCard, { overflow: 'hidden' }]}>
+        {/* 历史状态 - 右上角角标样式 */}
+        {isHistory && resultText && (
+             <View style={{
+                position: 'absolute',
+                top: 8,
+                right: -28,
+                width: 90,
+                backgroundColor: resultColor,
+                paddingVertical: 4,
+                transform: [{ rotate: '45deg' }],
+                zIndex: 10,
+                alignItems: 'center',
+                justifyContent: 'center',
+             }}>
+                 <Text style={{ 
+                    color: '#FFFFFF', 
+                    fontSize: 10, 
+                    fontWeight: 'bold',
+                 }}>{resultText}</Text>
+             </View>
+        )}
+
         <View style={styles.signalCardHeader}>
           <Text style={styles.signalPairText}>{signal.currency} {signalTypeText}</Text>
           <View style={[styles.signalStatusTag, { backgroundColor: statusBgColor }]}>
@@ -335,12 +414,15 @@ const TraderDetailScreen = () => {
               {isLong ? '做多' : '做空'}
             </Text>
           </View>
-          <View style={styles.signalLeverageTag}>
+          <View style={[styles.signalLeverageTag, { marginRight: 'auto' }]}>
             <Text style={styles.signalLeverageText}>{signal.leverage}x</Text>
           </View>
-          <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
-            <Text style={styles.signalCopyButtonText}>Copy</Text>
-          </TouchableOpacity>
+          
+          {!isHistory && (
+              <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
+                <Text style={styles.signalCopyButtonText}>Copy</Text>
+              </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.signalInfoGrid}>
@@ -353,8 +435,17 @@ const TraderDetailScreen = () => {
             <Text style={styles.signalInfoValue}>全仓</Text>
           </View>
           <View style={styles.signalGridItem}>
-            <Text style={styles.signalInfoLabel}>委托时间</Text>
-            <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time)}</Text>
+            {isHistory ? (
+                <>
+                <Text style={styles.signalInfoLabel}>收益率</Text>
+                <Text style={[styles.signalInfoValue, { color: roiColor, fontWeight: 'bold' }]}>{roiValue}</Text>
+                </>
+            ) : (
+                <>
+                <Text style={styles.signalInfoLabel}>委托时间</Text>
+                <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time)}</Text>
+                </>
+            )}
           </View>
         </View>
 
@@ -372,6 +463,25 @@ const TraderDetailScreen = () => {
             <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
           </View>
         </View>
+
+        {isHistory && (
+            <View style={[styles.signalInfoGrid, { marginTop: 4 }]}>
+                <View style={styles.signalGridItem}>
+                    <Text style={styles.signalInfoLabel}>信号时长</Text>
+                    <Text style={styles.signalInfoValue}>{getDuration()}</Text>
+                </View>
+                <View style={styles.signalGridItem}>
+                    <Text style={styles.signalInfoLabel}>委托时间</Text>
+                    <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time).split(' ')[0]}</Text> 
+                    <Text style={[styles.signalInfoValue, { fontSize: 10, color: COLORS.textSub }]}>{formatTime(signal.signal_time).split(' ')[1]}</Text>
+                </View>
+                <View style={styles.signalGridItem}>
+                    <Text style={styles.signalInfoLabel}>出场时间</Text>
+                    <Text style={styles.signalInfoValue}>{signal.closed_at ? formatTime(signal.closed_at).split(' ')[0] : '-'}</Text>
+                    <Text style={[styles.signalInfoValue, { fontSize: 10, color: COLORS.textSub }]}>{signal.closed_at ? formatTime(signal.closed_at).split(' ')[1] : ''}</Text>
+                </View>
+            </View>
+        )}
       </View>
     );
   };
@@ -640,8 +750,8 @@ const TraderDetailScreen = () => {
                     </Text>
                   </View>
                   <View style={[styles.statItem, { alignItems: 'center' }]}>
-                    <Text style={styles.statLabel}>平均盈亏比</Text>
-                    <Text style={styles.statValue}>{trader?.avg_pnl_ratio ? `1 : ${trader.avg_pnl_ratio.toFixed(2)}` : '0'}</Text>
+                    <Text style={styles.statLabel}>总盈亏比</Text>
+                    <Text style={styles.statValue}>{trader?.profit_factor ? trader.profit_factor.toFixed(2) : '0'}</Text>
                   </View>
                   <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
                     <Text style={styles.statLabel}>交易天数</Text>
@@ -715,7 +825,7 @@ const TraderDetailScreen = () => {
               <View style={styles.tabContent}>
                 <Text style={[styles.tabText, activeTab === 'current' ? styles.tabTextActive : null]}>有效信号</Text>
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{trader?.active_signals || 0}</Text>
+                  <Text style={styles.badgeText}>{currentSignals.length}</Text>
                 </View>
               </View>
               {activeTab === 'current' && <View style={styles.activeIndicator} />}
@@ -727,6 +837,9 @@ const TraderDetailScreen = () => {
             >
               <View style={styles.tabContent}>
                 <Text style={[styles.tabText, activeTab === 'history' ? styles.tabTextActive : null]}>历史信号</Text>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{historySignals.length}</Text>
+                </View>
               </View>
               {activeTab === 'history' && <View style={styles.activeIndicator} />}
             </TouchableOpacity>

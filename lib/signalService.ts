@@ -9,11 +9,16 @@ export interface Signal {
   stop_loss: string;
   take_profit: string;
   leverage: string;
-  status: 'active' | 'closed' | 'cancelled';
+  status: 'active' | 'closed' | 'cancelled' | 'closed_profit' | 'closed_loss';
   signal_type: 'spot' | 'futures' | 'margin';
   signal_time: string;
   created_at: string;
   updated_at?: string;
+  roi?: number;
+  closed_at?: string;
+  realized_pnl?: number;
+  exit_price?: number;
+  exit_reason?: 'tp' | 'sl' | 'manual';
   // 关联的交易员信息
   trader?: {
     id: string;

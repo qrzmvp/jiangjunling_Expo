@@ -492,6 +492,11 @@ export type Database = {
           signal_time: string
           created_at: string
           updated_at: string
+          roi: number
+          closed_at: string
+          realized_pnl: number
+          exit_price: number
+          exit_reason: string
           trader_name: string
           trader_avatar_url: string
           trader_is_online: boolean

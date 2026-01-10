@@ -279,7 +279,7 @@ export async function getTraderDetail(
  */
 export async function getTraderSignals(
   traderId: string,
-  status?: 'active' | 'closed' | 'cancelled',
+  status?: string,
   limit: number = 20,
   offset: number = 0
 ) {

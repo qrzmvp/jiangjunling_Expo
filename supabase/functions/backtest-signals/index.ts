@@ -194,8 +194,6 @@ async function processSignal(supabase: any, exchange: any, signal: any) {
 
         // Update State
         if (hitTP || hitSL) {
-            const status = hitTP ? 'closed_profit' : 'closed_loss';
-            
             // Calculation based on direction
             // Long ROI = (Exit - Entry) / Entry
             // Short ROI = (Entry - Exit) / Entry
@@ -204,6 +202,17 @@ async function processSignal(supabase: any, exchange: any, signal: any) {
                 roi = (exitPrice - signal.entry_price) / signal.entry_price;
             } else {
                 roi = (signal.entry_price - exitPrice) / signal.entry_price;
+            }
+
+            // Determine status based on PnL derived from ROI
+            // If ROI is positive, it's a profit (even if triggered by SL - e.g. trailing stop)
+            // If ROI is negative, it's a loss
+            // If ROI is zero, it's break-even (closed)
+            let status = 'closed'; // Default to break-even
+            if (roi > 0) {
+                status = 'closed_profit';
+            } else if (roi < 0) {
+                status = 'closed_loss';
             }
 
             // Calculate PnL based on default capital of 1000 USDT
