@@ -1563,34 +1563,132 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
             // RPC函数返回的是扁平化的数据结构，字段名为 trader_name, trader_avatar_url 等
             const signalWithTrader = signal as any;
             
+            // 渲染单个信号卡片 - 与交易员详情页样式一致
+            const isLong = signal.direction === 'long';
+            const statusBgColor = isLong ? 'rgba(46, 189, 133, 0.15)' : 'rgba(246, 70, 93, 0.15)';
+            const statusTextColor = isLong ? COLORS.primary : COLORS.danger;
+            
+            // 计算盈亏比
+            const entryPrice = parseFloat(signal.entry_price);
+            const takeProfit = parseFloat(signal.take_profit);
+            const stopLoss = parseFloat(signal.stop_loss);
+            
+            let profitLossRatio = '0:0';
+            if (isLong) {
+              const profit = takeProfit - entryPrice;
+              const loss = entryPrice - stopLoss;
+              if (loss > 0) {
+                profitLossRatio = `${(profit / loss).toFixed(2)}:1`;
+              }
+            } else {
+              const profit = entryPrice - takeProfit;
+              const loss = stopLoss - entryPrice;
+              if (loss > 0) {
+                profitLossRatio = `${(profit / loss).toFixed(2)}:1`;
+              }
+            }
+
+            // 格式化时间
+            const formatTime = (dateString: string) => {
+              const date = new Date(dateString);
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              const hours = String(date.getHours()).padStart(2, '0');
+              const minutes = String(date.getMinutes()).padStart(2, '0');
+              const seconds = String(date.getSeconds()).padStart(2, '0');
+              return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+            };
+
+            // 信号类型显示
+            const signalTypeText = signal.signal_type === 'spot' ? '现货' : 
+                                  signal.signal_type === 'futures' ? '永续' : '杠杆';
+
             return (
-              <SignalCard 
-                key={signal.id}
-                traderId={signal.trader_id}
-                name={signalWithTrader.trader_name || '未知交易员'}
-                avatar={signalWithTrader.trader_avatar_url || DEFAULT_AVATAR}
-                description={signalWithTrader.trader_description || ''}
-                currency={signal.currency}
-                entry={signal.entry_price}
-                direction={signal.direction}
-                stopLoss={signal.stop_loss}
-                takeProfit={signal.take_profit}
-                time={SignalService.formatSignalTime(signal.signal_time)}
-                signalCount={signalWithTrader.trader_signal_count || 0}
-                onPress={() => router.push({
-                  pathname: '/trader/detail',
-                  params: { 
-                    traderId: signal.trader_id
-                  }
-                })}
-                onSubscribe={() => {}}
-                onStatsChange={() => {
-                  // 当关注/订阅状态改变时，重新加载信号列表以更新筛选结果
-                  if (activeFilters.includes('已订阅') || activeFilters.includes('已关注')) {
-                    loadSignals(true);
-                  }
-                }}
-              />
+              <View key={signal.id} style={styles.signalCard}>
+                {/* 交易员信息头部 */}
+                <View style={styles.signalTraderHeader}>
+                  <TouchableOpacity 
+                    style={styles.signalTraderInfo}
+                    activeOpacity={0.8}
+                    onPress={() => router.push({
+                      pathname: '/trader/detail',
+                      params: { 
+                        traderId: signal.trader_id
+                      }
+                    })}
+                  >
+                    <View style={styles.signalTraderAvatarContainer}>
+                      <Image 
+                        source={{ uri: signalWithTrader.trader_avatar_url || DEFAULT_AVATAR }}
+                        style={styles.signalTraderAvatar}
+                      />
+                      <View style={styles.signalOnlineIndicator} />
+                    </View>
+                    <View style={styles.signalTraderTextContainer}>
+                      <Text style={styles.signalTraderName}>{signalWithTrader.trader_name || '未知交易员'}</Text>
+                      <Text style={styles.signalTraderDesc} numberOfLines={1}>
+                        {signalWithTrader.trader_description || '专业交易员'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.signalCopyButton}
+                    onPress={(e) => {
+                      // TODO: 实现copy功能
+                      console.log('Copy信号');
+                    }}
+                  >
+                    <Text style={styles.signalCopyButtonText}>Copy</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 信号详情 */}
+                <View style={styles.signalDetailBox}>
+                  <View style={styles.signalCardHeader}>
+                    <Text style={styles.signalPairText}>{signal.currency} {signalTypeText}</Text>
+                    <View style={[styles.signalStatusTag, { backgroundColor: statusBgColor }]}>
+                      <Text style={[styles.signalStatusText, { color: statusTextColor }]}>
+                        {isLong ? '做多' : '做空'}
+                      </Text>
+                    </View>
+                    <View style={[styles.signalLeverageTag, { marginRight: 'auto' }]}>
+                      <Text style={styles.signalLeverageText}>{signal.leverage}x</Text>
+                    </View>
+                  </View>
+
+                <View style={styles.signalInfoGrid}>
+                  <View style={styles.signalGridItem}>
+                    <Text style={styles.signalInfoLabel}>入场价</Text>
+                    <Text style={styles.signalInfoValue}>{signal.entry_price}</Text>
+                  </View>
+                  <View style={styles.signalGridItem}>
+                    <Text style={styles.signalInfoLabel}>仓位模式</Text>
+                    <Text style={styles.signalInfoValue}>全仓</Text>
+                  </View>
+                  <View style={styles.signalGridItem}>
+                    <Text style={styles.signalInfoLabel}>委托时间</Text>
+                    <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time)}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.signalInfoGrid}>
+                  <View style={styles.signalGridItem}>
+                    <Text style={styles.signalInfoLabel}>止盈价</Text>
+                    <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.take_profit}</Text>
+                  </View>
+                  <View style={styles.signalGridItem}>
+                    <Text style={styles.signalInfoLabel}>止损价</Text>
+                    <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stop_loss}</Text>
+                  </View>
+                  <View style={styles.signalGridItem}>
+                    <Text style={styles.signalInfoLabel}>盈亏比</Text>
+                    <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
+                  </View>
+                </View>
+                </View>
+              </View>
             );
           })}
           
@@ -2463,5 +2561,159 @@ const styles = StyleSheet.create({
   statLabelSmall: {
     color: COLORS.textMuted,
     fontSize: 11,
+  },
+  // Signal Card Styles - 与交易员详情页一致
+  signalCard: {
+    backgroundColor: COLORS.surface,
+    marginLeft: 0,
+    marginRight: 0,
+    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  // 交易员信息头部
+  signalTraderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  signalTraderInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  signalTraderAvatarContainer: {
+    position: 'relative',
+    width: 40,
+    height: 40,
+  },
+  signalTraderAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surfaceLight,
+  },
+  signalOnlineIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.primary,
+    borderWidth: 2,
+    borderColor: COLORS.surface,
+  },
+  signalTraderTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  signalTraderName: {
+    color: COLORS.textMain,
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  signalTraderDesc: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+  },
+  // 交易信号标题行
+  signalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  signalTitleText: {
+    color: COLORS.textMain,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  signalDirectionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    gap: 4,
+  },
+  signalDirectionText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  // 信号详情框
+  signalDetailBox: {
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: 8,
+    padding: 12,
+  },
+  signalCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+    flexWrap: 'wrap',
+  },
+  signalPairText: {
+    color: COLORS.textMain,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  signalStatusTag: {
+    backgroundColor: 'rgba(46, 189, 133, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  signalStatusText: {
+    color: COLORS.primary,
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  signalLeverageTag: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  signalLeverageText: {
+    color: COLORS.textMain,
+    fontSize: 11,
+  },
+  signalCopyButton: {
+    backgroundColor: COLORS.textMain,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  signalCopyButtonText: {
+    color: COLORS.background,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  signalInfoGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  signalGridItem: {
+    flex: 1,
+  },
+  signalInfoLabel: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    marginBottom: 4,
+  },
+  signalInfoValue: {
+    color: COLORS.textMain,
+    fontSize: 13,
+    fontWeight: '500',
   },
 });
