@@ -55,20 +55,33 @@ export interface TraderWithUserStatus extends Trader {
  * @param userId 用户ID（可选）
  * @param limit 限制返回数量
  * @param offset 偏移量（用于分页）
+ * @param filters 筛选条件
  */
 export async function getTradersWithStats(
   userId?: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  filters: {
+    sortByRoi?: boolean;
+    sortByWinRate?: boolean;
+    filterSubscribed?: boolean;
+    filterFollowed?: boolean;
+  } = {}
 ): Promise<TraderWithStats[]> {
   try {
-    console.log('🔵 [TraderService] 调用 RPC: get_traders_with_stats', { userId, limit, offset });
-    
-    const { data, error } = await supabase.rpc('get_traders_with_stats', {
+    const params = {
       p_user_id: userId || null,
       p_limit: limit,
-      p_offset: offset
-    });
+      p_offset: offset,
+      p_sort_by_roi: filters.sortByRoi ?? true, // 默认按 ROI 排序
+      p_sort_by_win_rate: filters.sortByWinRate ?? false,
+      p_filter_subscribed: filters.filterSubscribed ?? false,
+      p_filter_followed: filters.filterFollowed ?? false
+    };
+    
+    console.log('🔵 [TraderService] 调用 RPC: get_traders_with_stats', params);
+    
+    const { data, error } = await supabase.rpc('get_traders_with_stats', params);
     
     if (error) {
       console.error('❌ [TraderService] 获取交易员列表失败:', error);

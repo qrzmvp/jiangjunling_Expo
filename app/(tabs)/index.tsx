@@ -836,7 +836,8 @@ const generateChartPath = (trendData: Array<{ date: string; roi: number }>) => {
 const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy' }: TabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
-  const filters = ['全部', '已订阅', '已关注'];
+  // 更新筛选条件
+  const filters = ['按收益率', '按胜率', '已订阅', '已关注'];
   const [traders, setTraders] = useState<TraderWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -848,6 +849,14 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   const [isLoadingData, setIsLoadingData] = useState(false); // 添加加载状态标志
   const [traderTrendData, setTraderTrendData] = useState<Map<string, Array<{ date: string; roi: number }>>>(new Map());
   const PAGE_SIZE = 20;
+
+  // 当筛选条件变化时，重新加载数据
+  useEffect(() => {
+    if (currentTab === 'copy') {
+      console.log('🔄 [TradersTabContent] 筛选条件变化，重新加载:', activeFilters);
+      loadTraders(true);
+    }
+  }, [activeFilters]);
 
   // 【优化】批量加载交易员的7天趋势数据 (ROI)
   const loadTrendDataForTraders = async (traders: TraderWithStats[]) => {
@@ -901,11 +910,25 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
       const currentPage = reset ? 1 : page;
       const offset = reset ? 0 : (currentPage - 1) * PAGE_SIZE;
       
-      // 使用新的 RPC 函数：getTradersWithStats
+      console.log('🔍 [TradersTabContent] 加载交易员，筛选条件:', activeFilters);
+
+      // 解析筛选条件
+      const sortByRoi = activeFilters.includes('按收益率');
+      const sortByWinRate = activeFilters.includes('按胜率');
+      const filterSubscribed = activeFilters.includes('已订阅');
+      const filterFollowed = activeFilters.includes('已关注');
+
+      // 使用新的 RPC 函数：getTradersWithStats，传入筛选参数
       const tradersWithStatus = await getTradersWithStats(
         user?.id,
         PAGE_SIZE,
-        offset
+        offset,
+        {
+          sortByRoi: sortByRoi,
+          sortByWinRate: sortByWinRate,
+          filterSubscribed: filterSubscribed,
+          filterFollowed: filterFollowed
+        }
       );
       
       // 判断是否还有更多数据
@@ -968,31 +991,33 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*', // 监听所有事件
           schema: 'public',
           table: 'traders',
         },
         (payload: any) => {
-          const updatedTrader = payload.new;
-          console.log('⚡️ [Realtime] 收到交易员列表更新:', updatedTrader.id, updatedTrader.name);
-          
-          setTraders(prevTraders => 
-            prevTraders.map(t => {
-              if (t.id === updatedTrader.id) {
-                // 合并更新的数据，保留原有的用户状态字段（如是否关注、是否订阅）
-                return {
-                  ...t,
-                  ...updatedTrader,
-                };
-              }
-              return t;
-            })
-          );
+          // 收到变更时，如果列表为空可能需要重新加载，如果不为空则更新
+          // 简单起见，这里可以选择重新加载，或者精确更新
+          console.log('⚡️ [Realtime] 收到交易员列表更新，当前筛选:', activeFilters);
+          // 为了保持排序的一致性，收到更新可能需要重新排序，比较复杂
+          // 对列表已展示的进行局部更新
+           if (payload.eventType === 'UPDATE') {
+             const updatedTrader = payload.new;
+             setTraders(prevTraders => 
+               prevTraders.map(t => {
+                 if (t.id === updatedTrader.id) {
+                   return { ...t, ...updatedTrader };
+                 }
+                 return t;
+               })
+             );
+           } else {
+             // INSERT / DELETE 可能影响排序和分页，这里可以选择重新加载，但为了体验暂不重载整个列表
+             // 或者根据当前的过滤器决定是否重载
+           }
         }
       )
-      .subscribe((status) => {
-        console.log('🔌 [Realtime] 交易员列表订阅状态:', status);
-      });
+      .subscribe();
 
     return () => {
       console.log('🔌 [Realtime] 取消订阅交易员列表变更');
@@ -1016,49 +1041,68 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   // 当用户订阅/取消订阅后刷新状态
   const handleSubscriptionChange = async () => {
     if (!user?.id) return;
-    
-    try {
-      const subscribed = await getSubscribedTraders(user.id);
-      setSubscribedTraders(new Set(subscribed.map(item => item.trader_id)));
-    } catch (error) {
-      console.error('刷新订阅状态失败:', error);
+    // 如果当前启用了筛选"已订阅"，则可能需要刷新列表移除该项
+    if (activeFilters.includes('已订阅')) {
+       loadTraders(true); // 重新加载以更新列表
+    } else {
+        // 仅刷新状态集合
+        try {
+            const subscribed = await getSubscribedTraders(user.id);
+            setSubscribedTraders(new Set(subscribed.map(item => item.trader_id)));
+        } catch (error) {
+            console.error('刷新订阅状态失败:', error);
+        }
     }
   };
 
   // 当用户关注/取消关注后刷新状态
   const handleFavoriteChange = async () => {
     if (!user?.id) return;
-    
-    try {
-      const followed = await getFollowedTraders(user.id);
-      setFollowedTraders(new Set(followed.map(item => item.trader_id)));
-    } catch (error) {
-      console.error('刷新关注状态失败:', error);
+    // 如果当前启用了筛选"已关注"，则可能需要刷新列表移除该项
+    if (activeFilters.includes('已关注')) {
+        loadTraders(true);
+    } else {
+        try {
+          const followed = await getFollowedTraders(user.id);
+          setFollowedTraders(new Set(followed.map(item => item.trader_id)));
+        } catch (error) {
+          console.error('刷新关注状态失败:', error);
+        }
     }
   };
 
   const handleFilterPress = (filter: string) => {
-    if (filter === '全部') {
-      setActiveFilters(['全部']);
-      return;
-    }
-
     let newFilters = [...activeFilters];
-    if (newFilters.includes('全部')) {
-      newFilters = newFilters.filter(f => f !== '全部');
+    
+    if (filter === '按收益率') {
+        if (newFilters.includes('按收益率')) {
+             // 如果已经选中，且没有选中其他排序，则不能取消（至少保持一个排序? 或者允许无排序默认ROI）
+             // 策略：允许取消，取消后相当于无显式排序(RPC默认ROI)
+             newFilters = newFilters.filter(f => f !== '按收益率');
+        } else {
+             // 选中ROI，取消胜率（互斥）
+             newFilters = newFilters.filter(f => f !== '按胜率');
+             newFilters.push('按收益率');
+        }
+    } else if (filter === '按胜率') {
+        if (newFilters.includes('按胜率')) {
+             newFilters = newFilters.filter(f => f !== '按胜率');
+        } else {
+             // 选中胜率，取消ROI（互斥）
+             newFilters = newFilters.filter(f => f !== '按收益率');
+             newFilters.push('按胜率');
+        }
+    } else {
+        // 处理 Subscribed / Followed，普通 Toggle
+        if (newFilters.includes(filter)) {
+            newFilters = newFilters.filter(f => f !== filter);
+        } else {
+            newFilters.push(filter);
+        }
     }
 
-    if (newFilters.includes(filter)) {
-      newFilters = newFilters.filter(f => f !== filter);
-    } else {
-      newFilters.push(filter);
-    }
-
-    if (newFilters.length === 0) {
-      setActiveFilters(['全部']);
-    } else {
-      setActiveFilters(newFilters);
-    }
+    // 更新筛选状态，useEffect 会监听到变化并触发 loadTraders
+    setActiveFilters(newFilters);
   };
 
   const getRoiLabel = () => {
@@ -1592,15 +1636,21 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = React.useState<'overview' | 'copy' | 'signal'>('overview');
   const scrollViewRef = React.useRef<ScrollView>(null);
   const [heights, setHeights] = React.useState({ overview: 0, copy: 0, signal: 0 });
-  const [activeFilters, setActiveFilters] = React.useState<string[]>(['全部']);
+  // 分别管理每个 Tab 的筛选状态，确保持久化和默认选中
+  const [signalFilters, setSignalFilters] = React.useState<string[]>(['全部']);
+  const [traderFilters, setTraderFilters] = React.useState<string[]>(['按收益率']);
+  
   const isScrollingRef = React.useRef(false); // 用于标记是否正在滚动
   const [refreshSignalTab, setRefreshSignalTab] = React.useState(0); // 用于触发信号Tab刷新
 
   const handleMorePress = () => {
     handleTabPress('copy');
-    setActiveFilters(['全部']);
+    // 跳转到 copy tab 时，可以保持当前选中状态，或者根据需求重置
+    // 这里保持当前状态
   };
 
+  // 移除 Tab 切换时重置筛选条件的逻辑，以保持状态持久化
+  /* 
   React.useEffect(() => {
     if (activeTab === 'signal') {
       setActiveFilters(['全部']);
@@ -1608,13 +1658,14 @@ export default function HomePage() {
       setActiveFilters(['全部']);
     }
   }, [activeTab]);
+  */
 
   // 处理从其他页面跳转到特定标签
   React.useEffect(() => {
     if (params.tab === 'copy') {
       handleTabPress('copy');
       if (params.filter) {
-        setActiveFilters([params.filter as string]);
+        setTraderFilters([params.filter as string]);
       }
     }
   }, [params.tab, params.filter]);
@@ -1725,8 +1776,8 @@ export default function HomePage() {
             setHeights(h => ({ ...h, signal: height }));
           }}>
             <SignalTabContent 
-              activeFilters={activeFilters} 
-              setActiveFilters={setActiveFilters} 
+              activeFilters={signalFilters} 
+              setActiveFilters={setSignalFilters} 
               refreshTrigger={refreshSignalTab}
               currentTab={activeTab}
             />
@@ -1736,8 +1787,8 @@ export default function HomePage() {
             setHeights(h => ({ ...h, copy: height }));
           }}>
             <TradersTabContent 
-              activeFilters={activeFilters} 
-              setActiveFilters={setActiveFilters} 
+              activeFilters={traderFilters} 
+              setActiveFilters={setTraderFilters} 
               currentTab={activeTab}
             />
           </View>
