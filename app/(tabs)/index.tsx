@@ -1658,35 +1658,35 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
                     </View>
                   </View>
 
-                <View style={styles.signalInfoGrid}>
-                  <View style={styles.signalGridItem}>
-                    <Text style={styles.signalInfoLabel}>入场价</Text>
-                    <Text style={styles.signalInfoValue}>{signal.entry_price}</Text>
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>入场价</Text>
+                      <Text style={styles.signalInfoValue}>{signal.entry_price}</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
+                      <Text style={styles.signalInfoValue}>全仓</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>委托时间</Text>
+                      <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time)}</Text>
+                    </View>
                   </View>
-                  <View style={styles.signalGridItem}>
-                    <Text style={styles.signalInfoLabel}>仓位模式</Text>
-                    <Text style={styles.signalInfoValue}>全仓</Text>
-                  </View>
-                  <View style={styles.signalGridItem}>
-                    <Text style={styles.signalInfoLabel}>委托时间</Text>
-                    <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time)}</Text>
-                  </View>
-                </View>
 
-                <View style={styles.signalInfoGrid}>
-                  <View style={styles.signalGridItem}>
-                    <Text style={styles.signalInfoLabel}>止盈价</Text>
-                    <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.take_profit}</Text>
+                  <View style={styles.signalInfoGrid}>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止盈价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.take_profit}</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>止损价</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stop_loss}</Text>
+                    </View>
+                    <View style={styles.signalGridItem}>
+                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
+                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
+                    </View>
                   </View>
-                  <View style={styles.signalGridItem}>
-                    <Text style={styles.signalInfoLabel}>止损价</Text>
-                    <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stop_loss}</Text>
-                  </View>
-                  <View style={styles.signalGridItem}>
-                    <Text style={styles.signalInfoLabel}>盈亏比</Text>
-                    <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
-                  </View>
-                </View>
                 </View>
               </View>
             );
