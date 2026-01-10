@@ -52,7 +52,7 @@ async function getOrCreateTrader(supabaseClient: any, traderName: string) {
       description: `自动创建的交易员: ${traderName}`,
       followers_count: 0,
       win_rate: 0,
-      signal_count: 0,
+      total_signals: 0,
       is_online: false,
       is_online_today: false,
     })

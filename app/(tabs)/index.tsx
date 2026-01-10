@@ -718,7 +718,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
               rank={index + 1}
               traderId={trader.id}
               name={trader.name}
-              roi={`${trader.signal_count || 0}个信号`}
+              roi={`${trader.total_signals || 0}个信号`}
               avatar={trader.avatar_url || 'https://randomuser.me/api/portraits/men/1.jpg'}
               isTop={index === 0}
               initialIsSubscribed={!!trader.is_subscribed}
@@ -1062,7 +1062,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
                 pnl=""
                 winRate={`${trader.long_signals || 0}`}
                 aum={`${trader.short_signals || 0}`}
-                days={trader.signal_count || 0}
+                days={trader.trading_days || 0}
                 coins={[
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuATVNwivtQOZ2npc_w1PrcrX_4y17f4sOiNkn0PcY8zqp0YLkQ3QuxIkuDHNbTjM1ZyrnwY3GKd7UVSYfoETg68d3DNq3yliS1uwFDzri7UqYgzB5fN2Ju5KYY8plwkhuhEWVym03IBsLlyKhgTloiJKTujcHXIe_z-lpDvnkbxcYGocB5nfG-PQGKRLQ1b7pknYTUavPCwz1iU0-cRBaTMqb597A3OgbOCuT2YYwBSVl3V5yGQaMdwr6lBh9K9vzREuJyuOGn7Tg",
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuBqVLgtNIEpUr5EnOPS_CgkITlq0vVjaigO9jnxDPyQnAokTkWkEOTGXrlpCYF9sNvRwze7xjCTLCxaNfb3DiTbcvBgZhA5rJt4lyW5zxbfuPyai7ANHCgpXluqDnWr9ATykGdJ9X5sTLPyJND5T5bvWN7ciyMIvkT-OAUvZG8khWTSrhiGjPrSs-AL0ZpdNIzo2pRweRiGqFRbsmXXfg4024-qe1haFHvijyQhWvK--a2M_RHLjsnDeVusKni_aeEZwEa9cuvmxA",

@@ -10,6 +10,11 @@ export interface Trader {
   signal_count?: number;
   followers_count?: number;
   win_rate?: number;
+  // 新增统计字段
+  total_roi?: number;
+  avg_pnl_ratio?: number;
+  profit_factor?: number;
+  total_pnl?: number;
   created_at: string;
   updated_at: string;
 }
@@ -215,21 +220,48 @@ export async function getTraderDetail(
   userId?: string
 ): Promise<TraderDetail | null> {
   try {
-    console.log('🔵 [TraderService] 调用 RPC: get_trader_detail', { traderId, userId });
+    console.log('🔵 [TraderService] 获取交易员详情 (RPC + Table)', { traderId, userId });
     
-    const { data, error } = await supabase.rpc('get_trader_detail', {
+    // 1. 调用 RPC 获取动态统计数据 (如订阅状态、活跃信号数等)
+    const rpcPromise = supabase.rpc('get_trader_detail', {
       p_trader_id: traderId,
       p_user_id: userId || null
     });
+
+    // 2. 直接查询表获取最新的静态字段 (防止 RPC 未更新导致缺少 total_roi 等新字段)
+    const tablePromise = supabase
+      .from('traders')
+      .select('*')
+      .eq('id', traderId)
+      .single();
+
+    const [rpcResult, tableResult] = await Promise.all([rpcPromise, tablePromise]);
     
-    if (error) {
-      console.error('❌ [TraderService] 获取交易员详情失败:', error);
-      throw error;
+    if (rpcResult.error) {
+      console.error('❌ [TraderService] RPC 获取失败:', rpcResult.error);
+    }
+    if (tableResult.error) {
+      console.error('❌ [TraderService] Table 获取失败:', tableResult.error);
     }
 
-    console.log('✅ [TraderService] 成功获取交易员详情:', data);
-    // RPC 函数返回数组，取第一个元素
-    return data && data.length > 0 ? data[0] : null;
+    const rpcData = rpcResult.data && rpcResult.data.length > 0 ? rpcResult.data[0] : {};
+    const tableData = tableResult.data || {};
+
+    // 合并数据：Table 数据优先覆盖 (因为它是最新的 Schema), 但保留 RPC 特有的字段
+    const mergedData = {
+      ...rpcData,
+      ...tableData,
+      // 确保保留 RPC 计算出的特定字段，如果 tableData 里没有
+      is_subscribed: rpcData.is_subscribed,
+      is_followed: rpcData.is_followed,
+      // 某些统计字段如果 tableData 是 null (默认值), 可以考虑用 RPC 的
+      total_signals: tableData.total_signals ?? rpcData.total_signals,
+      long_signals: tableData.long_signals ?? rpcData.long_signals,
+      short_signals: tableData.short_signals ?? rpcData.short_signals,
+    };
+
+    console.log('✅ [TraderService] 成功合并交易员详情');
+    return mergedData as TraderDetail;
   } catch (error) {
     console.error('❌ [TraderService] 获取交易员详情异常:', error);
     throw error;

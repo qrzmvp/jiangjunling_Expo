@@ -25,7 +25,7 @@ async function verifyLeaderboard() {
   
   if (data && data.length > 0) {
     data.forEach((trader, index) => {
-      console.log(`${index + 1} | ${trader.name} | ${trader.signal_count} | ${trader.id}`);
+      console.log(`${index + 1} | ${trader.name} | ${trader.total_signals} | ${trader.id}`);
     });
   } else {
     console.log('No data found.');

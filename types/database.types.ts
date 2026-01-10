@@ -310,9 +310,17 @@ export type Database = {
           is_online: boolean | null
           is_online_today: boolean | null
           name: string
-          signal_count: number | null
           updated_at: string | null
           win_rate: number | null
+          total_roi: number | null
+          avg_pnl_ratio: number | null
+          profit_factor: number | null
+          total_signals: number | null
+          long_signals: number | null
+          short_signals: number | null
+          total_pnl: number | null
+          trading_days: number | null
+          subscription_count: number | null
         }
         Insert: {
           avatar_url?: string | null
@@ -323,9 +331,17 @@ export type Database = {
           is_online?: boolean | null
           is_online_today?: boolean | null
           name: string
-          signal_count?: number | null
           updated_at?: string | null
           win_rate?: number | null
+          total_roi?: number | null
+          avg_pnl_ratio?: number | null
+          profit_factor?: number | null
+          total_signals?: number | null
+          long_signals?: number | null
+          short_signals?: number | null
+          total_pnl?: number | null
+          trading_days?: number | null
+          subscription_count?: number | null
         }
         Update: {
           avatar_url?: string | null
@@ -336,9 +352,17 @@ export type Database = {
           is_online?: boolean | null
           is_online_today?: boolean | null
           name?: string
-          signal_count?: number | null
           updated_at?: string | null
           win_rate?: number | null
+          total_roi?: number | null
+          avg_pnl_ratio?: number | null
+          profit_factor?: number | null
+          total_signals?: number | null
+          long_signals?: number | null
+          short_signals?: number | null
+          total_pnl?: number | null
+          trading_days?: number | null
+          subscription_count?: number | null
         }
         Relationships: []
       }

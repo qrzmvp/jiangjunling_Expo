@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../../lib/userTraderService';
 import { getTraderDetail, TraderDetail, getTraderSignals, getTraderSignalTrend } from '../../lib/traderService';
 import { Signal } from '../../lib/signalService';
+import { supabase } from '../../lib/supabase';
 import type { Trader } from '../../types';
 import Toast from '../../components/Toast';
 
@@ -50,6 +51,48 @@ const TraderDetailScreen = () => {
   const [signalsLoading, setSignalsLoading] = useState(false);
   const [signalTrendData, setSignalTrendData] = useState<Array<{ date: string; signal_count: number }>>([]);
   const [trendLoading, setTrendLoading] = useState(false);
+
+  // 监听 Supabase Realtime 变更 (实时更新交易员统计数据)
+  useEffect(() => {
+    if (!traderId) return;
+
+    console.log('🔌 [Realtime] 正在订阅交易员变更:', traderId);
+    const channel = supabase
+      .channel(`trader-detail-${traderId}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'traders', 
+          filter: `id=eq.${traderId}` 
+        },
+        (payload) => {
+          console.log('🔄 [Realtime] 收到交易员数据更新:', payload.new);
+          // 增量更新 trader 状态
+          setTrader((prev) => {
+            if (!prev) return null;
+            // payload.new 中的字段是下划线命名，TraderDetail 接口也主要是下划线
+            // 我们直接合并，但要注意 payload.new 仅包含 DB 字段
+            // 不包含 RPC 生成的字段 (如 is_subscribed)。
+            // 所以必须保留 prev 中的原有字段。
+            return {
+              ...prev,
+              ...(payload.new as any), 
+              // 确保保留前端计算或 RPC 返回的状态
+              is_subscribed: prev.is_subscribed,
+              is_followed: prev.is_followed
+            };
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔌 [Realtime] 取消订阅:', traderId);
+      supabase.removeChannel(channel);
+    };
+  }, [traderId]);
 
   // 【优化】加载交易员数据 - 使用单次优化查询
   useEffect(() => {
@@ -97,7 +140,7 @@ const TraderDetailScreen = () => {
       setCurrentSignals(activeSignals);
       
       // 加载历史信号（closed状态）
-      const closedSignals = await getTraderSignals(traderId, 'closed', 20, 0);
+      const closedSignals = await getTraderSignals(traderId, 'closed', 20, 0); 
       setHistorySignals(closedSignals);
       
       console.log('✅ 成功加载信号数据:', { 
@@ -523,7 +566,7 @@ const TraderDetailScreen = () => {
             <View style={styles.roiSection}>
               <View style={styles.roiHeader}>
                 <View style={styles.roiHeaderLeft}>
-                  <Text style={styles.roiLabel}>信号总数</Text>
+                  <Text style={styles.roiLabel}>累计收益率 (ROI)</Text>
                   <MaterialIcons name="info-outline" size={14} color="rgba(136, 136, 136, 0.5)" />
                 </View>
                 <View style={styles.periodSelector}>
@@ -549,7 +592,9 @@ const TraderDetailScreen = () => {
               </View>
               <View style={styles.roiRow}>
                 <View style={styles.roiValues}>
-                  <Text style={styles.roiPercent}>{trader?.total_signals || 0}</Text>
+                  <Text style={[styles.roiPercent, { color: (trader?.total_roi || 0) >= 0 ? COLORS.primary : COLORS.danger }]}>
+                    {trader?.total_roi !== undefined ? `${trader.total_roi > 0 ? '+' : ''}${trader.total_roi.toFixed(2)}%` : '0.00%'}
+                  </Text>
                 </View>
                 <View style={styles.miniChartContainer}>
                   {trendLoading ? (
@@ -574,16 +619,33 @@ const TraderDetailScreen = () => {
 
             <View style={styles.gridStats}>
               <View style={styles.statItem}>
-                <Text style={styles.statLabel}>做多信号</Text>
-                <Text style={styles.statValue}>{trader?.long_signals || 0}</Text>
+                <Text style={styles.statLabel}>胜率 (Win Rate)</Text>
+                <Text style={[styles.statValue, { color: (trader?.win_rate || 0) >= 50 ? COLORS.primary : COLORS.textMain }]}>
+                  {trader?.win_rate !== undefined ? `${trader.win_rate.toFixed(1)}%` : '-'}
+                </Text>
               </View>
               <View style={[styles.statItem, { alignItems: 'center' }]}>
-                <Text style={styles.statLabel}>做空信号</Text>
-                <Text style={styles.statValue}>{trader?.short_signals || 0}</Text>
+                <Text style={styles.statLabel}>平均盈亏比</Text>
+                <Text style={styles.statValue}>{trader?.avg_pnl_ratio ? `1 : ${trader.avg_pnl_ratio.toFixed(2)}` : '-'}</Text>
               </View>
               <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
                 <Text style={styles.statLabel}>交易天数</Text>
-                <Text style={styles.statValue}>{trader?.signal_count || 0}</Text>
+                <Text style={styles.statValue}>{trader?.trading_days !== undefined && trader?.trading_days !== null ? trader.trading_days : '-'}</Text>
+              </View>
+            </View>
+
+            <View style={[styles.gridStats, { marginTop: 4, paddingTop: 0, borderTopWidth: 0 }]}>
+              <View style={styles.statItem}>
+                <Text style={styles.statLabel}>信号总数</Text>
+                <Text style={styles.statValue}>{trader?.total_signals || 0}</Text>
+              </View>
+              <View style={[styles.statItem, { alignItems: 'center' }]}>
+                <Text style={styles.statLabel}>做多信号</Text>
+                <Text style={styles.statValue}>{trader?.long_signals || 0}</Text>
+              </View>
+              <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
+                <Text style={styles.statLabel}>做空信号</Text>
+                <Text style={styles.statValue}>{trader?.short_signals || 0}</Text>
               </View>
             </View>
           </View>
@@ -842,7 +904,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   statsContainer: {
-    gap: 20,
+    gap: 12,
   },
   roiSection: {
     gap: 6,
@@ -911,7 +973,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: 'rgba(37, 37, 37, 0.5)',
-    paddingTop: 16,
+    paddingTop: 12,
   },
   statItem: {
     flex: 1,
