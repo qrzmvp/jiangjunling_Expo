@@ -30,6 +30,7 @@ export const TraderCard = ({
   pnl, 
   winRate, 
   aum, 
+  aumLabel,
   days, 
   coins,
   chartPath,
@@ -51,6 +52,7 @@ export const TraderCard = ({
   pnl: string,
   winRate: string,
   aum: string,
+  aumLabel?: string,
   days: number,
   coins: string[],
   chartPath: string,
@@ -208,7 +210,7 @@ export const TraderCard = ({
           <Text style={[styles.footerValue, { color: parseFloat(winRate) >= 50 ? COLORS.primary : COLORS.textMain }]}>{winRate}</Text>
         </View>
         <View style={[styles.footerStatItem, { alignItems: 'center' }]}>
-          <Text style={styles.footerLabel}>平均盈亏比</Text>
+          <Text style={styles.footerLabel}>{aumLabel || "平均盈亏比"}</Text>
           <Text style={styles.footerValue}>{aum}</Text>
         </View>
         <View style={[styles.footerStatItem, { alignItems: 'flex-end' }]}>

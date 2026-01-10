@@ -277,6 +277,39 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     }
   }, [currentTab, loadData]);
 
+  // 监听 Supabase Realtime 变更 (实时更新排行榜)
+  React.useEffect(() => {
+    // 仅在当前标签为 'overview' 时监听
+    if (currentTab !== 'overview') return;
+
+    console.log('🔌 [Realtime] 正在订阅排行榜变更...');
+    const subscription = supabase
+      .channel('leaderboard-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // 监听所有事件：INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'traders',
+        },
+        (payload) => {
+          console.log('⚡️ [Realtime] 收到交易员变更:', payload.eventType);
+          // 收到任何变更都重新加载排行榜数据
+          loadData();
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [Realtime] 排行榜订阅成功');
+        }
+      });
+
+    return () => {
+      console.log('🔌 [Realtime] 取消订阅排行榜变更');
+      supabase.removeChannel(subscription);
+    };
+  }, [currentTab, loadData]);
+
   // 当用户订阅/取消订阅后刷新状态
   const handleSubscriptionChange = async () => {
     // 重新加载数据以更新状态
