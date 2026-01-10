@@ -2348,7 +2348,7 @@ const styles = StyleSheet.create({
   roiValue: {
     color: COLORS.primary,
     fontWeight: 'bold',
-    fontSize: 13,
+    fontSize: 14,
   },
   copyButton: {
     paddingHorizontal: 16,
@@ -2478,7 +2478,7 @@ const styles = StyleSheet.create({
   },
   roiText: {
     color: COLORS.primary,
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 2,
   },

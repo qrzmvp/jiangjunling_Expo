@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   statsValue: {
     color: COLORS.primary,
-    fontSize: 30,
+    fontSize: 24,
     fontWeight: 'bold',
     letterSpacing: -0.5,
   },

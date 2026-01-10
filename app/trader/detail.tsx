@@ -1089,7 +1089,7 @@ const styles = StyleSheet.create({
   },
   roiPercent: {
     color: COLORS.primary,
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: 'bold',
     letterSpacing: -0.5,
   },
