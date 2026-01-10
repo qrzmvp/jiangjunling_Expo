@@ -944,7 +944,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: COLORS.textMain,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
   },
   iconButton: {
@@ -1013,7 +1013,7 @@ const styles = StyleSheet.create({
   },
   traderName: {
     color: COLORS.textMain,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
     maxWidth: 120,
   },
@@ -1050,7 +1050,7 @@ const styles = StyleSheet.create({
   },
   copyButtonText: {
     color: 'black',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
   },
   description: {
@@ -1089,7 +1089,7 @@ const styles = StyleSheet.create({
   },
   roiPercent: {
     color: COLORS.primary,
-    fontSize: 30,
+    fontSize: 26,
     fontWeight: 'bold',
     letterSpacing: -0.5,
   },
@@ -1139,7 +1139,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     color: COLORS.textMain,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   // Rank Card Styles
@@ -1316,7 +1316,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     color: COLORS.textSub,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
   },
   tabTextActive: {
@@ -1333,7 +1333,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: COLORS.textSub,
-    fontSize: 12,
+    fontSize: 11,
   },
   badgeTransparent: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -1482,7 +1482,7 @@ const styles = StyleSheet.create({
   },
   signalPairText: {
     color: COLORS.textMain,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
   },
   signalStatusTag: {
@@ -1541,7 +1541,7 @@ const styles = StyleSheet.create({
   },
   signalInfoValue: {
     color: COLORS.textMain,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
   },
 });

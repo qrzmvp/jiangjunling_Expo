@@ -2045,12 +2045,12 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: COLORS.textMain,
     fontWeight: '600',
-    fontSize: 20,
+    fontSize: 18,
   },
   tabText: {
     color: COLORS.textMuted,
     fontWeight: '500',
-    fontSize: 16,
+    fontSize: 15,
   },
   tabIndicator: {
     position: 'absolute',
@@ -2332,7 +2332,7 @@ const styles = StyleSheet.create({
   nameText: {
     color: COLORS.textMain,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 13,
     maxWidth: 100,
   },
   roiRow: {
@@ -2348,7 +2348,7 @@ const styles = StyleSheet.create({
   roiValue: {
     color: COLORS.primary,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 13,
   },
   copyButton: {
     paddingHorizontal: 16,
@@ -2367,7 +2367,7 @@ const styles = StyleSheet.create({
   },
   copyButtonText: {
     color: 'black',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   // Copy Tab Styles
@@ -2478,7 +2478,7 @@ const styles = StyleSheet.create({
   },
   roiText: {
     color: COLORS.primary,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 2,
   },
@@ -2580,7 +2580,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     color: COLORS.textMain,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   statLabelSmall: {
@@ -2641,7 +2641,7 @@ const styles = StyleSheet.create({
   },
   signalTraderName: {
     color: COLORS.textMain,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
     marginBottom: 2,
   },
@@ -2688,7 +2688,7 @@ const styles = StyleSheet.create({
   },
   signalPairText: {
     color: COLORS.textMain,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
   },
   signalStatusTag: {
@@ -2720,7 +2720,7 @@ const styles = StyleSheet.create({
   },
   signalCopyButtonText: {
     color: COLORS.background,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
   },
   signalInfoGrid: {
@@ -2738,7 +2738,7 @@ const styles = StyleSheet.create({
   },
   signalInfoValue: {
     color: COLORS.textMain,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
   },
 });
