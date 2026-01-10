@@ -8,6 +8,7 @@ import Svg, { Path, Defs, LinearGradient, Stop, Rect, Circle, G, Image as SvgIma
 import { AddToHomeScreen } from '../../components/AddToHomeScreen';
 import { TraderCard } from '../../components/TraderCard';
 import { SignalCard } from '../../components/SignalCard';
+import { CopySignalModal } from '../../components/CopySignalModal';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
 import { getFollowedTraders, getSubscribedTraders, subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader, getUserStats } from '../../lib/userTraderService';
@@ -1258,6 +1259,10 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
   const PAGE_SIZE = 20;
   const [isLoadingData, setIsLoadingData] = useState(false); // 添加加载状态标志，防止重复请求
   
+  // Copy Modal 状态
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
+  
   // 默认头像 - 简单的灰色圆形头像 (1x1 像素的灰色图片 base64)
   const DEFAULT_AVATAR = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mM8/x8AAn8B9h12xqwAAAAASUVORK5CYII=';
 
@@ -1415,6 +1420,21 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
     if (!loadingMore && hasMore) {
       loadSignals(false);
     }
+  };
+
+  // 打开Copy Modal
+  const handleCopySignal = (signal: Signal) => {
+    setSelectedSignal(signal);
+    setShowCopyModal(true);
+  };
+
+  // 确认Copy
+  const handleConfirmCopy = (editedData: { entryPrice: string; takeProfit: string; stopLoss: string }) => {
+    // TODO: 实现实际的copy功能，比如复制到剪贴板或提交到交易所
+    console.log('确认Copy:', {
+      signal: selectedSignal,
+      editedData,
+    });
   };
 
   const handleFilterPress = (filter: string) => {
@@ -1635,10 +1655,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
                   
                   <TouchableOpacity 
                     style={styles.signalCopyButton}
-                    onPress={(e) => {
-                      // TODO: 实现copy功能
-                      console.log('Copy信号');
-                    }}
+                    onPress={() => handleCopySignal(signal)}
                   >
                     <Text style={styles.signalCopyButtonText}>Copy</Text>
                   </TouchableOpacity>
@@ -1723,6 +1740,14 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
       )}
     </View>
     </ScrollView>
+
+    {/* Copy Modal */}
+    <CopySignalModal
+      visible={showCopyModal}
+      signal={selectedSignal}
+      onClose={() => setShowCopyModal(false)}
+      onConfirm={handleConfirmCopy}
+    />
   </View>
   );
 };

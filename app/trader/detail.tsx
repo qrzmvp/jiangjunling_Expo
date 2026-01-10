@@ -12,6 +12,7 @@ import { Signal } from '../../lib/signalService';
 import { supabase } from '../../lib/supabase';
 import type { Trader } from '../../types';
 import Toast from '../../components/Toast';
+import { CopySignalModal } from '../../components/CopySignalModal';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -52,6 +53,8 @@ const TraderDetailScreen = () => {
   const [roiTrendData, setRoiTrendData] = useState<Array<{ date: string; roi: number }>>([]);
   const [trendLoading, setTrendLoading] = useState(false);
   const [showStats, setShowStats] = useState(true);
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
 
   // 监听 Supabase Realtime 变更 (实时更新交易员统计数据)
   useEffect(() => {
@@ -250,7 +253,13 @@ const TraderDetailScreen = () => {
     }
   };
 
-  const handleCopy = () => {
+  const handleCopy = (signal: Signal) => {
+    setSelectedSignal(signal);
+    setShowCopyModal(true);
+  };
+
+  const handleConfirmCopy = () => {
+    setShowCopyModal(false);
     setToastMessage('Copy成功');
     setToastVisible(true);
   };
@@ -428,7 +437,7 @@ const TraderDetailScreen = () => {
           </View>
           
           {!isHistory && (
-              <TouchableOpacity style={styles.signalCopyButton} onPress={handleCopy}>
+              <TouchableOpacity style={styles.signalCopyButton} onPress={() => handleCopy(signal)}>
                 <Text style={styles.signalCopyButtonText}>Copy</Text>
               </TouchableOpacity>
           )}
@@ -900,6 +909,12 @@ const TraderDetailScreen = () => {
         type="success" 
         duration={1500}
         onHide={() => setToastVisible(false)} 
+      />
+      <CopySignalModal
+        visible={showCopyModal}
+        signal={selectedSignal}
+        onClose={() => setShowCopyModal(false)}
+        onConfirm={handleConfirmCopy}
       />
     </SafeAreaView>
   );
