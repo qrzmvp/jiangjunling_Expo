@@ -13,6 +13,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getFollowedTraders, getSubscribedTraders, subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader, getUserStats } from '../../lib/userTraderService';
 import { getTradersWithStats, TraderWithStats, getMultipleTradersSignalTrend, getLeaderboard, LeaderboardTrader } from '../../lib/traderService';
 import { getPlatformStats, PlatformStats } from '../../lib/platformStatsService';
+import { supabase } from '../../lib/supabase';
 import type { Trader } from '../../types';
 
 const { width } = Dimensions.get('window');
@@ -718,7 +719,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
               rank={index + 1}
               traderId={trader.id}
               name={trader.name}
-              roi={`${trader.total_signals || 0}个信号`}
+              roi={trader.total_roi !== undefined ? `${trader.total_roi > 0 ? '+' : ''}${trader.total_roi.toFixed(2)}%` : '0.00%'}
               avatar={trader.avatar_url || 'https://randomuser.me/api/portraits/men/1.jpg'}
               isTop={index === 0}
               initialIsSubscribed={!!trader.is_subscribed}
@@ -908,6 +909,49 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
     }
   }, [currentTab]);
 
+  // 监听 Supabase Realtime 变更 (实时更新交易员列表数据)
+  useEffect(() => {
+    // 仅在当前标签为 'copy' 时监听
+    if (currentTab !== 'copy') return;
+
+    console.log('🔌 [Realtime] 正在订阅交易员列表变更...');
+    const subscription = supabase
+      .channel('traders-list-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'traders',
+        },
+        (payload: any) => {
+          const updatedTrader = payload.new;
+          console.log('⚡️ [Realtime] 收到交易员列表更新:', updatedTrader.id, updatedTrader.name);
+          
+          setTraders(prevTraders => 
+            prevTraders.map(t => {
+              if (t.id === updatedTrader.id) {
+                // 合并更新的数据，保留原有的用户状态字段（如是否关注、是否订阅）
+                return {
+                  ...t,
+                  ...updatedTrader,
+                };
+              }
+              return t;
+            })
+          );
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔌 [Realtime] 交易员列表订阅状态:', status);
+      });
+
+    return () => {
+      console.log('🔌 [Realtime] 取消订阅交易员列表变更');
+      supabase.removeChannel(subscription);
+    };
+  }, [currentTab]);
+
   // 下拉刷新
   const onRefresh = async () => {
     setRefreshing(true);
@@ -1047,7 +1091,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
               <TraderCard 
                 key={trader.id}
                 traderId={trader.id}
-                roiLabel="信号总数" 
+                roiLabel="累计收益率 (ROI)"
                 name={trader.name}
                 avatar={trader.avatar_url}
                 description={trader.description}
@@ -1058,10 +1102,10 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
                 // 使用真实数据库数据
                 followers={trader.followers_count || 0}
                 maxFollowers={100}
-                roi={`${trader.total_signals || 0}`}
+                roi={trader.total_roi !== undefined && trader.total_roi !== null ? `${trader.total_roi > 0 ? '+' : ''}${trader.total_roi.toFixed(2)}%` : '0.00%'}
                 pnl=""
-                winRate={`${trader.long_signals || 0}`}
-                aum={`${trader.short_signals || 0}`}
+                winRate={trader.win_rate !== undefined && trader.win_rate !== null ? `${trader.win_rate.toFixed(1)}%` : '-'}
+                aum={trader.avg_pnl_ratio !== undefined && trader.avg_pnl_ratio !== null ? `1 : ${trader.avg_pnl_ratio.toFixed(2)}` : '-'}
                 days={trader.trading_days || 0}
                 coins={[
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuATVNwivtQOZ2npc_w1PrcrX_4y17f4sOiNkn0PcY8zqp0YLkQ3QuxIkuDHNbTjM1ZyrnwY3GKd7UVSYfoETg68d3DNq3yliS1uwFDzri7UqYgzB5fN2Ju5KYY8plwkhuhEWVym03IBsLlyKhgTloiJKTujcHXIe_z-lpDvnkbxcYGocB5nfG-PQGKRLQ1b7pknYTUavPCwz1iU0-cRBaTMqb597A3OgbOCuT2YYwBSVl3V5yGQaMdwr6lBh9K9vzREuJyuOGn7Tg",

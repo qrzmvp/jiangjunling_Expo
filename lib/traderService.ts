@@ -15,6 +15,8 @@ export interface Trader {
   avg_pnl_ratio?: number;
   profit_factor?: number;
   total_pnl?: number;
+  trading_days?: number;
+  subscription_count?: number;
   created_at: string;
   updated_at: string;
 }

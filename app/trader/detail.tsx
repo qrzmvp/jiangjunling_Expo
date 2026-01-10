@@ -713,7 +713,7 @@ const TraderDetailScreen = () => {
               onPress={() => setActiveTab('current')}
             >
               <View style={styles.tabContent}>
-                <Text style={[styles.tabText, activeTab === 'current' ? styles.tabTextActive : null]}>当天信号</Text>
+                <Text style={[styles.tabText, activeTab === 'current' ? styles.tabTextActive : null]}>有效信号</Text>
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{trader?.active_signals || 0}</Text>
                 </View>
@@ -746,7 +746,7 @@ const TraderDetailScreen = () => {
                   <>
                     {currentSignals.length === 0 ? (
                       <View style={{ padding: 40, alignItems: 'center' }}>
-                        <Text style={{ color: COLORS.textSub, fontSize: 14 }}>暂无当天信号</Text>
+                        <Text style={{ color: COLORS.textSub, fontSize: 14 }}>暂无有效信号</Text>
                       </View>
                     ) : (
                       currentSignals.map(signal => renderSignalCard(signal))

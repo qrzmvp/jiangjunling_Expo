@@ -182,10 +182,10 @@ export const TraderCard = ({
       {/* Stats Section - 与详情页完全一致 */}
       <View style={styles.statsSection}>
         <View style={styles.statsHeader}>
-          <Text style={styles.statsLabel}>信号总数（近7天）</Text>
+          <Text style={styles.statsLabel}>{roiLabel || "累计收益率 (ROI)"}</Text>
         </View>
         <View style={styles.statsRow}>
-          <Text style={styles.statsValue}>{roi}</Text>
+          <Text style={[styles.statsValue, { color: roi.includes('-') ? COLORS.danger : COLORS.primary }]}>{roi}</Text>
           <View style={styles.miniChartContainer}>
             <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
               <Path 
@@ -204,11 +204,11 @@ export const TraderCard = ({
       {/* Footer Stats - 3列布局 */}
       <View style={styles.cardFooter}>
         <View style={styles.footerStatItem}>
-          <Text style={styles.footerLabel}>做多信号</Text>
-          <Text style={styles.footerValue}>{winRate}</Text>
+          <Text style={styles.footerLabel}>胜率</Text>
+          <Text style={[styles.footerValue, { color: parseFloat(winRate) >= 50 ? COLORS.primary : COLORS.textMain }]}>{winRate}</Text>
         </View>
         <View style={[styles.footerStatItem, { alignItems: 'center' }]}>
-          <Text style={styles.footerLabel}>做空信号</Text>
+          <Text style={styles.footerLabel}>平均盈亏比</Text>
           <Text style={styles.footerValue}>{aum}</Text>
         </View>
         <View style={[styles.footerStatItem, { alignItems: 'flex-end' }]}>

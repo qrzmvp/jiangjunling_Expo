@@ -414,28 +414,31 @@ export type Database = {
     }
     Functions: {
       get_traders_with_stats: {
-        Args: { 
-          p_user_id?: string | null
+        Args: {
           p_limit?: number
           p_offset?: number
+          p_user_id?: string
         }
         Returns: {
-          id: string
-          name: string
-          description: string
           avatar_url: string
-          is_online_today: boolean
-          is_online: boolean
-          signal_count: number
-          followers_count: number
-          win_rate: number
+          avg_pnl_ratio: number
           created_at: string
-          updated_at: string
-          total_signals: number
-          active_signals: number
-          closed_signals: number
-          is_subscribed: boolean
+          description: string
+          followers_count: number
+          id: string
           is_followed: boolean
+          is_online: boolean
+          is_online_today: boolean
+          is_subscribed: boolean
+          long_signals: number
+          name: string
+          profit_factor: number
+          short_signals: number
+          total_roi: number
+          total_signals: number
+          trading_days: number
+          updated_at: string
+          win_rate: number
         }[]
       }
       get_trader_detail: {
