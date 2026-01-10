@@ -7,7 +7,7 @@ import Svg, { Path, Defs, LinearGradient, Stop, Circle, G, Image as SvgImage, Te
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 import { useAuth } from '../../contexts/AuthContext';
 import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../../lib/userTraderService';
-import { getTraderDetail, TraderDetail, getTraderSignals, getTraderSignalTrend } from '../../lib/traderService';
+import { getTraderDetail, TraderDetail, getTraderSignals, getTraderRoiTrend } from '../../lib/traderService';
 import { Signal } from '../../lib/signalService';
 import { supabase } from '../../lib/supabase';
 import type { Trader } from '../../types';
@@ -49,7 +49,7 @@ const TraderDetailScreen = () => {
   const [currentSignals, setCurrentSignals] = useState<Signal[]>([]);
   const [historySignals, setHistorySignals] = useState<Signal[]>([]);
   const [signalsLoading, setSignalsLoading] = useState(false);
-  const [signalTrendData, setSignalTrendData] = useState<Array<{ date: string; signal_count: number }>>([]);
+  const [roiTrendData, setRoiTrendData] = useState<Array<{ date: string; roi: number }>>([]);
   const [trendLoading, setTrendLoading] = useState(false);
   const [showStats, setShowStats] = useState(true);
 
@@ -99,13 +99,13 @@ const TraderDetailScreen = () => {
   useEffect(() => {
     loadTraderData();
     loadSignals();
-    loadSignalTrend();
+    loadRoiTrend();
   }, [traderId]);
 
   // 当时间周期改变时,重新加载趋势数据
   useEffect(() => {
     if (traderId) {
-      loadSignalTrend();
+      loadRoiTrend();
     }
   }, [signalTrendPeriod]);
 
@@ -169,22 +169,22 @@ const TraderDetailScreen = () => {
     }
   };
 
-  const loadSignalTrend = async () => {
+  const loadRoiTrend = async () => {
     if (!traderId) return;
     
     try {
       setTrendLoading(true);
       const days = parseInt(signalTrendPeriod);
-      const trendData = await getTraderSignalTrend(traderId, days);
-      setSignalTrendData(trendData);
+      const trendData = await getTraderRoiTrend(traderId, days);
+      setRoiTrendData(trendData);
       
-      console.log('✅ 成功加载信号趋势数据:', { 
+      console.log('✅ 成功加载 ROI 趋势数据:', { 
         period: signalTrendPeriod, 
         dataPoints: trendData.length 
       });
     } catch (error) {
-      console.error('加载信号趋势失败:', error);
-      setSignalTrendData([]); // 出错时设置为空数组
+      console.error('加载 ROI 趋势失败:', error);
+      setRoiTrendData([]); // 出错时设置为空数组
     } finally {
       setTrendLoading(false);
     }
@@ -261,18 +261,27 @@ const TraderDetailScreen = () => {
       return "M 0,20 L 100,20"; // 加载中显示直线
     }
     
-    if (!signalTrendData || signalTrendData.length === 0) {
+    if (!roiTrendData || roiTrendData.length === 0) {
       return "M 0,20 L 100,20"; // 无数据显示直线
     }
 
-    // 找到最大值用于归一化
-    const maxCount = Math.max(...signalTrendData.map(d => d.signal_count), 1);
+    // 计算ROI范围用于归一化
+    const rois = roiTrendData.map(d => d.roi);
+    const maxRoi = Math.max(...rois);
+    const minRoi = Math.min(...rois);
+    const range = maxRoi - minRoi;
     
     // 计算每个点的坐标
-    const points = signalTrendData.map((data, index) => {
-      const x = (index / (signalTrendData.length - 1)) * 100;
-      // Y轴倒置(SVG坐标系),归一化到5-35范围(留出边距)
-      const y = 35 - (data.signal_count / maxCount) * 30;
+    const points = roiTrendData.map((data, index) => {
+      const x = (index / (roiTrendData.length - 1)) * 100;
+      
+      // Y轴倒置(SVG坐标系), 归一化到5-35范围(留出边距)
+      let normalizedY = 0.5; // 默认居中
+      if (range > 0) {
+        normalizedY = (data.roi - minRoi) / range;
+      }
+      
+      const y = 35 - (normalizedY * 30);
       return { x, y };
     });
 

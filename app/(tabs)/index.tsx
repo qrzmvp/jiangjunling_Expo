@@ -11,7 +11,13 @@ import { SignalCard } from '../../components/SignalCard';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
 import { getFollowedTraders, getSubscribedTraders, subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader, getUserStats } from '../../lib/userTraderService';
-import { getTradersWithStats, TraderWithStats, getMultipleTradersSignalTrend, getLeaderboard, LeaderboardTrader } from '../../lib/traderService';
+import { 
+  getTradersWithStats, 
+  TraderWithStats, 
+  getMultipleTradersRoiTrend,  // Changed from Signal
+  getLeaderboard, 
+  LeaderboardTrader 
+} from '../../lib/traderService';
 import { getPlatformStats, PlatformStats } from '../../lib/platformStatsService';
 import { supabase } from '../../lib/supabase';
 import type { Trader } from '../../types';
@@ -747,19 +753,28 @@ interface TabContentProps {
 }
 
 // 生成SVG图表路径的辅助函数
-const generateChartPath = (trendData: Array<{ date: string; signal_count: number }>) => {
+const generateChartPath = (trendData: Array<{ date: string; roi: number }>) => {
   if (!trendData || trendData.length === 0) {
     return "M 0,20 L 100,20"; // 无数据显示直线
   }
 
-  // 找到最大值用于归一化
-  const maxCount = Math.max(...trendData.map(d => d.signal_count), 1);
-  
+  // 计算ROI范围用于归一化
+  const rois = trendData.map(d => d.roi);
+  const maxRoi = Math.max(...rois);
+  const minRoi = Math.min(...rois);
+  const range = maxRoi - minRoi;
+
   // 计算每个点的坐标
   const points = trendData.map((data, index) => {
     const x = (index / (trendData.length - 1)) * 100;
-    // Y轴倒置(SVG坐标系),归一化到5-35范围(留出边距)
-    const y = 35 - (data.signal_count / maxCount) * 30;
+    
+    // Y轴倒置(SVG坐标系), 归一化到5-35范围(留出边距)
+    let normalizedY = 0.5; // 默认居中
+    if (range > 0) {
+      normalizedY = (data.roi - minRoi) / range;
+    }
+    
+    const y = 35 - (normalizedY * 30);
     return { x, y };
   });
 
@@ -798,10 +813,10 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingData, setIsLoadingData] = useState(false); // 添加加载状态标志
-  const [traderTrendData, setTraderTrendData] = useState<Map<string, Array<{ date: string; signal_count: number }>>>(new Map());
+  const [traderTrendData, setTraderTrendData] = useState<Map<string, Array<{ date: string; roi: number }>>>(new Map());
   const PAGE_SIZE = 20;
 
-  // 【优化】批量加载交易员的7天趋势数据 - 一次RPC调用替代N次
+  // 【优化】批量加载交易员的7天趋势数据 (ROI)
   const loadTrendDataForTraders = async (traders: TraderWithStats[]) => {
     if (traders.length === 0) return;
     
@@ -810,7 +825,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
       const traderIds = traders.map(t => t.id);
       
       // 批量查询 - 只需1次RPC调用!
-      const trendMap = await getMultipleTradersSignalTrend(traderIds, 7);
+      const trendMap = await getMultipleTradersRoiTrend(traderIds, 7);
       
       // 更新状态
       setTraderTrendData(prevMap => {
@@ -821,9 +836,9 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
         return newMap;
       });
       
-      console.log('✅ 成功批量加载', trendMap.size, '个交易员的趋势数据');
+      console.log('✅ 成功批量加载', trendMap.size, '个交易员的 ROI 趋势数据');
     } catch (error) {
-      console.error('批量加载趋势数据失败:', error);
+      console.error('批量加载 ROI 趋势数据失败:', error);
     }
   };
 
