@@ -139,9 +139,9 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>杠杆</Text>
+              <Text style={styles.formLabel}>杠杆（倍数）</Text>
               <View style={styles.formInputDisabled}>
-                <Text style={styles.formInputDisabledText}>{signal.leverage}x</Text>
+                <Text style={styles.formInputDisabledText}>{signal.leverage.replace(/x$/i, '')}</Text>
               </View>
             </View>
 

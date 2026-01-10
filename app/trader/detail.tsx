@@ -433,7 +433,7 @@ const TraderDetailScreen = () => {
             </Text>
           </View>
           <View style={[styles.signalLeverageTag, { marginRight: 'auto' }]}>
-            <Text style={styles.signalLeverageText}>{signal.leverage}x</Text>
+            <Text style={styles.signalLeverageText}>{signal.leverage.replace(/x$/i, '')}x</Text>
           </View>
           
           {!isHistory && (
