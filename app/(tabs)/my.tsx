@@ -148,40 +148,25 @@ const MyPage: React.FC = () => {
           </View>
         </TouchableOpacity>
 
-        {/* Stats Section */}
-        <View style={styles.statsCard}>
-          <View style={styles.statsRow}>
-            {/* 订阅统计 - 暂时隐藏 */}
-            {false && (
-              <TouchableOpacity
-                style={styles.statItem}
-                onPress={() => router.push('/(tabs)?tab=copy&filter=已订阅')}
-              >
+        {/* Stats Section - 暂时隐藏 */}
+        {false && (
+          <View style={styles.statsCard}>
+            <View style={styles.statsRow}>
+              <TouchableOpacity style={styles.statItem} onPress={() => router.push('/(tabs)?tab=copy&filter=已订阅')}>
                 <Text style={styles.statNumber}>{subscriptionCount}</Text>
                 <Text style={styles.statLabel}>订阅</Text>
               </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={styles.statItem}
-              onPress={() => router.push('/(tabs)?tab=copy&filter=已关注')}
-            >
-              <Text style={styles.statNumber}>{followCount}</Text>
-              <Text style={styles.statLabel}>关注</Text>
-            </TouchableOpacity>
-            {/* 朋友统计 - 暂时隐藏 */}
-            {/* <TouchableOpacity style={styles.statItem} onPress={() => router.push('/invite-friends')}>
-              <Text style={styles.statNumber}>16</Text>
-              <Text style={styles.statLabel}>朋友</Text>
-            </TouchableOpacity> */}
-            {/* 交易账户统计 - 暂时隐藏 */}
-            {false && (
+              <TouchableOpacity style={styles.statItem} onPress={() => router.push('/(tabs)?tab=copy&filter=已关注')}>
+                <Text style={styles.statNumber}>{followCount}</Text>
+                <Text style={styles.statLabel}>关注</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.statItem} onPress={() => router.push('/profile/exchange-accounts')}>
                 <Text style={styles.statNumber}>{exchangeAccountCount > 99 ? '99+' : exchangeAccountCount}</Text>
                 <Text style={styles.statLabel}>交易账户</Text>
               </TouchableOpacity>
-            )}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Promotion Banner */}
         {/* <View style={styles.promoBanner}>
@@ -300,7 +285,7 @@ const MyPage: React.FC = () => {
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
           <View style={styles.menuDivider} /> */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/qrcode')}
           >
@@ -310,17 +295,22 @@ const MyPage: React.FC = () => {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
-          <View style={styles.menuDivider} />
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => router.push('/settings')}
-          >
-            <View style={styles.menuLeft}>
-              <Ionicons name="settings-outline" size={22} color="#8A919E" />
-              <Text style={styles.menuText}>设置</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
-          </TouchableOpacity>
+          {/* 设置入口 - 暂时隐藏 */}
+          {false && (
+            <>
+              <View style={styles.menuDivider} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => router.push('/settings')}
+              >
+                <View style={styles.menuLeft}>
+                  <Ionicons name="settings-outline" size={22} color="#8A919E" />
+                  <Text style={styles.menuText}>设置</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* Footer */}

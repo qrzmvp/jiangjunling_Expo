@@ -241,6 +241,9 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     tradingPairCount: 0,
   });
 
+  // 关注博主数量
+  const [followCount, setFollowCount] = React.useState<number>(0);
+
   const toggleTrader = (name: string) => {
     setHiddenTraders(prev => 
       prev.includes(name) 
@@ -253,14 +256,20 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
   const loadData = React.useCallback(async () => {
     try {
       // 初始加载时loading为true，后续focus时静默更新，不设置loading为true以避免闪烁
-      
+
       // 直接传入 user.id，获取带有状态的排行榜数据
       const data = await getLeaderboard(user?.id);
       setLeaderboardData(data);
-      
+
       // 加载平台统计数据
       const stats = await getPlatformStats();
       setPlatformStats(stats);
+
+      // 加载关注博主数量
+      if (user?.id) {
+        const userStats = await getUserStats(user.id);
+        setFollowCount(userStats.followCount);
+      }
     } catch (error) {
       console.error('加载数据失败:', error);
     } finally {
@@ -555,6 +564,10 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
       <View style={styles.statItemGrid}>
         <Text style={styles.statValue}>{platformStats.activeTraderCount}</Text>
         <Text style={styles.statLabelSmall}>活跃博主</Text>
+      </View>
+      <View style={styles.statItemGrid}>
+        <Text style={styles.statValue}>{followCount}</Text>
+        <Text style={styles.statLabelSmall}>关注博主</Text>
       </View>
       <View style={styles.statItemGrid}>
         <Text style={styles.statValue}>{platformStats.tradingPairCount}</Text>
