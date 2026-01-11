@@ -60,23 +60,23 @@ class ChartErrorBoundary extends React.Component<{children: React.ReactNode}, {h
 }
 
 // 排行榜列表项组件
-const LeaderboardItem = ({ 
-  rank, 
+const LeaderboardItem = ({
+  rank,
   traderId,
-  name, 
-  roi, 
-  avatar, 
+  name,
+  roi,
+  avatar,
   isTop = false,
   initialIsSubscribed = false,
   initialIsFavorite = false,
   onSubscriptionChange,
   onFavoriteChange
-}: { 
-  rank: number, 
+}: {
+  rank: number,
   traderId: string,
-  name: string, 
-  roi: string, 
-  avatar: string, 
+  name: string,
+  roi: string,
+  avatar: string,
   isTop?: boolean,
   initialIsSubscribed?: boolean,
   initialIsFavorite?: boolean,
@@ -84,6 +84,7 @@ const LeaderboardItem = ({
   onFavoriteChange?: () => void
 }) => {
   const { user } = useAuth();
+  const router = useRouter();
   const [isSubscribed, setIsSubscribed] = React.useState(initialIsSubscribed);
   const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
   const [loading, setLoading] = React.useState(false);
@@ -162,19 +163,23 @@ const LeaderboardItem = ({
   };
 
   return (
-    <View style={[styles.leaderboardItem, isTop && styles.topLeaderboardItem]}>
+    <TouchableOpacity
+      style={[styles.leaderboardItem, isTop && styles.topLeaderboardItem]}
+      onPress={() => router.push(`/trader/detail?traderId=${traderId}`)}
+      activeOpacity={0.7}
+    >
       {isTop && (
         <View style={styles.topBadgeIcon}>
            <MaterialIcons name="emoji-events" size={60} color={COLORS.yellow} style={{ opacity: 0.1 }} />
         </View>
       )}
-      
+
       <View style={styles.rankContainer}>
         <Text style={[
-          styles.rankText, 
-          rank === 1 ? { color: COLORS.yellow } : 
-          rank === 2 ? { color: '#9ca3af' } : 
-          rank === 3 ? { color: '#c2410c' } : 
+          styles.rankText,
+          rank === 1 ? { color: COLORS.yellow } :
+          rank === 2 ? { color: '#9ca3af' } :
+          rank === 3 ? { color: '#c2410c' } :
           { color: COLORS.textMuted, fontSize: 14 }
         ]}>
           {rank}
@@ -202,11 +207,12 @@ const LeaderboardItem = ({
       <TouchableOpacity
         onPress={handleFavoriteToggle}
         disabled={loading}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <MaterialIcons 
-          name={isFavorite ? "star" : "star-border"} 
-          size={24} 
-          color={isFavorite ? COLORS.yellow : COLORS.textMuted} 
+        <MaterialIcons
+          name={isFavorite ? "star" : "star-border"}
+          size={24}
+          color={isFavorite ? COLORS.yellow : COLORS.textMuted}
         />
       </TouchableOpacity>
 
@@ -220,7 +226,7 @@ const LeaderboardItem = ({
           <Text style={styles.copyButtonText}>{loading ? '...' : (isSubscribed ? '已订阅' : '订阅')}</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </TouchableOpacity>
   );
 };
 
