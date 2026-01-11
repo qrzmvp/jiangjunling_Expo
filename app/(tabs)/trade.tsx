@@ -1,11 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Modal, ActivityIndicator, TextInput, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { ExchangeAccountService } from '../../lib/exchangeAccountService';
 import { ExchangeAccount } from '../../types';
+
+// 可用的交易对选项
+const AVAILABLE_CURRENCY_PAIRS = [
+  'BTC/USDT',
+  'ETH/USDT',
+  'SOL/USDT',
+  'XRP/USDT',
+  'DOGE/USDT',
+  'ADA/USDT',
+  'AVAX/USDT',
+  'DOT/USDT',
+  'MATIC/USDT',
+  'LINK/USDT',
+];
 
 const COLORS = {
   primary: "#2ebd85",
@@ -72,9 +86,17 @@ const TradePage: React.FC = () => {
   const { session } = useAuth();
   const [activeTab, setActiveTab] = useState<'current_signals' | 'history_signals'>('current_signals');
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [exchangeAccounts, setExchangeAccounts] = useState<ExchangeAccount[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<ExchangeAccount | null>(null);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
+
+  // 跟单设置状态
+  const [maxCopyAmount, setMaxCopyAmount] = useState('1000');
+  const [copyCurrencyPairs, setCopyCurrencyPairs] = useState<string[]>(AVAILABLE_CURRENCY_PAIRS);
+  const [maxLeverage, setMaxLeverage] = useState('20');
+  const [stopLossPercentage, setStopLossPercentage] = useState('5');
+  const [maxSlippage, setMaxSlippage] = useState('0.5');
 
   // Real Data State
   const [balance, setBalance] = useState<any>(null);
@@ -276,9 +298,20 @@ const TradePage: React.FC = () => {
             </>
           )}
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push('/profile/exchange-accounts/edit')}>
-          <Ionicons name="add" size={28} color="#EAEBEF" />
-        </TouchableOpacity>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => setShowSettingsModal(true)}
+          >
+            <Ionicons name="settings-outline" size={24} color="#EAEBEF" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => router.push('/profile/exchange-accounts/edit')}
+          >
+            <Ionicons name="add" size={28} color="#EAEBEF" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.scrollView}>
@@ -501,7 +534,7 @@ const TradePage: React.FC = () => {
         onRequestClose={() => setShowAccountModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.modalBackdrop}
             activeOpacity={1}
             onPress={() => setShowAccountModal(false)}
@@ -525,7 +558,7 @@ const TradePage: React.FC = () => {
                 ) : exchangeAccounts.length === 0 ? (
                   <View style={styles.emptyContainer}>
                     <Text style={styles.emptyText}>暂无已启用的交易所账户</Text>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.createAccountButton}
                       onPress={() => {
                         setShowAccountModal(false);
@@ -537,7 +570,7 @@ const TradePage: React.FC = () => {
                   </View>
                 ) : (
                   exchangeAccounts.map((account) => {
-                    const exchangeIcon = account.exchanges 
+                    const exchangeIcon = account.exchanges
                       ? getExchangeIcon(account.exchanges.name)
                       : { icon: 'E', bg: '#666666', color: '#FFFFFF' };
                     const isSelected = selectedAccount?.id === account.id;
@@ -576,6 +609,163 @@ const TradePage: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Copy Settings Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showSettingsModal}
+        onRequestClose={() => setShowSettingsModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowSettingsModal(false)}
+          />
+          <View style={styles.modalContainer}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>账户跟单设置</Text>
+              <TouchableOpacity onPress={() => setShowSettingsModal(false)}>
+                <Ionicons name="close" size={24} color={COLORS.textMain} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Content */}
+            <ScrollView style={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
+              {/* 最大跟单金额 */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>最大跟单金额 (USDT)</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={maxCopyAmount}
+                  onChangeText={(text) => {
+                    const filtered = text.replace(/[^0-9]/g, '');
+                    setMaxCopyAmount(filtered);
+                  }}
+                  keyboardType="number-pad"
+                  placeholder="请输入最大跟单金额"
+                  placeholderTextColor={COLORS.textMuted}
+                />
+              </View>
+
+              {/* 跟单币种范围 - 两列布局 */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>跟单币种范围</Text>
+                <View style={styles.currencyPairsGrid}>
+                  {AVAILABLE_CURRENCY_PAIRS.map((pair) => {
+                    const isSelected = copyCurrencyPairs.includes(pair);
+                    return (
+                      <TouchableOpacity
+                        key={pair}
+                        style={[
+                          styles.currencyPairItem,
+                          isSelected && styles.currencyPairItemSelected,
+                        ]}
+                        onPress={() => {
+                          if (isSelected) {
+                            setCopyCurrencyPairs(copyCurrencyPairs.filter(p => p !== pair));
+                          } else {
+                            setCopyCurrencyPairs([...copyCurrencyPairs, pair]);
+                          }
+                        }}
+                      >
+                        <Text style={[
+                          styles.currencyPairText,
+                          isSelected && styles.currencyPairTextSelected,
+                        ]}>
+                          {pair}
+                        </Text>
+                        {isSelected && (
+                          <Ionicons name="checkmark-circle" size={16} color={COLORS.primary} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* 最大杠杆 */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>最大杠杆 (倍)</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={maxLeverage}
+                  onChangeText={(text) => {
+                    const filtered = text.replace(/[^0-9]/g, '');
+                    setMaxLeverage(filtered);
+                  }}
+                  keyboardType="number-pad"
+                  placeholder="请输入最大杠杆倍数"
+                  placeholderTextColor={COLORS.textMuted}
+                />
+              </View>
+
+              {/* 单笔止损百分比 */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>单笔止损百分比 (%)</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={stopLossPercentage}
+                  onChangeText={(text) => {
+                    const filtered = text.replace(/[^0-9.]/g, '');
+                    setStopLossPercentage(filtered);
+                  }}
+                  keyboardType="decimal-pad"
+                  placeholder="请输入止损百分比"
+                  placeholderTextColor={COLORS.textMuted}
+                />
+              </View>
+
+              {/* 允许最大滑点 */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>允许最大滑点 (%)</Text>
+                <TextInput
+                  style={styles.formInput}
+                  value={maxSlippage}
+                  onChangeText={(text) => {
+                    const filtered = text.replace(/[^0-9.]/g, '');
+                    setMaxSlippage(filtered);
+                  }}
+                  keyboardType="decimal-pad"
+                  placeholder="请输入最大滑点"
+                  placeholderTextColor={COLORS.textMuted}
+                />
+              </View>
+            </ScrollView>
+
+            {/* Modal Footer */}
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowSettingsModal(false)}
+              >
+                <Text style={styles.modalCancelButtonText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalConfirmButton}
+                onPress={() => {
+                  // TODO: 保存设置到数据库
+                  console.log('保存跟单设置:', {
+                    maxCopyAmount,
+                    copyCurrencyPairs,
+                    maxLeverage,
+                    stopLossPercentage,
+                    maxSlippage,
+                  });
+                  setShowSettingsModal(false);
+                }}
+              >
+                <Text style={styles.modalConfirmButtonText}>保存设置</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 };
@@ -608,6 +798,10 @@ const styles = StyleSheet.create({
   headerIcons: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 16,
+  },
+  iconButton: {
+    padding: 4,
   },
   scrollView: {
     flex: 1,
@@ -1047,6 +1241,96 @@ const styles = StyleSheet.create({
     color: COLORS.textMain,
     fontSize: 13,
     fontWeight: '500',
+  },
+  // Copy Settings Modal Styles
+  modalScrollContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    maxHeight: 500,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  modalCancelButton: {
+    flex: 1,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalCancelButtonText: {
+    color: COLORS.textMain,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalConfirmButton: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalConfirmButtonText: {
+    color: COLORS.textMain,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  formLabel: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  formInput: {
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: COLORS.textMain,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  // Currency Pairs Grid (Two columns)
+  currencyPairsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  currencyPairItem: {
+    width: '48%',
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  currencyPairItemSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(46, 189, 133, 0.1)',
+  },
+  currencyPairText: {
+    color: COLORS.textMain,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  currencyPairTextSelected: {
+    color: COLORS.primary,
+    fontWeight: '600',
   },
 });
 
