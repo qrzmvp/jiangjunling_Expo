@@ -210,13 +210,16 @@ const LeaderboardItem = ({
         />
       </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
-        onPress={handleSubscriptionToggle}
-        disabled={loading}
-      >
-        <Text style={styles.copyButtonText}>{loading ? '...' : (isSubscribed ? '已订阅' : '订阅')}</Text>
-      </TouchableOpacity>
+      {/* 订阅按钮 - 暂时隐藏 */}
+      {false && (
+        <TouchableOpacity
+          style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
+          onPress={handleSubscriptionToggle}
+          disabled={loading}
+        >
+          <Text style={styles.copyButtonText}>{loading ? '...' : (isSubscribed ? '已订阅' : '订阅')}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -1653,12 +1656,15 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
                     </View>
                   </TouchableOpacity>
                   
-                  <TouchableOpacity 
-                    style={styles.signalCopyButton}
-                    onPress={() => handleCopySignal(signal)}
-                  >
-                    <Text style={styles.signalCopyButtonText}>Copy</Text>
-                  </TouchableOpacity>
+                  {/* Copy 按钮 - 暂时隐藏 */}
+                  {false && (
+                    <TouchableOpacity
+                      style={styles.signalCopyButton}
+                      onPress={() => handleCopySignal(signal)}
+                    >
+                      <Text style={styles.signalCopyButtonText}>Copy</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 {/* 信号详情 */}

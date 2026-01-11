@@ -83,24 +83,26 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 交易页 - 突出的圆形按钮 */}
-      <Tabs.Screen
-        name="trade"
-        options={{
-          title: '交易',
-          tabBarIcon: ({ focused }) => (
-            <View style={styles.tradeButton}>
-              <Animated.View style={{ transform: [{ rotate }] }}>
-                <Ionicons
-                  name="swap-horizontal"
-                  size={28}
-                  color="#000000"
-                />
-              </Animated.View>
-            </View>
-          ),
-        }}
-      />
+      {/* 交易页 - 突出的圆形按钮 - 暂时隐藏 */}
+      {false && (
+        <Tabs.Screen
+          name="trade"
+          options={{
+            title: '交易',
+            tabBarIcon: ({ focused }) => (
+              <View style={styles.tradeButton}>
+                <Animated.View style={{ transform: [{ rotate }] }}>
+                  <Ionicons
+                    name="swap-horizontal"
+                    size={28}
+                    color="#000000"
+                  />
+                </Animated.View>
+              </View>
+            ),
+          }}
+        />
+      )}
 
       {/* 我的页面 */}
       <Tabs.Screen

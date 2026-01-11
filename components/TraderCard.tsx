@@ -169,15 +169,18 @@ export const TraderCard = ({
               color={isFavorite ? COLORS.yellow : COLORS.textMuted} 
             />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.cardCopyBtn, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
-            onPress={handleSubscriptionToggle}
-            disabled={loading}
-          >
-            <Text style={styles.cardCopyBtnText}>
-              {loading ? '...' : (isSubscribed ? '已订阅' : '订阅')}
-            </Text>
-          </TouchableOpacity>
+          {/* 订阅按钮 - 暂时隐藏 */}
+          {false && (
+            <TouchableOpacity
+              style={[styles.cardCopyBtn, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
+              onPress={handleSubscriptionToggle}
+              disabled={loading}
+            >
+              <Text style={styles.cardCopyBtnText}>
+                {loading ? '...' : (isSubscribed ? '已订阅' : '订阅')}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 

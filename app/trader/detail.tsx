@@ -436,7 +436,8 @@ const TraderDetailScreen = () => {
             <Text style={styles.signalLeverageText}>{signal.leverage.replace(/x$/i, '')}x</Text>
           </View>
           
-          {!isHistory && (
+          {/* Copy 按钮 - 暂时隐藏 */}
+          {!isHistory && false && (
               <TouchableOpacity style={styles.signalCopyButton} onPress={() => handleCopy(signal)}>
                 <Text style={styles.signalCopyButtonText}>Copy</Text>
               </TouchableOpacity>
@@ -672,19 +673,22 @@ const TraderDetailScreen = () => {
                         />
                       )}
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
-                      onPress={handleSubscriptionToggle}
-                      disabled={subscribeLoading}
-                    >
-                      {subscribeLoading ? (
-                        <ActivityIndicator size="small" color={isSubscribed ? COLORS.textSub : COLORS.background} />
-                      ) : (
-                        <Text style={styles.copyButtonText}>
-                          {isSubscribed ? '已订阅' : '订阅'}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
+                    {/* 订阅按钮 - 暂时隐藏 */}
+                    {false && (
+                      <TouchableOpacity
+                        style={[styles.copyButton, isSubscribed ? styles.copyButtonSubscribed : styles.copyButtonUnsubscribed]}
+                        onPress={handleSubscriptionToggle}
+                        disabled={subscribeLoading}
+                      >
+                        {subscribeLoading ? (
+                          <ActivityIndicator size="small" color={isSubscribed ? COLORS.textSub : COLORS.background} />
+                        ) : (
+                          <Text style={styles.copyButtonText}>
+                            {isSubscribed ? '已订阅' : '订阅'}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
                 <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">{trader.description || '暂无描述'}</Text>

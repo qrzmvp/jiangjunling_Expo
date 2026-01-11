@@ -151,14 +151,17 @@ const MyPage: React.FC = () => {
         {/* Stats Section */}
         <View style={styles.statsCard}>
           <View style={styles.statsRow}>
-            <TouchableOpacity 
-              style={styles.statItem}
-              onPress={() => router.push('/(tabs)?tab=copy&filter=已订阅')}
-            >
-              <Text style={styles.statNumber}>{subscriptionCount}</Text>
-              <Text style={styles.statLabel}>订阅</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
+            {/* 订阅统计 - 暂时隐藏 */}
+            {false && (
+              <TouchableOpacity
+                style={styles.statItem}
+                onPress={() => router.push('/(tabs)?tab=copy&filter=已订阅')}
+              >
+                <Text style={styles.statNumber}>{subscriptionCount}</Text>
+                <Text style={styles.statLabel}>订阅</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
               style={styles.statItem}
               onPress={() => router.push('/(tabs)?tab=copy&filter=已关注')}
             >
@@ -170,10 +173,13 @@ const MyPage: React.FC = () => {
               <Text style={styles.statNumber}>16</Text>
               <Text style={styles.statLabel}>朋友</Text>
             </TouchableOpacity> */}
-            <TouchableOpacity style={styles.statItem} onPress={() => router.push('/profile/exchange-accounts')}>
-              <Text style={styles.statNumber}>{exchangeAccountCount > 99 ? '99+' : exchangeAccountCount}</Text>
-              <Text style={styles.statLabel}>交易账户</Text>
-            </TouchableOpacity>
+            {/* 交易账户统计 - 暂时隐藏 */}
+            {false && (
+              <TouchableOpacity style={styles.statItem} onPress={() => router.push('/profile/exchange-accounts')}>
+                <Text style={styles.statNumber}>{exchangeAccountCount > 99 ? '99+' : exchangeAccountCount}</Text>
+                <Text style={styles.statLabel}>交易账户</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -240,17 +246,22 @@ const MyPage: React.FC = () => {
 
         {/* Menu List 1 */}
         <View style={styles.menuCard}>
-          <TouchableOpacity 
-            style={styles.menuItem}
-            onPress={() => router.push('/profile/exchange-accounts')}
-          >
-            <View style={styles.menuLeft}>
-              <Ionicons name="pricetag" size={22} color="#8A919E" />
-              <Text style={styles.menuText}>交易所账户</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
-          </TouchableOpacity>
-          <View style={styles.menuDivider} />
+          {/* 交易所账户菜单 - 暂时隐藏 */}
+          {false && (
+            <>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => router.push('/profile/exchange-accounts')}
+              >
+                <View style={styles.menuLeft}>
+                  <Ionicons name="pricetag" size={22} color="#8A919E" />
+                  <Text style={styles.menuText}>交易所账户</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+            </>
+          )}
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => router.push('/purchase-history')}
