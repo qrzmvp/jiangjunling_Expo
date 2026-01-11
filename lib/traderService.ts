@@ -542,6 +542,7 @@ export interface LeaderboardTrader {
   name: string;
   avatar_url: string;
   signal_count: number;
+  total_roi?: number;
   created_at: string;
   is_subscribed?: boolean;
   is_followed?: boolean;

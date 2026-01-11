@@ -582,11 +582,11 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     </View>
 
     {/* Profit Trend Section */}
-    {/* <View style={styles.card}>
+    <View style={styles.card}>
       <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>收益走势</Text>
       
       <View style={styles.timeFilter}>
-        {['近一周', '近一月', '近三月', '创建至今'].map((filter) => (
+        {['近一周', '近一月'].map((filter) => (
           <TouchableOpacity 
             key={filter}
             style={timeFilter === filter ? styles.timeBtnActive : styles.timeBtn}
@@ -620,12 +620,12 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
       <View style={styles.chartContainer}>
         <View style={styles.yAxis}>
           {/* Max Label */}
-          {/* <Text style={[styles.axisText, { position: 'absolute', top: getY(yAxisMax) - 6 }]}>
+          <Text style={[styles.axisText, { position: 'absolute', top: getY(yAxisMax) - 6 }]}>
             {yAxisMax}%
           </Text>
 
           {/* Positive Intermediate Labels */}
-          {/* {yAxisMax > 0 && (
+          {yAxisMax > 0 && (
             <>
               <Text style={[styles.axisText, { position: 'absolute', top: getY(positiveStep2) - 6 }]}>
                 {positiveStep2}%
@@ -635,16 +635,16 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
               </Text>
             </>
           )}
-          
+
           {/* Zero Label */}
-          {/* {yAxisMin < 0 && yAxisMax > 0 && (
+          {yAxisMin < 0 && yAxisMax > 0 && (
             <Text style={[styles.axisText, { position: 'absolute', top: getY(0) - 6, color: COLORS.textMain }]}>
               0%
             </Text>
           )}
 
           {/* Negative Intermediate Labels */}
-          {/* {yAxisMin < 0 && (
+          {yAxisMin < 0 && (
             <>
               <Text style={[styles.axisText, { position: 'absolute', top: getY(negativeStep1) - 6 }]}>
                 {negativeStep1}%
@@ -654,9 +654,9 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
               </Text>
             </>
           )}
-          
+
           {/* Min Label */}
-          {/* <Text style={[styles.axisText, { position: 'absolute', top: getY(yAxisMin) - 6 }]}>
+          <Text style={[styles.axisText, { position: 'absolute', top: getY(yAxisMin) - 6 }]}>
             {yAxisMin}%
           </Text>
         </View>
@@ -674,7 +674,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
                   </Defs>
 
                   {/* Zero Line */}
-                  {/* {yAxisMin < 0 && (
+                  {yAxisMin < 0 && (
                     <Path
                       d={`M 0 ${getY(0)} L ${chartWidth} ${getY(0)}`}
                       stroke={COLORS.textMuted}
@@ -685,33 +685,33 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
                   )}
 
                   {/* Lines */}
-                  {/* {traders.map((trader, index) => {
+                  {traders.map((trader, index) => {
                     if (hiddenTraders.includes(trader.name)) return null;
                     return (
-                      <Path 
+                      <Path
                         key={`line-${index}`}
-                        d={generatePath(trader.data)} 
-                        fill="none" 
+                        d={generatePath(trader.data)}
+                        fill="none"
                         stroke={trader.color}
-                        strokeWidth="3" 
-                        strokeLinecap="round" 
+                        strokeWidth="3"
+                        strokeLinecap="round"
                         strokeLinejoin="round"
                       />
                     );
                   })}
 
                   {/* Avatars at the end of each line */}
-                  {/* {traders.map((trader, index) => {
+                  {traders.map((trader, index) => {
                     if (hiddenTraders.includes(trader.name)) return null;
                     const lastPoint = trader.data[trader.data.length - 1];
                     const i = trader.data.length - 1;
                     const x = i * xStep;
                     const y = getY(lastPoint.value);
-                    
+
                     return (
                       <G key={`avatar-${index}`}>
                         {/* Avatar Border */}
-                        {/* <Circle
+                        <Circle
                           cx={x}
                           cy={y}
                           r={14}
@@ -719,9 +719,9 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
                           stroke={trader.color}
                           strokeWidth={2}
                         />
-                        
+
                         {/* Avatar Image with ClipPath */}
-                        {/* <Defs>
+                        <Defs>
                           <ClipPath id={`clip-trader-${index}`}>
                             <Circle cx={x} cy={y} r={12} />
                           </ClipPath>
@@ -738,9 +738,9 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
                       </G>
                     );
                   })}
-                  
+
                   {/* X Axis Labels inside ScrollView */}
-                  {/* {traders[0].data.map((point, i) => (
+                  {traders[0].data.map((point, i) => (
                     <SvgText
                       key={`label-${i}`}
                       x={i * xStep}
@@ -758,7 +758,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
           </View>
         </ChartErrorBoundary>
       </View>
-    </View> */}
+    </View>
 
     {/* Leaderboard Section */}
     <View style={{ paddingHorizontal: 16, paddingBottom: 20, paddingTop: 24 }}>
