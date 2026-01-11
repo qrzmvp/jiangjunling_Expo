@@ -313,16 +313,19 @@ export default function PersonalInfoPage() {
             </View>
           </TouchableOpacity>
 
-          <View style={styles.divider} />
-
-          {/* QR Code Row */}
-          <TouchableOpacity style={styles.row}>
-            <Text style={styles.label}>二维码名片</Text>
-            <View style={styles.rowRight}>
-              <MaterialIcons name="qr-code-2" size={24} color={COLORS.textSubDark} style={{ marginRight: 4 }} />
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
-            </View>
-          </TouchableOpacity>
+          {/* QR Code Row - 暂时隐藏 */}
+          {false && (
+            <>
+              <View style={styles.divider} />
+              <TouchableOpacity style={styles.row}>
+                <Text style={styles.label}>二维码名片</Text>
+                <View style={styles.rowRight}>
+                  <MaterialIcons name="qr-code-2" size={24} color={COLORS.textSubDark} style={{ marginRight: 4 }} />
+                  <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
+                </View>
+              </TouchableOpacity>
+            </>
+          )}
 
         </View>
 
