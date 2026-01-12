@@ -489,16 +489,18 @@ export async function getMultipleTradersRoiTrend(
 }
 
 /**
- * 【优化版】搜索交易员（支持模糊搜索名称和描述）
+ * 【优化版】搜索交易员（支持模糊搜索名称和描述，只返回 is_visible=true 的数据）
  * 性能提升：使用数据库 RPC 函数，从 3-4 个查询优化为 1 个 RPC 调用
  * @param query 搜索关键词
  * @param userId 用户ID（可选，用于获取订阅/关注状态）
- * @param limit 限制返回数量
+ * @param limit 限制返回数量（默认10条，用于分页）
+ * @param offset 偏移量（用于分页）
  */
 export async function searchTraders(
   query: string,
   userId?: string,
-  limit: number = 20
+  limit: number = 10,
+  offset: number = 0
 ): Promise<TraderWithStats[]> {
   try {
     if (!query || query.trim() === '') {
@@ -507,13 +509,14 @@ export async function searchTraders(
     }
 
     const trimmedQuery = query.trim();
-    console.log('🔍 [TraderService] 搜索交易员 (RPC):', trimmedQuery, 'userId:', userId);
+    console.log('🔍 [TraderService] 搜索交易员 (RPC):', trimmedQuery, 'userId:', userId, 'limit:', limit, 'offset:', offset);
 
-    // 使用优化的数据库 RPC 函数，一次性获取所有数据
+    // 使用优化的数据库 RPC 函数，支持分页和 is_visible 筛选
     const { data, error } = await supabase.rpc('search_traders_with_stats', {
       p_query: trimmedQuery,
       p_user_id: userId || null,
-      p_limit: limit
+      p_limit: limit,
+      p_offset: offset
     });
 
     if (error) {
@@ -526,7 +529,7 @@ export async function searchTraders(
       return [];
     }
 
-    console.log('✅ [TraderService] 搜索完成，返回', data.length, '条结果');
+    console.log('✅ [TraderService] 搜索完成，返回', data.length, '条结果（只显示 is_visible=true）');
     return data || [];
   } catch (error) {
     console.error('❌ [TraderService] 搜索交易员异常:', error);
