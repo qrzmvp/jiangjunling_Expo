@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { 
   isFollowing, 
   isSubscribed as checkSubscribed, 
@@ -10,6 +11,7 @@ import {
   subscribeTrader,
   unsubscribeTrader
 } from '../lib/userTraderService';
+import { formatDateTime } from '../lib/timezoneUtils';
 import Toast from './Toast';
 
 const COLORS = {
@@ -143,6 +145,7 @@ export const SignalCard = ({
   onStatsChange
 }: SignalCardProps) => {
   const { user } = useAuth();
+  const { timezone } = useSettings();
   const isLong = direction === 'long';
   const directionText = isLong ? '多单' : '空单';
   const directionColor = isLong ? COLORS.primary : COLORS.danger;
@@ -332,7 +335,9 @@ export const SignalCard = ({
           </Text>
         </View>
         <View style={styles.signalTimeContainer}>
-          <Text style={styles.timeText}>{time}</Text>
+          <Text style={styles.timeText}>
+            {formatDateTime(time, timezone.offset, 'datetime')}
+          </Text>
         </View>
       </View>
 

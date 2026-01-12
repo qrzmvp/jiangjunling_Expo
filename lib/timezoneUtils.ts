@@ -38,15 +38,15 @@ export function formatDateTime(
 
   switch (format) {
     case 'full':
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
     case 'date':
-      return `${year}-${month}-${day}`;
+      return `${year}/${month}/${day}`;
     case 'time':
-      return `${hours}:${minutes}`;
+      return `${hours}:${minutes}:${seconds}`;
     case 'datetime':
-      return `${year}-${month}-${day} ${hours}:${minutes}`;
+      return `${year}/${month}/${day} ${hours}:${minutes}`;
     default:
-      return `${year}-${month}-${day} ${hours}:${minutes}`;
+      return `${year}/${month}/${day} ${hours}:${minutes}`;
   }
 }
 

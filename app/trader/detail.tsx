@@ -6,9 +6,11 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path, Defs, LinearGradient, Stop, Circle, G, Image as SvgImage, Text as SvgText, ClipPath } from 'react-native-svg';
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../../lib/userTraderService';
 import { getTraderDetail, TraderDetail, getTraderSignals, getTraderRoiTrend } from '../../lib/traderService';
 import { Signal } from '../../lib/signalService';
+import { formatDateTime } from '../../lib/timezoneUtils';
 import { supabase } from '../../lib/supabase';
 import type { Trader } from '../../types';
 import Toast from '../../components/Toast';
@@ -32,6 +34,7 @@ const TraderDetailScreen = () => {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
   const { user } = useAuth();
+  const { timezone } = useSettings();
   const params = useLocalSearchParams();
   const traderId = params.traderId as string;
   
@@ -249,8 +252,8 @@ const TraderDetailScreen = () => {
       // 我们在前端暂时尝试获取所有，然后过滤。
       const allSignals = await getTraderSignals(traderId, undefined, 50, 0); 
       
-      const activeSignals = allSignals.filter(s => s.status === 'active');
-      const closedSignals = allSignals.filter(s => 
+      const activeSignals = allSignals.filter((s: Signal) => s.status === 'active');
+      const closedSignals = allSignals.filter((s: Signal) => 
         s.status === 'closed' || 
         s.status === 'closed_profit' || 
         s.status === 'closed_loss' || 
@@ -441,16 +444,9 @@ const TraderDetailScreen = () => {
       }
     }
 
-    // 格式化时间
+    // 格式化时间 - 使用时区工具
     const formatTime = (dateString: string) => {
-      const date = new Date(dateString);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-      return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+      return formatDateTime(dateString, timezone.offset, 'full');
     };
 
     // 信号类型显示

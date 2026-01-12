@@ -12,6 +12,7 @@ import { CopySignalModal } from '../../components/CopySignalModal';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { formatDateTime } from '../../lib/timezoneUtils';
 import { getFollowedTraders, getSubscribedTraders, subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader, getUserStats } from '../../lib/userTraderService';
 import {
   getTradersWithStats,
@@ -1443,6 +1444,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
 const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, currentTab = 'signal' }: TabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
+  const { timezone } = useSettings();
   // 更新筛选条件：全部、做多、做空、已关注
   const filters = ['全部', '做多', '做空', '已关注'];
   const [signals, setSignals] = useState<Signal[]>([]);
@@ -1806,16 +1808,9 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
               }
             }
 
-            // 格式化时间
+            // 格式化时间 - 使用时区工具
             const formatTime = (dateString: string) => {
-              const date = new Date(dateString);
-              const year = date.getFullYear();
-              const month = String(date.getMonth() + 1).padStart(2, '0');
-              const day = String(date.getDate()).padStart(2, '0');
-              const hours = String(date.getHours()).padStart(2, '0');
-              const minutes = String(date.getMinutes()).padStart(2, '0');
-              const seconds = String(date.getSeconds()).padStart(2, '0');
-              return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+              return formatDateTime(dateString, timezone.offset, 'full');
             };
 
             // 信号类型显示
@@ -1956,6 +1951,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
 export default function HomePage() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { timezone } = useSettings();
   const { width: windowWidth } = useWindowDimensions();
   const [containerWidth, setContainerWidth] = React.useState(windowWidth);
   const [activeTab, setActiveTab] = React.useState<'overview' | 'copy' | 'signal'>('overview');
