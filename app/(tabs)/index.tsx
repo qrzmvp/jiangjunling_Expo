@@ -980,7 +980,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   const router = useRouter();
   const { user } = useAuth();
   // 更新筛选条件
-  const filters = ['按收益率', '按胜率', '已订阅', '已关注'];
+  const filters = ['按收益率', '按胜率', '已关注'];
   const [traders, setTraders] = useState<TraderWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
