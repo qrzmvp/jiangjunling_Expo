@@ -269,8 +269,8 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     try {
       // 初始加载时loading为true，后续focus时静默更新，不设置loading为true以避免闪烁
 
-      // 直接传入 user.id，获取带有状态的排行榜数据
-      const data = await getLeaderboard(user?.id);
+      // 直接传入 user.id，获取带有状态的排行榜数据 (limit=5,只获取前5名)
+      const data = await getLeaderboard(user?.id, 5);
       setLeaderboardData(data);
 
       // 加载平台统计数据
@@ -324,6 +324,52 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     // 仅在当前标签为 'overview' 时监听
     if (currentTab !== 'overview') return;
 
+    // 辅助函数：判断 traders 变更是否需要刷新排行榜
+    const checkIfShouldRefreshLeaderboard = (payload: any): boolean => {
+      const { eventType, new: newRow, old: oldRow } = payload;
+      
+      // INSERT: 新增交易员,如果可见则需要刷新
+      if (eventType === 'INSERT' && newRow?.is_visible === true) {
+        console.log('✅ [Realtime] 新增可见交易员,刷新排行榜');
+        return true;
+      }
+      
+      // DELETE: 删除交易员,直接刷新
+      if (eventType === 'DELETE') {
+        console.log('✅ [Realtime] 删除交易员,刷新排行榜');
+        return true;
+      }
+      
+      // UPDATE: 检查关键字段是否变化
+      if (eventType === 'UPDATE') {
+        // 可见性变化
+        if (oldRow?.is_visible !== newRow?.is_visible) {
+          console.log('✅ [Realtime] 交易员可见性变化,刷新排行榜');
+          return true;
+        }
+        
+        // ROI 变化 (影响排名)
+        if (oldRow?.total_roi !== newRow?.total_roi) {
+          console.log('✅ [Realtime] 交易员ROI变化,刷新排行榜');
+          return true;
+        }
+        
+        // 其他展示字段变化 (名称、头像等)
+        if (
+          oldRow?.name !== newRow?.name ||
+          oldRow?.avatar_url !== newRow?.avatar_url ||
+          oldRow?.win_rate !== newRow?.win_rate ||
+          oldRow?.signal_count !== newRow?.signal_count ||
+          oldRow?.followers_count !== newRow?.followers_count
+        ) {
+          console.log('✅ [Realtime] 交易员展示字段变化,刷新排行榜');
+          return true;
+        }
+      }
+      
+      return false;
+    };
+
     // 防抖节流：合并频繁变更，同时避免"正在加载时又触发"的抽搐
     let refreshTimer: ReturnType<typeof setTimeout> | null = null;
     let isRefreshing = false; // 防止刷新期间再次触发
@@ -347,7 +393,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
         } finally {
           isRefreshing = false; // 刷新完成，解锁
         }
-      }, 500); // 增加到 500ms，减少抽搐感
+      }, 500); // 500ms 防抖
     };
 
     console.log('🔌 [Realtime] 正在订阅 traders / signals 变更...');
@@ -357,7 +403,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
       .on(
         'postgres_changes',
         {
-          event: '*', // traders 同样建议 '*'
+          event: '*', // INSERT | UPDATE | DELETE
           schema: 'public',
           table: 'traders',
         },
@@ -365,11 +411,18 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
           console.log('⚡️ [Realtime] traders 变更:', {
             eventType: payload.eventType,
             table: payload.table,
-            schema: payload.schema,
-            commit_timestamp: (payload as any).commit_timestamp,
+            trader_id: (payload as any).new?.id || (payload as any).old?.id,
+            trader_name: (payload as any).new?.name || (payload as any).old?.name,
           });
-          // traders 变化：刷新排行榜 + 趋势（Top5 可能变化）
-          scheduleRefresh({ data: true, trend: true });
+          
+          // 智能过滤：只有真正影响排行榜的变更才刷新
+          const shouldRefreshLeaderboard = checkIfShouldRefreshLeaderboard(payload);
+          if (shouldRefreshLeaderboard) {
+            // traders 变化：刷新排行榜 + 趋势（Top5 可能变化）
+            scheduleRefresh({ data: true, trend: true });
+          } else {
+            console.log('⏭️  [Realtime] traders 变更不影响排行榜,跳过刷新');
+          }
         }
       )
       // signals：收益趋势来自 signals 的累计（closed% + roi + closed_at），所以 signals 变更必须刷新趋势
@@ -387,7 +440,6 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
             eventType: payload.eventType,
             table: payload.table,
             schema: payload.schema,
-            commit_timestamp: (payload as any).commit_timestamp,
             // 只打印关键字段，避免日志过大
             trader_id: newRow?.trader_id ?? oldRow?.trader_id,
             status: newRow?.status ?? oldRow?.status,
@@ -939,7 +991,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingData, setIsLoadingData] = useState(false); // 添加加载状态标志
   const [traderTrendData, setTraderTrendData] = useState<Map<string, Array<{ date: string; roi: number }>>>(new Map());
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 10; // 每页10条交易员数据
 
   // 当筛选条件变化时，重新加载数据
   useEffect(() => {
@@ -1077,6 +1129,62 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
     if (currentTab !== 'copy') return;
 
     console.log('🔌 [Realtime] 正在订阅交易员列表变更...');
+    
+    // 智能判断是否需要刷新交易员列表
+    const checkIfShouldRefreshTradersList = (eventType: string, newData: any, oldData?: any): boolean => {
+      // INSERT: 新交易员必须 is_visible = true 才需要刷新
+      if (eventType === 'INSERT') {
+        const shouldRefresh = newData.is_visible === true;
+        console.log('📊 [Realtime] INSERT事件:', {
+          trader_name: newData.name,
+          is_visible: newData.is_visible,
+          shouldRefresh
+        });
+        return shouldRefresh;
+      }
+
+      // DELETE: 任何交易员删除都需要刷新列表
+      if (eventType === 'DELETE') {
+        console.log('📊 [Realtime] DELETE事件: 交易员被删除，需要刷新列表');
+        return true;
+      }
+
+      // UPDATE: 检查关键字段变化
+      if (eventType === 'UPDATE' && oldData) {
+        // is_visible 改变
+        const visibilityChanged = newData.is_visible !== oldData.is_visible;
+        
+        // total_roi 改变（影响排序）
+        const roiChanged = newData.total_roi !== oldData.total_roi;
+        
+        // win_rate 改变（影响排序）
+        const winRateChanged = newData.win_rate !== oldData.win_rate;
+        
+        // 显示字段改变（name, avatar_url, description等）
+        const displayFieldsChanged = 
+          newData.name !== oldData.name ||
+          newData.avatar_url !== oldData.avatar_url ||
+          newData.description !== oldData.description ||
+          newData.is_online !== oldData.is_online ||
+          newData.is_online_today !== oldData.is_online_today;
+
+        const shouldRefresh = visibilityChanged || roiChanged || winRateChanged || displayFieldsChanged;
+        
+        console.log('📊 [Realtime] UPDATE事件:', {
+          trader_name: newData.name,
+          visibilityChanged,
+          roiChanged,
+          winRateChanged,
+          displayFieldsChanged,
+          shouldRefresh
+        });
+        
+        return shouldRefresh;
+      }
+
+      return false;
+    };
+
     const subscription = supabase
       .channel('traders-list-updates')
       .on(
@@ -1087,25 +1195,22 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
           table: 'traders',
         },
         (payload: any) => {
-          // 收到变更时，如果列表为空可能需要重新加载，如果不为空则更新
-          // 简单起见，这里可以选择重新加载，或者精确更新
-          console.log('⚡️ [Realtime] 收到交易员列表更新，当前筛选:', activeFilters);
-          // 为了保持排序的一致性，收到更新可能需要重新排序，比较复杂
-          // 对列表已展示的进行局部更新
-           if (payload.eventType === 'UPDATE') {
-             const updatedTrader = payload.new;
-             setTraders(prevTraders => 
-               prevTraders.map(t => {
-                 if (t.id === updatedTrader.id) {
-                   return { ...t, ...updatedTrader };
-                 }
-                 return t;
-               })
-             );
-           } else {
-             // INSERT / DELETE 可能影响排序和分页，这里可以选择重新加载，但为了体验暂不重载整个列表
-             // 或者根据当前的过滤器决定是否重载
-           }
+          console.log('⚡️ [Realtime] 收到交易员表变更事件:', payload.eventType);
+          
+          // 智能判断是否需要刷新
+          const shouldRefresh = checkIfShouldRefreshTradersList(
+            payload.eventType,
+            payload.new,
+            payload.old
+          );
+
+          if (shouldRefresh) {
+            console.log('🔄 [Realtime] 触发交易员列表刷新');
+            // 重新加载列表以保持正确的排序和分页
+            loadTraders(true);
+          } else {
+            console.log('⏭️ [Realtime] 无需刷新交易员列表（无关键字段变化）');
+          }
         }
       )
       .subscribe();
@@ -1114,7 +1219,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
       console.log('🔌 [Realtime] 取消订阅交易员列表变更');
       supabase.removeChannel(subscription);
     };
-  }, [currentTab]);
+  }, [currentTab, activeFilters]);
 
   // 下拉刷新
   const onRefresh = async () => {

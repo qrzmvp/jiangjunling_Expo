@@ -93,8 +93,107 @@ const TraderDetailScreen = () => {
       .subscribe();
 
     return () => {
-      console.log('🔌 [Realtime] 取消订阅:', traderId);
+      console.log('🔌 [Realtime] 取消订阅交易员数据:', traderId);
       supabase.removeChannel(channel);
+    };
+  }, [traderId]);
+
+  // 监听 Supabase Realtime 变更 (实时更新信号数据)
+  useEffect(() => {
+    if (!traderId) return;
+
+    console.log('🔌 [Realtime] 正在订阅信号变更:', traderId);
+    
+    // 智能判断是否需要刷新信号列表
+    const checkIfShouldRefreshSignals = (eventType: string, newData: any, oldData?: any): boolean => {
+      // INSERT: 新信号属于当前交易员
+      if (eventType === 'INSERT') {
+        const shouldRefresh = newData.trader_id === traderId;
+        console.log('📊 [Realtime] INSERT事件:', {
+          signal_id: newData.id,
+          currency: newData.currency,
+          status: newData.status,
+          shouldRefresh
+        });
+        return shouldRefresh;
+      }
+
+      // DELETE: 删除的信号属于当前交易员
+      if (eventType === 'DELETE' && oldData) {
+        const shouldRefresh = oldData.trader_id === traderId;
+        console.log('📊 [Realtime] DELETE事件:', {
+          signal_id: oldData.id,
+          shouldRefresh
+        });
+        return shouldRefresh;
+      }
+
+      // UPDATE: 检查关键字段变化
+      if (eventType === 'UPDATE' && oldData && newData.trader_id === traderId) {
+        // status 改变 (active -> closed 等)
+        const statusChanged = newData.status !== oldData.status;
+        
+        // 收益数据改变
+        const pnlChanged = newData.realized_pnl !== oldData.realized_pnl || 
+                          newData.roi !== oldData.roi;
+        
+        // 价格数据改变
+        const priceChanged = newData.entry_price !== oldData.entry_price ||
+                            newData.exit_price !== oldData.exit_price ||
+                            newData.stop_loss !== oldData.stop_loss ||
+                            newData.take_profit !== oldData.take_profit;
+
+        const shouldRefresh = statusChanged || pnlChanged || priceChanged;
+        
+        console.log('📊 [Realtime] UPDATE事件:', {
+          signal_id: newData.id,
+          currency: newData.currency,
+          statusChanged,
+          pnlChanged,
+          priceChanged,
+          shouldRefresh
+        });
+        
+        return shouldRefresh;
+      }
+
+      return false;
+    };
+
+    const signalChannel = supabase
+      .channel(`signals-${traderId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // 监听所有事件 (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'signals',
+          filter: `trader_id=eq.${traderId}`
+        },
+        (payload) => {
+          console.log('⚡️ [Realtime] 收到信号变更事件:', payload.eventType);
+          
+          // 智能判断是否需要刷新
+          const shouldRefresh = checkIfShouldRefreshSignals(
+            payload.eventType,
+            payload.new,
+            payload.old
+          );
+
+          if (shouldRefresh) {
+            console.log('🔄 [Realtime] 触发信号列表刷新');
+            // 重新加载信号列表
+            loadSignals();
+          } else {
+            console.log('⏭️ [Realtime] 无需刷新信号列表');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('🔌 [Realtime] 取消订阅信号数据:', traderId);
+      supabase.removeChannel(signalChannel);
     };
   }, [traderId]);
 

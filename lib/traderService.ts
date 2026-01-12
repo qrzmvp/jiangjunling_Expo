@@ -7,6 +7,7 @@ export interface Trader {
   description?: string;
   is_online_today?: boolean;
   is_online?: boolean;
+  is_visible?: boolean; // 新增：是否展示
   signal_count?: number;
   followers_count?: number;
   win_rate?: number;
@@ -53,13 +54,13 @@ export interface TraderWithUserStatus extends Trader {
 /**
  * 获取交易员列表及统计数据（使用RPC函数）
  * @param userId 用户ID（可选）
- * @param limit 限制返回数量
+ * @param limit 限制返回数量（默认10条，用于分页）
  * @param offset 偏移量（用于分页）
  * @param filters 筛选条件
  */
 export async function getTradersWithStats(
   userId?: string,
-  limit: number = 20,
+  limit: number = 10,
   offset: number = 0,
   filters: {
     sortByRoi?: boolean;
@@ -88,7 +89,7 @@ export async function getTradersWithStats(
       throw error;
     }
 
-    console.log('✅ [TraderService] 成功获取', data?.length || 0, '条交易员数据');
+    console.log('✅ [TraderService] 成功获取', data?.length || 0, '条交易员数据（只显示is_visible=true）');
     return data || [];
   } catch (error) {
     console.error('❌ [TraderService] 获取交易员列表异常:', error);
@@ -548,12 +549,17 @@ export interface LeaderboardTrader {
   is_followed?: boolean;
 }
 
-export async function getLeaderboard(userId?: string): Promise<LeaderboardTrader[]> {
+export async function getLeaderboard(
+  userId?: string, 
+  limit: number = 5  // 明确设置默认为5,获取前5名排行榜
+): Promise<LeaderboardTrader[]> {
   try {
-    console.log('🔵 [TraderService] 调用 RPC: get_leaderboard, userId:', userId);
+    console.log('🔵 [TraderService] 调用 RPC: get_leaderboard, userId:', userId, 'limit:', limit);
     
     const { data, error } = await supabase.rpc('get_leaderboard', {
-      p_user_id: userId || null
+      p_user_id: userId || null,
+      p_limit: limit,
+      p_offset: 0
     });
 
     if (error) {

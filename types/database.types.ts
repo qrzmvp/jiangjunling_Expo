@@ -309,7 +309,9 @@ export type Database = {
           id: string
           is_online: boolean | null
           is_online_today: boolean | null
+          is_visible: boolean
           name: string
+          signal_count: number | null
           updated_at: string | null
           win_rate: number | null
           total_roi: number | null
@@ -330,7 +332,9 @@ export type Database = {
           id?: string
           is_online?: boolean | null
           is_online_today?: boolean | null
+          is_visible?: boolean
           name: string
+          signal_count?: number | null
           updated_at?: string | null
           win_rate?: number | null
           total_roi?: number | null
@@ -351,7 +355,9 @@ export type Database = {
           id?: string
           is_online?: boolean | null
           is_online_today?: boolean | null
+          is_visible?: boolean
           name?: string
+          signal_count?: number | null
           updated_at?: string | null
           win_rate?: number | null
           total_roi?: number | null
@@ -402,17 +408,29 @@ export type Database = {
           trader_id: string
           subscribed_at: string | null
         }
-      }
-      user_follows: {
-        Row: {
-          id: string
-          user_id: string
+        Insert: {
+          id?: string
+          subscribed_at?: string | null
           trader_id: string
-          followed_at: string | null
+          user_id: string
         }
+        Update: {
+          id?: string
+          subscribed_at?: string | null
+          trader_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_trader_id_fkey"
+            columns: ["trader_id"]
+            isOneToOne: false
+            referencedRelation: "traders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-    }
-    Functions: {
+      users: {
       get_traders_with_stats: {
         Args: {
           p_limit?: number
