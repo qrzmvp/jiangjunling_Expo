@@ -1441,8 +1441,8 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
 const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, currentTab = 'signal' }: TabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
-  // 暂时隐藏已订阅和已关注筛选器
-  const filters = ['全部', '做多', '做空'];
+  // 更新筛选条件：全部、做多、做空、已关注
+  const filters = ['全部', '做多', '做空', '已关注'];
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -1521,20 +1521,6 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
       const hasSubscribed = activeFilters.includes('已订阅');
       const hasFollowed = activeFilters.includes('已关注');
 
-      // 获取已订阅和已关注的交易员ID
-      let subscribedTraderIds: string[] = [];
-      let followedTraderIds: string[] = [];
-      
-      if (hasSubscribed && user?.id) {
-        const subscribedTraders = await getSubscribedTraders(user.id);
-        subscribedTraderIds = subscribedTraders.map(item => item.trader_id);
-      }
-      
-      if (hasFollowed && user?.id) {
-        const followedTraders = await getFollowedTraders(user.id);
-        followedTraderIds = followedTraders.map(item => item.trader_id);
-      }
-
       // 根据筛选条件获取信号 - 使用新的 RPC 函数
       let direction: 'long' | 'short' | undefined = undefined;
       if (hasLong && !hasShort) {
@@ -1543,22 +1529,24 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
         direction = 'short';
       }
 
-      // 使用新的 getSignalsWithTraders RPC 函数
+      // 使用新的 getSignalsWithTraders RPC 函数，直接在数据库层面筛选已关注
       data = await SignalService.getSignalsWithTraders(
         'active',
         direction,
         undefined, // signal_type
         PAGE_SIZE,
-        offset
+        offset,
+        user?.id, // 传入用户ID
+        hasFollowed // 是否筛选已关注的交易员
       );
 
-      // 根据已订阅/已关注筛选交易员
-      if (hasSubscribed && subscribedTraderIds.length > 0) {
-        data = data.filter(signal => subscribedTraderIds.includes(signal.trader_id));
-      }
-      
-      if (hasFollowed && followedTraderIds.length > 0) {
-        data = data.filter(signal => followedTraderIds.includes(signal.trader_id));
+      // 如果需要筛选已订阅的交易员（前端筛选）
+      if (hasSubscribed && user?.id) {
+        const subscribedTraders = await getSubscribedTraders(user.id);
+        const subscribedTraderIds = subscribedTraders.map(item => item.trader_id);
+        if (subscribedTraderIds.length > 0) {
+          data = data.filter(signal => subscribedTraderIds.includes(signal.trader_id));
+        }
       }
 
       // 判断是否还有更多数据
@@ -1643,12 +1631,28 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
       newFilters = newFilters.filter(f => f !== '全部');
     }
 
-    if (newFilters.includes(filter)) {
-      newFilters = newFilters.filter(f => f !== filter);
+    // 处理做多/做空的互斥逻辑
+    if (filter === '做多' || filter === '做空') {
+      // 如果点击做多，移除做空；如果点击做空，移除做多
+      const oppositeFilter = filter === '做多' ? '做空' : '做多';
+      newFilters = newFilters.filter(f => f !== oppositeFilter);
+      
+      // 切换当前筛选项
+      if (newFilters.includes(filter)) {
+        newFilters = newFilters.filter(f => f !== filter);
+      } else {
+        newFilters.push(filter);
+      }
     } else {
-      newFilters.push(filter);
+      // 处理"已关注"等其他筛选项，可以独立切换
+      if (newFilters.includes(filter)) {
+        newFilters = newFilters.filter(f => f !== filter);
+      } else {
+        newFilters.push(filter);
+      }
     }
 
+    // 如果没有任何筛选项，恢复为"全部"
     if (newFilters.length === 0) {
       setActiveFilters(['全部']);
     } else {
@@ -1688,9 +1692,6 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
           </TouchableOpacity>
         )})}
       </ScrollView>
-      <TouchableOpacity style={{ padding: 4 }} onPress={() => router.push('/search')}>
-        <MaterialIcons name="search" size={24} color={COLORS.textMuted} />
-      </TouchableOpacity>
     </View>
 
     {/* 加载完成提示 */}

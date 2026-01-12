@@ -52,17 +52,21 @@ export class SignalService {
    * @param signalType 信号类型
    * @param limit 限制返回数量
    * @param offset 偏移量
+   * @param userId 用户ID（用于已关注筛选）
+   * @param filterFollowed 是否只显示已关注的交易员的信号
    */
   static async getSignalsWithTraders(
     status: 'active' | 'closed' | 'cancelled' = 'active',
     direction?: 'long' | 'short',
     signalType?: 'spot' | 'futures' | 'margin',
     limit: number = 20,
-    offset: number = 0
+    offset: number = 0,
+    userId?: string,
+    filterFollowed: boolean = false
   ): Promise<SignalWithTrader[]> {
     try {
       console.log('🔵 [SignalService] 调用 RPC: get_signals_with_traders', { 
-        status, direction, signalType, limit, offset 
+        status, direction, signalType, limit, offset, userId, filterFollowed
       });
       
       const { data, error } = await supabase.rpc('get_signals_with_traders', {
@@ -70,7 +74,9 @@ export class SignalService {
         p_direction: direction || null,
         p_signal_type: signalType || null,
         p_limit: limit,
-        p_offset: offset
+        p_offset: offset,
+        p_user_id: userId || null,
+        p_filter_followed: filterFollowed
       });
 
       if (error) {
