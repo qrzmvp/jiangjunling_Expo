@@ -324,20 +324,30 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     // 仅在当前标签为 'overview' 时监听
     if (currentTab !== 'overview') return;
 
-    // 简易节流：把多次变更合并到一次刷新，避免频繁 RPC
+    // 防抖节流：合并频繁变更，同时避免"正在加载时又触发"的抽搐
     let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    let isRefreshing = false; // 防止刷新期间再次触发
     const scheduleRefresh = (opts: { data?: boolean; trend?: boolean }) => {
+      if (isRefreshing) {
+        console.log('⏸️  [Realtime] 刷新中，跳过本次触发');
+        return; // 已经在刷新中，跳过
+      }
       if (refreshTimer) clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => {
-        if (opts.data) {
-          console.log('🔄 [Realtime] 触发刷新：loadData()');
-          loadData();
+      refreshTimer = setTimeout(async () => {
+        isRefreshing = true;
+        try {
+          if (opts.data) {
+            console.log('🔄 [Realtime] 触发刷新：loadData()');
+            await loadData();
+          }
+          if (opts.trend) {
+            console.log('🔄 [Realtime] 触发刷新：loadTrendData()');
+            await loadTrendData();
+          }
+        } finally {
+          isRefreshing = false; // 刷新完成，解锁
         }
-        if (opts.trend) {
-          console.log('🔄 [Realtime] 触发刷新：loadTrendData()');
-          loadTrendData();
-        }
-      }, 250);
+      }, 500); // 增加到 500ms，减少抽搐感
     };
 
     console.log('🔌 [Realtime] 正在订阅 traders / signals 变更...');
@@ -385,8 +395,26 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
             roi: newRow?.roi ?? oldRow?.roi,
             id: newRow?.id ?? oldRow?.id,
           });
-          // signals 变化：只刷新趋势即可（减少不必要的排行榜请求）
-          scheduleRefresh({ trend: true });
+          
+          // 智能过滤：只对影响趋势的变更才刷新
+          // 1. INSERT 且 status 是 closed% → 新增平仓信号，影响趋势
+          // 2. UPDATE 且 status/roi/closed_at 字段变化 → 影响趋势
+          // 3. DELETE → 删除了平仓信号，也影响趋势
+          const isRelevant = 
+            payload.eventType === 'INSERT' && newRow?.status?.startsWith('closed') ||
+            payload.eventType === 'UPDATE' && (
+              newRow?.status !== oldRow?.status ||
+              newRow?.roi !== oldRow?.roi ||
+              newRow?.closed_at !== oldRow?.closed_at
+            ) ||
+            payload.eventType === 'DELETE' && oldRow?.status?.startsWith('closed');
+          
+          if (isRelevant) {
+            console.log('✅ [Realtime] signals 相关变更，触发趋势刷新');
+            scheduleRefresh({ trend: true });
+          } else {
+            console.log('⏭️  [Realtime] signals 无关变更（非平仓/字段未变），跳过');
+          }
         }
       )
       .subscribe((status) => {
@@ -508,7 +536,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
   // - 轴标签仍显示原始 ROI(%)
   // - 绘制时使用 symlog 映射后的比例，避免极端值“压扁”其它曲线
   // - k 越大：线性区越宽（更像线性）；k 越小：压缩更强
-  const SYMLOG_K = 100; // 建议口径：-100%~300% 更接近线性，1000% 级别开始明显压缩
+  const SYMLOG_K = 50; // 建议口径：-100%~300% 更接近线性，1000% 级别开始明显压缩
 
   const symlog = (x: number, k: number) => {
     if (!Number.isFinite(x)) return 0;
@@ -625,7 +653,8 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
       </View>
     </View>
 
-    {/* Profit Trend Section */}
+    {/* Profit Trend Section - 暂时隐藏 */}
+    {false && (
     <View style={styles.card}>
       <Text style={[styles.sectionTitle, { marginBottom: 16 }]}>收益走势</Text>
       
@@ -797,6 +826,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
       </View>
       )}
     </View>
+    )}
 
     {/* Leaderboard Section */}
     <View style={{ paddingHorizontal: 16, paddingBottom: 20, paddingTop: 24 }}>
