@@ -12,12 +12,14 @@ import { CopySignalModal } from '../../components/CopySignalModal';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
 import { getFollowedTraders, getSubscribedTraders, subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader, getUserStats } from '../../lib/userTraderService';
-import { 
-  getTradersWithStats, 
-  TraderWithStats, 
+import {
+  getTradersWithStats,
+  TraderWithStats,
   getMultipleTradersRoiTrend,  // Changed from Signal
-  getLeaderboard, 
-  LeaderboardTrader 
+  getLeaderboard,
+  LeaderboardTrader,
+  getTopTradersTrendData,
+  TraderTrendData
 } from '../../lib/traderService';
 import { getPlatformStats, PlatformStats } from '../../lib/platformStatsService';
 import { supabase } from '../../lib/supabase';
@@ -250,6 +252,10 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
   // 关注博主数量
   const [followCount, setFollowCount] = React.useState<number>(0);
 
+  // 收益趋势数据
+  const [trendData, setTrendData] = React.useState<TraderTrendData[]>([]);
+  const [trendLoading, setTrendLoading] = React.useState(true);
+
   const toggleTrader = (name: string) => {
     setHiddenTraders(prev => 
       prev.includes(name) 
@@ -283,10 +289,27 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     }
   }, [user?.id]);
 
+  // 加载收益趋势数据
+  const loadTrendData = React.useCallback(async () => {
+    try {
+      setTrendLoading(true);
+      const days = timeFilter === '近一周' ? 7 : 30;
+      const data = await getTopTradersTrendData(days);
+      setTrendData(data);
+      console.log('✅ 成功加载收益趋势数据，交易员数量:', data.length);
+    } catch (error) {
+      console.error('❌ 加载收益趋势数据失败:', error);
+      setTrendData([]);
+    } finally {
+      setTrendLoading(false);
+    }
+  }, [timeFilter]);
+
   useFocusEffect(
     React.useCallback(() => {
       loadData();
-    }, [loadData])
+      loadTrendData();
+    }, [loadData, loadTrendData])
   );
 
   // 当切换回Overview标签时刷新数据
@@ -296,38 +319,86 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     }
   }, [currentTab, loadData]);
 
-  // 监听 Supabase Realtime 变更 (实时更新排行榜)
+  // 监听 Supabase Realtime 变更 (实时更新排行榜和趋势数据)
   React.useEffect(() => {
     // 仅在当前标签为 'overview' 时监听
     if (currentTab !== 'overview') return;
 
-    console.log('🔌 [Realtime] 正在订阅排行榜变更...');
-    const subscription = supabase
-      .channel('leaderboard-updates')
+    // 简易节流：把多次变更合并到一次刷新，避免频繁 RPC
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = (opts: { data?: boolean; trend?: boolean }) => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        if (opts.data) {
+          console.log('🔄 [Realtime] 触发刷新：loadData()');
+          loadData();
+        }
+        if (opts.trend) {
+          console.log('🔄 [Realtime] 触发刷新：loadTrendData()');
+          loadTrendData();
+        }
+      }, 250);
+    };
+
+    console.log('🔌 [Realtime] 正在订阅 traders / signals 变更...');
+    const channel = supabase
+      .channel('overview-realtime')
+      // traders：排行榜字段、头像、名称、total_roi 等变化；也可能影响 Top5 的选择
       .on(
         'postgres_changes',
         {
-          event: '*', // 监听所有事件：INSERT, UPDATE, DELETE
+          event: '*', // traders 同样建议 '*'
           schema: 'public',
           table: 'traders',
         },
         (payload) => {
-          console.log('⚡️ [Realtime] 收到交易员变更:', payload.eventType);
-          // 收到任何变更都重新加载排行榜数据
-          loadData();
+          console.log('⚡️ [Realtime] traders 变更:', {
+            eventType: payload.eventType,
+            table: payload.table,
+            schema: payload.schema,
+            commit_timestamp: (payload as any).commit_timestamp,
+          });
+          // traders 变化：刷新排行榜 + 趋势（Top5 可能变化）
+          scheduleRefresh({ data: true, trend: true });
+        }
+      )
+      // signals：收益趋势来自 signals 的累计（closed% + roi + closed_at），所以 signals 变更必须刷新趋势
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // signals 建议同样监听 '*': INSERT/UPDATE/DELETE
+          schema: 'public',
+          table: 'signals',
+        },
+        (payload) => {
+          const newRow = (payload as any).new;
+          const oldRow = (payload as any).old;
+          console.log('⚡️ [Realtime] signals 变更:', {
+            eventType: payload.eventType,
+            table: payload.table,
+            schema: payload.schema,
+            commit_timestamp: (payload as any).commit_timestamp,
+            // 只打印关键字段，避免日志过大
+            trader_id: newRow?.trader_id ?? oldRow?.trader_id,
+            status: newRow?.status ?? oldRow?.status,
+            closed_at: newRow?.closed_at ?? oldRow?.closed_at,
+            roi: newRow?.roi ?? oldRow?.roi,
+            id: newRow?.id ?? oldRow?.id,
+          });
+          // signals 变化：只刷新趋势即可（减少不必要的排行榜请求）
+          scheduleRefresh({ trend: true });
         }
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ [Realtime] 排行榜订阅成功');
-        }
+        console.log('📡 [Realtime] overview 订阅状态:', status);
       });
 
     return () => {
-      console.log('🔌 [Realtime] 取消订阅排行榜变更');
-      supabase.removeChannel(subscription);
+      if (refreshTimer) clearTimeout(refreshTimer);
+      console.log('🔌 [Realtime] 取消订阅 overview');
+      supabase.removeChannel(channel);
     };
-  }, [currentTab, loadData]);
+  }, [currentTab, loadData, loadTrendData]);
 
   // 当用户订阅/取消订阅后刷新状态
   const handleSubscriptionChange = async () => {
@@ -341,162 +412,79 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     loadData();
   };
 
-  // Mock Chart Data
-  const rawTraders = [
-    {
-      name: '本组合',
-      color: COLORS.primary,
-      avatar: 'https://randomuser.me/api/portraits/men/85.jpg',
-      data: [
-        { date: '10-21', value: 20 },
-        { date: '10-22', value: 35 },
-        { date: '10-23', value: 55 },
-        { date: '10-24', value: 50 },
-        { date: '10-25', value: 70 },
-        { date: '10-26', value: 85 },
-        { date: '10-27', value: 90 },
-        { date: '10-28', value: 80 },
-        { date: '10-29', value: 95 },
-        { date: '10-30', value: 85 },
-        { date: '10-31', value: 100 },
-      ]
-    },
-    {
-      name: 'Trader A',
-      color: '#3b82f6',
-      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-      data: [
-        { date: '10-21', value: 10 },
-        { date: '10-22', value: 25 },
-        { date: '10-23', value: 40 },
-        { date: '10-24', value: 35 },
-        { date: '10-25', value: 60 },
-        { date: '10-26', value: 75 },
-        { date: '10-27', value: 60 },
-        { date: '10-28', value: 70 },
-        { date: '10-29', value: 85 },
-        { date: '10-30', value: 75 },
-        { date: '10-31', value: 90 },
-      ]
-    },
-    {
-      name: 'Trader B',
-      color: COLORS.yellow,
-      avatar: 'https://randomuser.me/api/portraits/men/44.jpg',
-      data: [
-        { date: '10-21', value: 30 },
-        { date: '10-22', value: 45 },
-        { date: '10-23', value: 35 },
-        { date: '10-24', value: 55 },
-        { date: '10-25', value: 40 },
-        { date: '10-26', value: 65 },
-        { date: '10-27', value: 50 },
-        { date: '10-28', value: 60 },
-        { date: '10-29', value: 55 },
-        { date: '10-30', value: 70 },
-        { date: '10-31', value: 80 },
-      ]
-    },
-    {
-      name: 'Trader C',
-      color: '#f97316', // orange-500
-      avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-      data: [
-        { date: '10-21', value: 15 },
-        { date: '10-22', value: 20 },
-        { date: '10-23', value: 30 },
-        { date: '10-24', value: 45 },
-        { date: '10-25', value: 50 },
-        { date: '10-26', value: 60 },
-        { date: '10-27', value: 55 },
-        { date: '10-28', value: 65 },
-        { date: '10-29', value: 70 },
-        { date: '10-30', value: 80 },
-        { date: '10-31', value: 85 },
-      ]
-    },
-    {
-      name: 'Trader D',
-      color: '#8b5cf6', // violet-500
-      avatar: 'https://randomuser.me/api/portraits/women/65.jpg',
-      data: [
-        { date: '10-21', value: 50 },
-        { date: '10-22', value: 45 },
-        { date: '10-23', value: 40 },
-        { date: '10-24', value: 30 },
-        { date: '10-25', value: 20 },
-        { date: '10-26', value: 25 },
-        { date: '10-27', value: 15 },
-        { date: '10-28', value: 10 },
-        { date: '10-29', value: 5 },
-        { date: '10-30', value: 0 },
-        { date: '10-31', value: -10 },
-      ]
-    },
-    {
-      name: 'Trader E',
-      color: '#ec4899', // pink-500
-      avatar: 'https://randomuser.me/api/portraits/men/12.jpg',
-      data: [
-        { date: '10-21', value: 25 },
-        { date: '10-22', value: 30 },
-        { date: '10-23', value: 45 },
-        { date: '10-24', value: 40 },
-        { date: '10-25', value: 55 },
-        { date: '10-26', value: 65 },
-        { date: '10-27', value: 70 },
-        { date: '10-28', value: 60 },
-        { date: '10-29', value: 75 },
-        { date: '10-30', value: 85 },
-        { date: '10-31', value: 95 },
-      ]
-    }
+  // 为排行榜前5名交易员分配颜色
+  const TRADER_COLORS = [
+    COLORS.primary,  // 第1名 - 绿色
+    '#3b82f6',       // 第2名 - 蓝色
+    COLORS.yellow,   // 第3名 - 黄色
+    '#f97316',       // 第4名 - 橙色
+    '#8b5cf6'        // 第5名 - 紫色
   ];
 
+  // 将真实数据转换为图表格式
   const traders = React.useMemo(() => {
-    let currentTraders = rawTraders;
-    if (timeFilter === '近一周') {
-      currentTraders = rawTraders.map(t => ({
-        ...t,
-        data: t.data.slice(-7)
+    if (trendData.length === 0) return [];
+
+    return trendData.map((trader, index) => {
+      // 格式化日期：从 YYYY-MM-DD 转换为 MM-DD
+      const formattedData = trader.data.map(d => ({
+        date: d.date.substring(5), // 只保留 MM-DD 部分
+        value: d.roi
       }));
+
+      return {
+        name: trader.name,
+        color: TRADER_COLORS[index % TRADER_COLORS.length],
+        avatar: trader.avatarUrl,
+        // 累计收益率模式：使用真实累计 ROI（不做减首日归一化）
+        data: formattedData
+      };
+    });
+  }, [trendData]);
+
+  // Calculate Min/Max Y dynamically - 累计收益率模式：从所有点位计算范围
+  const { yAxisMax, yAxisMin, yRange } = React.useMemo(() => {
+    if (trendData.length === 0) {
+      return { yAxisMax: 10, yAxisMin: -10, yRange: 20 };
     }
 
-    // Normalize each trader's data so start is 0%
-    return currentTraders.map(t => {
-      if (t.data.length > 0) {
-        const startValue = t.data[0].value;
-        return {
-          ...t,
-          data: t.data.map(d => ({ ...d, value: d.value - startValue }))
-        };
-      }
-      return t;
+    const allValues: number[] = [];
+    trendData.forEach(t => {
+      t.data.forEach(p => {
+        if (p.roi === null || p.roi === undefined) return;
+        const v = Number(p.roi);
+        if (!Number.isFinite(v)) return;
+        allValues.push(v);
+      });
     });
-  }, [timeFilter]);
 
-  // Calculate Min/Max Y dynamically
-  const { yAxisMax, yAxisMin, yRange } = React.useMemo(() => {
-    const allValues = traders.flatMap(t => t.data.map(d => d.value));
+    if (allValues.length === 0) {
+      return { yAxisMax: 10, yAxisMin: -10, yRange: 20 };
+    }
+
     const dataMax = Math.max(...allValues);
     const dataMin = Math.min(...allValues);
-    
-    // Add ~10% padding
+
+    // 轻微 padding，避免折线贴边
     const range = dataMax - dataMin;
-    const padding = range * 0.1 || 5;
-    
-    const max = Math.ceil(dataMax + padding);
-    const min = Math.floor(dataMin - padding);
-    
+    const padding = range * 0.12 || 5;
+    const roughMax = dataMax + padding;
+    const roughMin = dataMin - padding;
+
+    // 计算数量级并扩展到“漂亮”数字
+    const magnitude = Math.pow(10, Math.floor(Math.log10(Math.max(Math.abs(roughMax), Math.abs(roughMin))))) || 1;
+    const max = Math.ceil(roughMax / magnitude) * magnitude;
+    const min = Math.floor(roughMin / magnitude) * magnitude;
+
     return { yAxisMax: max, yAxisMin: min, yRange: max - min };
-  }, [traders]);
+  }, [trendData]);
 
   const chartAreaWidth = windowWidth - 64 - 40; // 16*2 margin + 16*2 padding + 40 yAxis
-  const dataLength = traders[0].data.length;
-  
+  const dataLength = traders.length > 0 ? traders[0].data.length : 0;
+
   let xStep = 0;
   let chartWidth = chartAreaWidth;
-  
+
   if (dataLength > 1) {
     if (dataLength <= 7) {
       // Fit in screen, leave ~30px for avatar at the end
@@ -515,17 +503,73 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
   const chartHeight = 200;
   const verticalPadding = 20;
 
+  // === 累计收益率：symlog 压缩刻度 ===
+  // 说明：
+  // - 轴标签仍显示原始 ROI(%)
+  // - 绘制时使用 symlog 映射后的比例，避免极端值“压扁”其它曲线
+  // - k 越大：线性区越宽（更像线性）；k 越小：压缩更强
+  const SYMLOG_K = 100; // 建议口径：-100%~300% 更接近线性，1000% 级别开始明显压缩
+
+  const symlog = (x: number, k: number) => {
+    if (!Number.isFinite(x)) return 0;
+    const ax = Math.abs(x);
+    const s = x < 0 ? -1 : 1;
+    return s * Math.log1p(ax / k);
+  };
+
+  const yMinT = symlog(yAxisMin, SYMLOG_K);
+  const yMaxT = symlog(yAxisMax, SYMLOG_K);
+  const yRangeT = yMaxT - yMinT || 1;
+
   const getY = (val: number) => {
     const availableHeight = chartHeight - (verticalPadding * 2);
-    const normalizedVal = (val - yAxisMin) / (yRange || 1);
+    const vt = symlog(val, SYMLOG_K);
+    const normalizedVal = (vt - yMinT) / yRangeT;
     return chartHeight - verticalPadding - normalizedVal * availableHeight;
   };
 
-  // Calculate intermediate ticks
-  const positiveStep1 = Math.ceil(yAxisMax / 3);
-  const positiveStep2 = Math.ceil(yAxisMax * 2 / 3);
-  const negativeStep1 = yAxisMin < 0 ? Math.floor(yAxisMin / 3) : 0;
-  const negativeStep2 = yAxisMin < 0 ? Math.floor(yAxisMin * 2 / 3) : 0;
+  // Calculate Y-axis ticks (symlog): 在变换空间里等分，再反解回原始值
+  const symlogInverse = (y: number, k: number) => {
+    if (!Number.isFinite(y)) return 0;
+    const s = y < 0 ? -1 : 1;
+    const ay = Math.abs(y);
+    return s * k * (Math.expm1(ay));
+  };
+
+  const formatPct = (v: number) => {
+    const abs = Math.abs(v);
+    if (abs >= 100000) return `${Math.round(v).toLocaleString()}%`;
+    if (abs >= 1000) return `${Math.round(v)}%`;
+    if (abs >= 100) return `${Math.round(v * 10) / 10}%`;
+    return `${Math.round(v * 10) / 10}%`;
+  };
+
+  const calculateSymlogTicks = () => {
+    const ticks: number[] = [];
+    const divisions = 5;
+    const stepT = yRangeT / divisions;
+
+    for (let i = 0; i <= divisions; i++) {
+      const t = yMinT + stepT * i;
+      const raw = symlogInverse(t, SYMLOG_K);
+      // 让 0 更“粘”在刻度上
+      const snapped = Math.abs(raw) < 0.0001 ? 0 : raw;
+      // 小数保留 1 位（ROI 常见口径），大值直接整数
+      const rounded = Math.abs(snapped) >= 100 ? Math.round(snapped) : (Math.round(snapped * 10) / 10);
+      ticks.push(rounded);
+    }
+
+    // 若 0 不在 ticks 中，且范围跨越 0，则强制插入 0
+    const crossesZero = yAxisMin < 0 && yAxisMax > 0;
+    if (crossesZero && !ticks.some(v => v === 0)) {
+      ticks.push(0);
+      ticks.sort((a, b) => a - b);
+    }
+
+    return ticks;
+  };
+
+  const yAxisTicks = calculateSymlogTicks();
 
   // Generate Smooth Path
   const generatePath = (data: any[]) => {
@@ -614,51 +658,44 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
       </View>
 
       <View style={styles.chartHeader}>
-        <Text style={styles.chartLabel}>累计收益率(%)</Text>
+        <Text style={styles.chartLabel}>累计收益率(%)（压缩刻度）</Text>
       </View>
 
+      {/* 加载状态 */}
+      {trendLoading && (
+        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+          <Text style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 8 }}>加载中...</Text>
+        </View>
+      )}
+
+      {/* 空数据状态 */}
+      {!trendLoading && traders.length === 0 && (
+        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+          <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>暂无收益数据</Text>
+        </View>
+      )}
+
+      {/* 图表 */}
+      {!trendLoading && traders.length > 0 && (
       <View style={styles.chartContainer}>
         <View style={styles.yAxis}>
-          {/* Max Label */}
-          <Text style={[styles.axisText, { position: 'absolute', top: getY(yAxisMax) - 6 }]}>
-            {yAxisMax}%
-          </Text>
-
-          {/* Positive Intermediate Labels */}
-          {yAxisMax > 0 && (
-            <>
-              <Text style={[styles.axisText, { position: 'absolute', top: getY(positiveStep2) - 6 }]}>
-                {positiveStep2}%
-              </Text>
-              <Text style={[styles.axisText, { position: 'absolute', top: getY(positiveStep1) - 6 }]}>
-                {positiveStep1}%
-              </Text>
-            </>
-          )}
-
-          {/* Zero Label */}
-          {yAxisMin < 0 && yAxisMax > 0 && (
-            <Text style={[styles.axisText, { position: 'absolute', top: getY(0) - 6, color: COLORS.textMain }]}>
-              0%
+          {/* Dynamic Y-Axis Labels using smart ticks */}
+          {yAxisTicks.map((tick) => (
+            <Text
+              key={`tick-${tick}`}
+              style={[
+                styles.axisText,
+                {
+                  position: 'absolute',
+                  top: getY(tick) - 6,
+                  color: tick === 0 ? COLORS.textMain : COLORS.textMuted
+                }
+              ]}
+            >
+              {formatPct(tick)}
             </Text>
-          )}
-
-          {/* Negative Intermediate Labels */}
-          {yAxisMin < 0 && (
-            <>
-              <Text style={[styles.axisText, { position: 'absolute', top: getY(negativeStep1) - 6 }]}>
-                {negativeStep1}%
-              </Text>
-              <Text style={[styles.axisText, { position: 'absolute', top: getY(negativeStep2) - 6 }]}>
-                {negativeStep2}%
-              </Text>
-            </>
-          )}
-
-          {/* Min Label */}
-          <Text style={[styles.axisText, { position: 'absolute', top: getY(yAxisMin) - 6 }]}>
-            {yAxisMin}%
-          </Text>
+          ))}
         </View>
         
         <ChartErrorBoundary>
@@ -758,6 +795,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
           </View>
         </ChartErrorBoundary>
       </View>
+      )}
     </View>
 
     {/* Leaderboard Section */}

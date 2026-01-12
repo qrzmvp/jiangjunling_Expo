@@ -568,3 +568,93 @@ export async function getLeaderboard(userId?: string): Promise<LeaderboardTrader
     throw error;
   }
 }
+
+/**
+ * 获取前5名交易员的收益趋势数据
+ * 用于首页收益走势图表
+ * @param days 天数（7或30）
+ * @returns 交易员及其趋势数据
+ */
+export interface TopTraderTrend {
+  trader_id: string;
+  trader_name: string;
+  avatar_url: string;
+  total_roi: number;
+  trend_date: string;
+  trend_roi: number | null;
+  trend_rank: number;
+}
+
+export interface TraderTrendData {
+  traderId: string;
+  name: string;
+  avatarUrl: string;
+  totalRoi: number;
+  rank: number;
+  data: Array<{ date: string; roi: number }>;
+}
+
+export async function getTopTradersForTrend(days: number = 7): Promise<TopTraderTrend[]> {
+  try {
+    console.log('🔵 [TraderService] 调用 RPC: get_top_traders_for_trend, days:', days);
+
+    const { data, error } = await supabase.rpc('get_top_traders_for_trend', {
+      p_days: days
+    });
+
+    if (error) {
+      console.error('❌ [TraderService] 获取前5名交易员趋势失败:', error);
+      throw error;
+    }
+
+    console.log('✅ [TraderService] 成功获取前5名交易员趋势数据');
+    return data || [];
+  } catch (error) {
+    console.error('❌ [TraderService] 获取前5名交易员趋势异常:', error);
+    throw error;
+  }
+}
+
+/**
+ * 将 getTopTradersForTrend 返回的数据转换为图表可用的格式
+ */
+export async function getTopTradersTrendData(days: number = 7): Promise<TraderTrendData[]> {
+  try {
+    const rawData = await getTopTradersForTrend(days);
+
+    // 按 trader_id 分组并转换格式
+    const traderMap = new Map<string, TraderTrendData>();
+
+    rawData.forEach((row) => {
+      if (!traderMap.has(row.trader_id)) {
+        traderMap.set(row.trader_id, {
+          traderId: row.trader_id,
+          name: row.trader_name,
+          avatarUrl: row.avatar_url,
+          totalRoi: row.total_roi,
+          rank: row.trend_rank,
+          data: []
+        });
+      }
+
+      const trader = traderMap.get(row.trader_id)!;
+
+      // 添加趋势数据点
+      if (row.trend_roi !== null) {
+        trader.data.push({
+          date: row.trend_date,
+          roi: row.trend_roi
+        });
+      }
+    });
+
+    // 转换为数组并按 rank 排序
+    const result = Array.from(traderMap.values()).sort((a, b) => a.rank - b.rank);
+
+    console.log('✅ [TraderService] 成功转换', result.length, '个交易员的趋势数据');
+    return result;
+  } catch (error) {
+    console.error('❌ [TraderService] 转换趋势数据异常:', error);
+    throw error;
+  }
+}
