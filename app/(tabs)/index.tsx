@@ -11,6 +11,7 @@ import { SignalCard } from '../../components/SignalCard';
 import { CopySignalModal } from '../../components/CopySignalModal';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { getFollowedTraders, getSubscribedTraders, subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader, getUserStats } from '../../lib/userTraderService';
 import {
   getTradersWithStats,
@@ -235,6 +236,7 @@ const LeaderboardItem = ({
 const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => void, currentTab?: string }) => {
   const { width: windowWidth } = useWindowDimensions();
   const { user } = useAuth();
+  const { timezone } = useSettings();
   const [timeFilter, setTimeFilter] = React.useState('近一周');
   const [hiddenTraders, setHiddenTraders] = React.useState<string[]>([]);
   const [leaderboardData, setLeaderboardData] = React.useState<LeaderboardTrader[]>([]);
@@ -273,8 +275,8 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
       const data = await getLeaderboard(user?.id, 5);
       setLeaderboardData(data);
 
-      // 加载平台统计数据
-      const stats = await getPlatformStats();
+      // 加载平台统计数据（使用用户设置的时区）
+      const stats = await getPlatformStats(timezone.offset);
       setPlatformStats(stats);
 
       // 加载关注博主数量
@@ -287,7 +289,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     } finally {
       setLeaderboardLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, timezone.offset]);
 
   // 加载收益趋势数据
   const loadTrendData = React.useCallback(async () => {

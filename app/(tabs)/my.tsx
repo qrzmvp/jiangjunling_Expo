@@ -295,22 +295,18 @@ const MyPage: React.FC = () => {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
-          {/* 设置入口 - 暂时隐藏 */}
-          {false && (
-            <>
-              <View style={styles.menuDivider} />
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => router.push('/settings')}
-              >
-                <View style={styles.menuLeft}>
-                  <Ionicons name="settings-outline" size={22} color="#8A919E" />
-                  <Text style={styles.menuText}>设置</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#8A919E" />
-              </TouchableOpacity>
-            </>
-          )}
+          {/* 设置入口 */}
+          <View style={styles.menuDivider} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/settings')}
+          >
+            <View style={styles.menuLeft}>
+              <Ionicons name="settings-outline" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>设置</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+          </TouchableOpacity>
         </View>
 
         {/* Footer */}

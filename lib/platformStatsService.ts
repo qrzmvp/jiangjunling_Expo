@@ -11,10 +11,14 @@ export interface PlatformStats {
 /**
  * 获取平台统计数据
  * 通过单个RPC调用获取所有平台级别的统计信息
+ * 只统计 is_visible = true 的交易员相关数据
+ * @param timezoneOffset - 时区偏移量（小时），默认 UTC+8
  */
-export async function getPlatformStats(): Promise<PlatformStats> {
+export async function getPlatformStats(timezoneOffset: number = 8): Promise<PlatformStats> {
   try {
-    const { data, error } = await supabase.rpc('get_platform_stats');
+    const { data, error } = await supabase.rpc('get_platform_stats', {
+      p_timezone_offset: timezoneOffset
+    });
 
     if (error) {
       console.error('获取平台统计数据失败:', error);

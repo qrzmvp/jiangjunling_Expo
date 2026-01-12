@@ -80,22 +80,26 @@ export default function SettingsPage() {
         contentContainerStyle={styles.content}
       >
         <View style={styles.card}>
-          {/* Language Setting Row */}
-          <TouchableOpacity 
-            style={styles.row}
-            onPress={() => setLanguageModalVisible(true)}
-          >
-            <View style={styles.rowLeft}>
-              <Ionicons name="language-outline" size={22} color={COLORS.textMainDark} />
-              <Text style={styles.label}>语言设置</Text>
-            </View>
-            <View style={styles.rowRight}>
-              <Text style={styles.valueText}>{language === 'zh' ? '中文' : 'English'}</Text>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
-            </View>
-          </TouchableOpacity>
+          {/* Language Setting Row - 暂时隐藏 */}
+          {false && (
+            <>
+              <TouchableOpacity 
+                style={styles.row}
+                onPress={() => setLanguageModalVisible(true)}
+              >
+                <View style={styles.rowLeft}>
+                  <Ionicons name="language-outline" size={22} color={COLORS.textMainDark} />
+                  <Text style={styles.label}>语言设置</Text>
+                </View>
+                <View style={styles.rowRight}>
+                  <Text style={styles.valueText}>{language === 'zh' ? '中文' : 'English'}</Text>
+                  <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
+                </View>
+              </TouchableOpacity>
 
-          <View style={styles.divider} />
+              <View style={styles.divider} />
+            </>
+          )}
 
           {/* Timezone Setting Row */}
           <TouchableOpacity 
