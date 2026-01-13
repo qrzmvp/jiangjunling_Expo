@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../contexts/AuthContext';
 import { SettingsProvider } from '../contexts/SettingsContext';
+import { I18nProvider } from '../lib/i18n';
 import { Platform } from 'react-native';
 
 
@@ -14,8 +15,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <SettingsProvider>
-        <StatusBar style="light" />
-        <Stack
+        <I18nProvider>
+          <StatusBar style="light" />
+          <Stack
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: '#14151A' },
@@ -43,6 +45,7 @@ export default function RootLayout() {
             }} 
           />
         </Stack>
+        </I18nProvider>
       </SettingsProvider>
     </AuthProvider>
   );

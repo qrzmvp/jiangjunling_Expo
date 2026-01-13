@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from '../../lib/i18n';
 import { supabase } from '../../lib/supabase';
 
 const COLORS = {
@@ -18,16 +19,16 @@ const COLORS = {
 };
 
 export default function EditNicknamePage() {
-  useProtectedRoute(); // 保护路由
+  useProtectedRoute();
   const router = useRouter();
   const { user, profile, refreshProfile } = useAuth();
+  const { t } = useTranslation();
   const [nickname, setNickname] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
-    // 使用与个人信息页面相同的逻辑获取昵称
     const currentNickname = profile?.username || user?.email?.split('@')[0] || '';
     setNickname(currentNickname);
   }, [profile, user]);
@@ -35,17 +36,21 @@ export default function EditNicknamePage() {
   // 实时校验昵称
   const validateNickname = (value: string) => {
     if (!value.trim()) {
-      setErrorMsg("账户名称不能为空");
+      setErrorMsg(t('editNickname.nicknameRequired'));
       return false;
     }
-    if (value.length < 2 || value.length > 20) {
-      setErrorMsg("账户名称长度需在2-20个字符之间");
+    if (value.length < 2) {
+      setErrorMsg(t('editNickname.nicknameTooShort'));
+      return false;
+    }
+    if (value.length > 20) {
+      setErrorMsg(t('editNickname.nicknameTooLong'));
       return false;
     }
     // 检查是否只包含中文、英文和数字
     const validPattern = /^[\u4e00-\u9fa5a-zA-Z0-9]+$/;
     if (!validPattern.test(value)) {
-      setErrorMsg("账户名称只支持中英文、数字");
+      setErrorMsg(t('editNickname.nicknameRequired') + '\n' + t('editNickname.nicknameTooShort'));
       return false;
     }
     setErrorMsg("");
@@ -59,47 +64,40 @@ export default function EditNicknamePage() {
 
   const handleSave = async () => {
     if (!user) return;
-    
-    // 保存前再次校验
+
     if (!validateNickname(nickname)) {
       return;
     }
 
     setSaving(true);
     try {
-      // 添加超时保护
       const updatePromise = supabase
         .from('users')
         .update({ username: nickname.trim() })
         .eq('id', user.id);
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('网络请求超时，请检查网络连接后重试')), 15000)
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Network timeout, please try again')), 15000)
       );
-      
+
       const result = await Promise.race([updatePromise, timeoutPromise]) as any;
 
       if (result.error) throw result.error;
 
       await refreshProfile();
-      
-      // 显示成功提示
+
       setShowToast(true);
-      
-      // 1.5秒后隐藏提示并返回
+
       setTimeout(() => {
         setShowToast(false);
         router.back();
       }, 1500);
     } catch (error: any) {
-      let errorMessage = '更新失败';
+      let errorMessage = t('editNickname.saveFailed');
       if (error.message) {
         errorMessage = error.message;
       }
-      if (errorMessage.includes('超时') || errorMessage.includes('timeout')) {
-        errorMessage = '网络连接超时\n\n可能原因：服务器在国外，网络不稳定\n建议：稍后重试或检查网络';
-      }
-      Alert.alert('错误', errorMessage);
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setSaving(false);
     }
@@ -107,17 +105,17 @@ export default function EditNicknamePage() {
 
   const clearNickname = () => {
     setNickname("");
-    setErrorMsg("账户名称不能为空");
+    setErrorMsg(t('editNickname.nicknameRequired'));
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.backgroundDark} />
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             if (router.canGoBack()) {
               router.back();
@@ -129,14 +127,14 @@ export default function EditNicknamePage() {
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>修改账户名称</Text>
-        <TouchableOpacity 
-          onPress={handleSave} 
+        <Text style={styles.headerTitle}>{t('editNickname.title')}</Text>
+        <TouchableOpacity
+          onPress={handleSave}
           style={styles.saveButton}
           disabled={saving}
         >
           <Text style={[styles.saveButtonText, saving && { opacity: 0.5 }]}>
-            {saving ? '保存中...' : '保存'}
+            {saving ? t('editNickname.saving') : t('editNickname.save')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -147,7 +145,7 @@ export default function EditNicknamePage() {
             style={styles.input}
             value={nickname}
             onChangeText={handleNicknameChange}
-            placeholder="请输入账户名称"
+            placeholder={t('editNickname.placeholder')}
             placeholderTextColor="rgba(136, 136, 136, 0.5)"
             selectionColor={COLORS.accentOrange}
             autoFocus
@@ -168,7 +166,7 @@ export default function EditNicknamePage() {
         ) : null}
 
         <View style={styles.helperTextContainer}>
-          <Text style={styles.helperText}>账户名称支持中英文、数字，长度限制2-20个字符。</Text>
+          <Text style={styles.helperText}>{t('editNickname.nicknameTooShort')}, {t('editNickname.nicknameTooLong')}</Text>
         </View>
       </View>
 
@@ -177,7 +175,7 @@ export default function EditNicknamePage() {
         <View style={styles.toastContainer}>
           <View style={styles.toastContent}>
             <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            <Text style={styles.toastText}>修改成功</Text>
+            <Text style={styles.toastText}>{t('editNickname.saveSuccess')}</Text>
           </View>
         </View>
       )}
@@ -272,7 +270,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 8,
   },
-  // Toast Styles
   toastContainer: {
     position: 'absolute',
     top: 50,

@@ -5,6 +5,7 @@ import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useProtectedRoute } from '../hooks/useProtectedRoute';
+import { useTranslation } from '../lib/i18n';
 
 const COLORS = {
   background: "#000000",
@@ -44,30 +45,31 @@ const GradientAvatar = ({ colors, initials }: { colors: string[], initials: stri
 export default function InviteFriendsPage() {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => router.back()}
         >
           <MaterialIcons name="arrow-back-ios" size={20} color={COLORS.textMain} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>邀请好友列表</Text>
-        <View style={{ width: 40 }} /> 
+        <Text style={styles.headerTitle}>{t('inviteFriends.title')}</Text>
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Stats Card */}
         <View style={styles.statsCard}>
-          <Text style={styles.statsLabel}>累计邀请</Text>
+          <Text style={styles.statsLabel}>{t('inviteFriends.totalInvites')}</Text>
           <Text style={styles.statsValue}>128</Text>
         </View>
 
         {/* List Header */}
-        <Text style={styles.listHeader}>最近邀请</Text>
+        <Text style={styles.listHeader}>{t('inviteFriends.recentInvites')}</Text>
 
         {/* List */}
         <View style={styles.listContainer}>
@@ -92,7 +94,7 @@ export default function InviteFriendsPage() {
                 </View>
               </View>
               <View style={styles.itemRight}>
-                <Text style={styles.itemLabel}>注册时间</Text>
+                <Text style={styles.itemLabel}>{t('inviteFriends.registerTime')}</Text>
                 <Text style={styles.itemTime}>{item.time}</Text>
               </View>
             </View>
@@ -100,18 +102,18 @@ export default function InviteFriendsPage() {
         </View>
 
         <View style={styles.footerTextContainer}>
-          <Text style={styles.footerText}>没有更多数据了</Text>
+          <Text style={styles.footerText}>{t('inviteFriends.noMoreData')}</Text>
         </View>
       </ScrollView>
 
       {/* Bottom Button */}
       <View style={styles.bottomContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.inviteButton}
           onPress={() => router.push('/qrcode')}
         >
           <MaterialIcons name="person-add" size={20} color="black" />
-          <Text style={styles.inviteButtonText}>邀请好友</Text>
+          <Text style={styles.inviteButtonText}>{t('inviteFriends.inviteButton')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase';
 import type { Trader } from '../../types';
 import Toast from '../../components/Toast';
 import { CopySignalModal } from '../../components/CopySignalModal';
+import { useTranslation } from '../../lib/i18n';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -35,14 +36,15 @@ const TraderDetailScreen = () => {
   const router = useRouter();
   const { user } = useAuth();
   const { timezone } = useSettings();
+  const { t, language } = useTranslation();
   const params = useLocalSearchParams();
   const traderId = params.traderId as string;
-  
+
   const { width: windowWidth } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [timeFilter, setTimeFilter] = useState('近一周');
+  const [timeFilter, setTimeFilter] = useState<'lastWeek' | 'lastMonth' | 'lastQuarter'>('lastWeek');
   const [signalTrendPeriod, setSignalTrendPeriod] = useState<'7' | '30' | '90'>('7');
   const [trader, setTrader] = useState<TraderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -362,7 +364,7 @@ const TraderDetailScreen = () => {
 
   const handleConfirmCopy = () => {
     setShowCopyModal(false);
-    setToastMessage('Copy成功');
+    setToastMessage(t('toast.copySuccess'));
     setToastVisible(true);
   };
 
@@ -450,8 +452,8 @@ const TraderDetailScreen = () => {
     };
 
     // 信号类型显示
-    const signalTypeText = signal.signal_type === 'spot' ? '现货' : 
-                          signal.signal_type === 'futures' ? '永续' : '杠杆';
+    const signalTypeText = signal.signal_type === 'spot' ? t('traderDetail.spot') :
+                          signal.signal_type === 'futures' ? t('traderDetail.futures') : t('traderDetail.leverage');
 
     // 判断是否为历史信号
     const isHistory = signal.status !== 'active';
@@ -460,18 +462,18 @@ const TraderDetailScreen = () => {
     let resultBgColor = 'rgba(255,255,255,0.1)';
 
     if (signal.status === 'closed_profit') {
-      resultText = '止盈';
+      resultText = t('traderDetail.takeProfit');
       resultColor = COLORS.primary;
       resultBgColor = 'rgba(46, 189, 133, 0.15)';
     } else if (signal.status === 'closed_loss') {
-      resultText = '止损';
+      resultText = t('traderDetail.stopLoss');
       resultColor = COLORS.danger;
       resultBgColor = 'rgba(246, 70, 93, 0.15)';
     } else if (signal.status === 'closed') {
-       resultText = '平价';
+       resultText = t('traderDetail.breakEven');
        resultColor = COLORS.textSub;
     } else if (signal.status === 'cancelled') {
-        resultText = '已取消';
+        resultText = t('traderDetail.cancelled');
     }
 
     // 计算信号时长
@@ -524,7 +526,7 @@ const TraderDetailScreen = () => {
           <Text style={styles.signalPairText}>{signal.currency} {signalTypeText}</Text>
           <View style={[styles.signalStatusTag, { backgroundColor: statusBgColor }]}>
             <Text style={[styles.signalStatusText, { color: statusTextColor }]}>
-              {isLong ? '做多' : '做空'}
+              {isLong ? t('traderDetail.long') : t('traderDetail.short')}
             </Text>
           </View>
           <View style={[styles.signalLeverageTag, { marginRight: 'auto' }]}>
@@ -541,22 +543,22 @@ const TraderDetailScreen = () => {
 
         <View style={styles.signalInfoGrid}>
           <View style={styles.signalGridItem}>
-            <Text style={styles.signalInfoLabel}>入场价</Text>
+            <Text style={styles.signalInfoLabel}>{t('traderDetail.entryPrice')}</Text>
             <Text style={styles.signalInfoValue}>{signal.entry_price}</Text>
           </View>
           <View style={styles.signalGridItem}>
-            <Text style={styles.signalInfoLabel}>仓位模式</Text>
-            <Text style={styles.signalInfoValue}>全仓</Text>
+            <Text style={styles.signalInfoLabel}>{t('traderDetail.positionMode')}</Text>
+            <Text style={styles.signalInfoValue}>{t('traderDetail.fullPosition')}</Text>
           </View>
           <View style={styles.signalGridItem}>
             {isHistory ? (
                 <>
-                <Text style={styles.signalInfoLabel}>收益率</Text>
+                <Text style={styles.signalInfoLabel}>{t('traderDetail.roi')}</Text>
                 <Text style={[styles.signalInfoValue, { color: roiColor, fontWeight: 'bold' }]}>{roiValue}</Text>
                 </>
             ) : (
                 <>
-                <Text style={styles.signalInfoLabel}>委托时间</Text>
+                <Text style={styles.signalInfoLabel}>{t('traderDetail.orderTime')}</Text>
                 <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time)}</Text>
                 </>
             )}
@@ -565,15 +567,15 @@ const TraderDetailScreen = () => {
 
         <View style={styles.signalInfoGrid}>
           <View style={styles.signalGridItem}>
-            <Text style={styles.signalInfoLabel}>止盈价</Text>
+            <Text style={styles.signalInfoLabel}>{t('traderDetail.takeProfitPrice')}</Text>
             <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.take_profit}</Text>
           </View>
           <View style={styles.signalGridItem}>
-            <Text style={styles.signalInfoLabel}>止损价</Text>
+            <Text style={styles.signalInfoLabel}>{t('traderDetail.stopLossPrice')}</Text>
             <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stop_loss}</Text>
           </View>
           <View style={styles.signalGridItem}>
-            <Text style={styles.signalInfoLabel}>盈亏比</Text>
+            <Text style={styles.signalInfoLabel}>{t('traderDetail.profitLossRatio')}</Text>
             <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
           </View>
         </View>
@@ -581,16 +583,16 @@ const TraderDetailScreen = () => {
         {isHistory && (
             <View style={[styles.signalInfoGrid, { marginTop: 4 }]}>
                 <View style={styles.signalGridItem}>
-                    <Text style={styles.signalInfoLabel}>信号时长</Text>
+                    <Text style={styles.signalInfoLabel}>{t('traderDetail.signalDuration')}</Text>
                     <Text style={styles.signalInfoValue}>{getDuration()}</Text>
                 </View>
                 <View style={styles.signalGridItem}>
-                    <Text style={styles.signalInfoLabel}>委托时间</Text>
-                    <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time).split(' ')[0]}</Text> 
+                    <Text style={styles.signalInfoLabel}>{t('traderDetail.orderTime')}</Text>
+                    <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time).split(' ')[0]}</Text>
                     <Text style={[styles.signalInfoValue, { fontSize: 10, color: COLORS.textSub }]}>{formatTime(signal.signal_time).split(' ')[1]}</Text>
                 </View>
                 <View style={styles.signalGridItem}>
-                    <Text style={styles.signalInfoLabel}>出场时间</Text>
+                    <Text style={styles.signalInfoLabel}>{t('traderDetail.exitTime')}</Text>
                     <Text style={styles.signalInfoValue}>{signal.closed_at ? formatTime(signal.closed_at).split(' ')[0] : '-'}</Text>
                     <Text style={[styles.signalInfoValue, { fontSize: 10, color: COLORS.textSub }]}>{signal.closed_at ? formatTime(signal.closed_at).split(' ')[1] : ''}</Text>
                 </View>
@@ -617,7 +619,7 @@ const TraderDetailScreen = () => {
 
   const chartData = React.useMemo(() => {
     let data = rawChartData;
-    if (timeFilter === '近一周') {
+    if (timeFilter === 'lastWeek') {
       data = rawChartData.slice(-7);
     }
     
@@ -717,7 +719,7 @@ const TraderDetailScreen = () => {
         >
           <MaterialIcons name="arrow-back-ios" size={20} color={COLORS.textSub} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>交易员详情</Text>
+        <Text style={styles.headerTitle}>{t('traderDetail.title')}</Text>
         <TouchableOpacity style={styles.iconButton}>
           <MaterialIcons name="share" size={20} color={COLORS.textSub} />
         </TouchableOpacity>
@@ -729,7 +731,7 @@ const TraderDetailScreen = () => {
         </View>
       ) : !trader ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: COLORS.textSub }}>未找到交易员信息</Text>
+          <Text style={{ color: COLORS.textSub }}>{t('traderDetail.notFound')}</Text>
         </View>
       ) : (
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -779,14 +781,14 @@ const TraderDetailScreen = () => {
                           <ActivityIndicator size="small" color={isSubscribed ? COLORS.textSub : COLORS.background} />
                         ) : (
                           <Text style={styles.copyButtonText}>
-                            {isSubscribed ? '已订阅' : '订阅'}
+                            {isSubscribed ? t('traderDetail.subscribed') : t('traderDetail.subscribe')}
                           </Text>
                         )}
                       </TouchableOpacity>
                     )}
                   </View>
                 </View>
-                <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">{trader.description || '暂无描述'}</Text>
+                <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">{trader.description || t('traderDetail.noDescription')}</Text>
               </View>
             </View>
 
@@ -794,27 +796,27 @@ const TraderDetailScreen = () => {
             <View style={styles.roiSection}>
               <View style={styles.roiHeader}>
                 <View style={styles.roiHeaderLeft}>
-                  <Text style={styles.roiLabel}>累计收益率 (ROI)</Text>
+                  <Text style={styles.roiLabel}>{t('traderDetail.totalRoi')}</Text>
                   <MaterialIcons name="info-outline" size={14} color="rgba(136, 136, 136, 0.5)" />
                 </View>
                 <View style={styles.periodSelector}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.periodButton, signalTrendPeriod === '7' && styles.periodButtonActive]}
                     onPress={() => setSignalTrendPeriod('7')}
                   >
-                    <Text style={[styles.periodButtonText, signalTrendPeriod === '7' && styles.periodButtonTextActive]}>7天</Text>
+                    <Text style={[styles.periodButtonText, signalTrendPeriod === '7' && styles.periodButtonTextActive]}>{t('traderDetail.last7Days')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.periodButton, signalTrendPeriod === '30' && styles.periodButtonActive]}
                     onPress={() => setSignalTrendPeriod('30')}
                   >
-                    <Text style={[styles.periodButtonText, signalTrendPeriod === '30' && styles.periodButtonTextActive]}>30天</Text>
+                    <Text style={[styles.periodButtonText, signalTrendPeriod === '30' && styles.periodButtonTextActive]}>{t('traderDetail.last30Days')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.periodButton, signalTrendPeriod === '90' && styles.periodButtonActive]}
                     onPress={() => setSignalTrendPeriod('90')}
                   >
-                    <Text style={[styles.periodButtonText, signalTrendPeriod === '90' && styles.periodButtonTextActive]}>90天</Text>
+                    <Text style={[styles.periodButtonText, signalTrendPeriod === '90' && styles.periodButtonTextActive]}>{t('traderDetail.last90Days')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -861,32 +863,32 @@ const TraderDetailScreen = () => {
               <>
                 <View style={[styles.gridStats, { paddingTop: 4, borderTopColor: 'transparent' }]}>
                   <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>胜率 (Win Rate)</Text>
+                    <Text style={styles.statLabel}>{t('traderDetail.winRate')}</Text>
                     <Text style={[styles.statValue, { color: (trader?.win_rate || 0) >= 50 ? COLORS.primary : COLORS.textMain }]}>
                       {trader?.win_rate !== undefined ? `${trader.win_rate.toFixed(1)}%` : '-'}
                     </Text>
                   </View>
                   <View style={[styles.statItem, { alignItems: 'center' }]}>
-                    <Text style={styles.statLabel}>总盈亏比</Text>
+                    <Text style={styles.statLabel}>{t('traderDetail.profitFactor')}</Text>
                     <Text style={styles.statValue}>{trader?.profit_factor ? trader.profit_factor.toFixed(2) : '0'}</Text>
                   </View>
                   <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
-                    <Text style={styles.statLabel}>交易天数</Text>
+                    <Text style={styles.statLabel}>{t('traderDetail.tradingDays')}</Text>
                     <Text style={styles.statValue}>{trader?.trading_days !== undefined && trader?.trading_days !== null ? trader.trading_days : '-'}</Text>
                   </View>
                 </View>
 
                 <View style={[styles.gridStats, { marginTop: 4, paddingTop: 0, borderTopWidth: 0 }]}>
                   <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>信号总数</Text>
+                    <Text style={styles.statLabel}>{t('traderDetail.totalSignals')}</Text>
                     <Text style={styles.statValue}>{trader?.total_signals || 0}</Text>
                   </View>
                   <View style={[styles.statItem, { alignItems: 'center' }]}>
-                    <Text style={styles.statLabel}>做多信号</Text>
+                    <Text style={styles.statLabel}>{t('traderDetail.longSignals')}</Text>
                     <Text style={styles.statValue}>{trader?.long_signals || 0}</Text>
                   </View>
                   <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
-                    <Text style={styles.statLabel}>做空信号</Text>
+                    <Text style={styles.statLabel}>{t('traderDetail.shortSignals')}</Text>
                     <Text style={styles.statValue}>{trader?.short_signals || 0}</Text>
                   </View>
                 </View>
@@ -940,7 +942,7 @@ const TraderDetailScreen = () => {
               onPress={() => setActiveTab('current')}
             >
               <View style={styles.tabContent}>
-                <Text style={[styles.tabText, activeTab === 'current' ? styles.tabTextActive : null]}>有效信号</Text>
+                <Text style={[styles.tabText, activeTab === 'current' ? styles.tabTextActive : null]}>{t('traderDetail.currentSignals')}</Text>
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{currentSignals.length}</Text>
                 </View>
@@ -953,7 +955,7 @@ const TraderDetailScreen = () => {
               onPress={() => setActiveTab('history')}
             >
               <View style={styles.tabContent}>
-                <Text style={[styles.tabText, activeTab === 'history' ? styles.tabTextActive : null]}>历史信号</Text>
+                <Text style={[styles.tabText, activeTab === 'history' ? styles.tabTextActive : null]}>{t('traderDetail.historySignals')}</Text>
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{historySignals.length}</Text>
                 </View>
@@ -967,7 +969,7 @@ const TraderDetailScreen = () => {
               <View style={{ padding: 40, alignItems: 'center' }}>
                 <ActivityIndicator size="small" color={COLORS.primary} />
                 <Text style={{ color: COLORS.textSub, fontSize: 12, marginTop: 8 }}>
-                  加载信号数据...
+                  {t('traderDetail.loadingSignals')}
                 </Text>
               </View>
             ) : (
@@ -976,7 +978,7 @@ const TraderDetailScreen = () => {
                   <>
                     {currentSignals.length === 0 ? (
                       <View style={{ padding: 40, alignItems: 'center' }}>
-                        <Text style={{ color: COLORS.textSub, fontSize: 14 }}>暂无有效信号</Text>
+                        <Text style={{ color: COLORS.textSub, fontSize: 14 }}>{t('traderDetail.noCurrentSignals')}</Text>
                       </View>
                     ) : (
                       currentSignals.map(signal => renderSignalCard(signal))
@@ -988,7 +990,7 @@ const TraderDetailScreen = () => {
                   <>
                     {historySignals.length === 0 ? (
                       <View style={{ padding: 40, alignItems: 'center' }}>
-                        <Text style={{ color: COLORS.textSub, fontSize: 14 }}>暂无历史信号</Text>
+                        <Text style={{ color: COLORS.textSub, fontSize: 14 }}>{t('traderDetail.noHistorySignals')}</Text>
                       </View>
                     ) : (
                       historySignals.map(signal => renderSignalCard(signal))

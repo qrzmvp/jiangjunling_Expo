@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Modal, ScrollView, Dimensions, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from '../lib/i18n';
 
 const { width } = Dimensions.get('window');
 
@@ -12,6 +13,7 @@ interface Step {
 }
 
 export const AddToHomeScreen = () => {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
@@ -22,47 +24,47 @@ export const AddToHomeScreen = () => {
   const iosSteps: Step[] = [
     {
       icon: 'phone-portrait-outline',
-      title: '欢迎使用将军令',
-      description: '添加到主屏幕，获得更好的使用体验',
+      title: t('addToHomeScreen.welcomeTitle'),
+      description: t('addToHomeScreen.welcomeDesc'),
     },
     {
       icon: 'share-outline',
-      title: '点击分享按钮',
-      description: '点击浏览器的三个点或者 + 号按钮找到【共享】按钮（向上箭头图标）',
+      title: t('addToHomeScreen.iosShareButton'),
+      description: t('addToHomeScreen.iosShareButtonDesc'),
       illustration: 'arrow-down',
     },
     {
       icon: 'add-circle-outline',
-      title: '添加到主屏幕',
-      description: '在弹出菜单中选择"添加到主屏幕"',
+      title: t('addToHomeScreen.iosAddToHome'),
+      description: t('addToHomeScreen.iosAddToHomeDesc'),
     },
     {
       icon: 'checkmark-circle',
-      title: '完成！',
-      description: '现在可以像原生应用一样使用了',
+      title: t('addToHomeScreen.iosComplete'),
+      description: t('addToHomeScreen.iosCompleteDesc'),
     },
   ];
 
   const androidSteps: Step[] = [
     {
       icon: 'phone-portrait-outline',
-      title: '欢迎使用将军令',
-      description: '添加到主屏幕，获得更好的使用体验',
+      title: t('addToHomeScreen.welcomeTitle'),
+      description: t('addToHomeScreen.welcomeDesc'),
     },
     {
       icon: 'menu-outline',
-      title: '打开浏览器菜单',
-      description: '点击浏览器右上角的菜单按钮（三个点）',
+      title: t('addToHomeScreen.androidOpenMenu'),
+      description: t('addToHomeScreen.androidOpenMenuDesc'),
     },
     {
       icon: 'add-circle-outline',
-      title: '添加到主屏幕',
-      description: '在菜单中选择"安装应用"或"添加到主屏幕"',
+      title: t('addToHomeScreen.androidAddToHome'),
+      description: t('addToHomeScreen.androidAddToHomeDesc'),
     },
     {
       icon: 'checkmark-circle',
-      title: '完成！',
-      description: '现在可以像原生应用一样使用了',
+      title: t('addToHomeScreen.androidComplete'),
+      description: t('addToHomeScreen.androidCompleteDesc'),
     },
   ];
 
@@ -200,31 +202,35 @@ export const AddToHomeScreen = () => {
             <View style={styles.buttonContainer}>
               {currentStep > 0 && (
                 <TouchableOpacity onPress={handlePrev} style={styles.btnSecondary}>
-                  <Text style={styles.btnSecondaryText}>上一步</Text>
+                  <Text style={styles.btnSecondaryText}>{t('addToHomeScreen.prevStep')}</Text>
                 </TouchableOpacity>
               )}
-              
-              <TouchableOpacity 
-                onPress={handleNext} 
+
+              <TouchableOpacity
+                onPress={handleNext}
                 style={[styles.btnPrimary, currentStep === 0 && styles.btnPrimaryFull]}
               >
                 <Text style={styles.btnPrimaryText}>
-                  {currentStep === steps.length - 1 ? '完成' : currentStep === 0 ? '开始' : '下一步'}
+                  {currentStep === steps.length - 1
+                    ? t('addToHomeScreen.complete')
+                    : currentStep === 0
+                      ? t('addToHomeScreen.start')
+                      : t('addToHomeScreen.nextStep')}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity 
-              style={styles.checkboxContainer} 
+            <TouchableOpacity
+              style={styles.checkboxContainer}
               activeOpacity={0.8}
               onPress={() => setDontShowAgain(!dontShowAgain)}
             >
-              <Ionicons 
-                name={dontShowAgain ? "checkbox" : "square-outline"} 
-                size={18} 
-                color={dontShowAgain ? "#2ebd85" : "#9ca3af"} 
+              <Ionicons
+                name={dontShowAgain ? "checkbox" : "square-outline"}
+                size={18}
+                color={dontShowAgain ? "#2ebd85" : "#9ca3af"}
               />
-              <Text style={styles.checkboxText}>不再提示</Text>
+              <Text style={styles.checkboxText}>{t('addToHomeScreen.dontShowAgain')}</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

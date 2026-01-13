@@ -5,6 +5,8 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { UserInfo, Stats } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSettings, Language } from '../../contexts/SettingsContext';
+import { useTranslation } from '../../lib/i18n';
 import { isVipActive, formatVipExpiresAt } from '../../lib/redemptionService';
 import { getUserStats } from '../../lib/userTraderService';
 
@@ -24,6 +26,8 @@ const COLORS = {
 const MyPage: React.FC = () => {
   const router = useRouter();
   const { user, profile } = useAuth();
+  const { language, setLanguage } = useSettings();
+  const { t } = useTranslation();
   const [exchangeAccountCount, setExchangeAccountCount] = useState<number>(0);
   const [followCount, setFollowCount] = useState<number>(0);
   const [subscriptionCount, setSubscriptionCount] = useState<number>(0);
@@ -39,7 +43,7 @@ const MyPage: React.FC = () => {
   useEffect(() => {
     const loadUserStats = async () => {
       if (!user?.id) return;
-      
+
       try {
         const stats = await getUserStats(user.id);
         setFollowCount(stats.followCount);
@@ -61,7 +65,7 @@ const MyPage: React.FC = () => {
     React.useCallback(() => {
       const loadStats = async () => {
         if (!user?.id) return;
-        
+
         try {
           const stats = await getUserStats(user.id);
           setFollowCount(stats.followCount);
@@ -89,32 +93,36 @@ const MyPage: React.FC = () => {
     friends: profile?.friends_count || 0,
     favorites: profile?.favorites_count || 0,
   };
+
+  // 切换语言
+  const toggleLanguage = async () => {
+    const newLanguage: Language = language === 'zh' ? 'en' : 'zh';
+    await setLanguage(newLanguage);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.myHeader}>
         <View style={{ width: 24 }} />
-        <Text style={styles.myHeaderTitle}>个人中心</Text>
-        <View style={{ width: 24 }} />
-        {/* <View style={styles.myHeaderRight}>
-          <Ionicons name="chatbubble-outline" size={24} color="#EAEBEF" />
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>3</Text>
-          </View>
-        </View> */}
+        <Text style={styles.myHeaderTitle}>{t('myPage.title')}</Text>
+        {/* 语言切换按钮 */}
+        <TouchableOpacity onPress={toggleLanguage} style={styles.languageButton}>
+          <Text style={styles.languageText}>{language === 'zh' ? 'EN' : '中'}</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.myScrollView}>
         {/* Profile Section */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.profileSection}
           onPress={() => router.push('/profile')}
           activeOpacity={0.8}
         >
           <View style={styles.profileInfo}>
             <View style={styles.avatarContainer}>
-              <Image 
-                source={{ uri: avatarUri }} 
+              <Image
+                source={{ uri: avatarUri }}
                 style={styles.avatar}
               />
               {/* VIP Badge - Bottom Right */}
@@ -124,7 +132,7 @@ const MyPage: React.FC = () => {
                 </View>
               ) : (
                 <View style={styles.freeBadge}>
-                  <Text style={styles.freeBadgeText}>免费</Text>
+                  <Text style={styles.freeBadgeText}>{t('myPage.free')}</Text>
                 </View>
               )}
               {/* Verified Badge - Top Right */}
@@ -137,7 +145,7 @@ const MyPage: React.FC = () => {
             <View style={styles.userInfo}>
               <Text style={styles.username}>{userInfo.username}</Text>
               <View style={styles.accountRow}>
-                <Text style={styles.accountId}>账号:{userInfo.accountId}</Text>
+                <Text style={styles.accountId}>{t('myPage.account')}:{userInfo.accountId}</Text>
                 <Ionicons name="copy-outline" size={16} color="#8A919E" style={{ marginLeft: 4 }} />
               </View>
             </View>
@@ -203,7 +211,7 @@ const MyPage: React.FC = () => {
         </View> */}
 
         {/* VIP Card */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.vipCard}
           onPress={() => router.push('/vip-purchase')}
           activeOpacity={0.9}
@@ -211,20 +219,20 @@ const MyPage: React.FC = () => {
           <View style={styles.vipContent}>
             <View style={styles.vipTitleRow}>
               <Ionicons name="diamond" size={20} color="#ffffff" />
-              <Text style={styles.vipTitle}>VIP 会员中心</Text>
+              <Text style={styles.vipTitle}>{t('myPage.vipCenter')}</Text>
             </View>
             {!vipActive && (
-              <Text style={styles.vipSubtitle}>尊享更低手续费与专属客服服务</Text>
+              <Text style={styles.vipSubtitle}>{t('myPage.vipSubtitle')}</Text>
             )}
             {vipActive && (
               <Text style={styles.vipExpiryText}>
-                到期时间: {formatVipExpiresAt(profile?.vip_expires_at || null)}
+                {t('myPage.expiryDate')}: {formatVipExpiresAt(profile?.vip_expires_at || null)}
               </Text>
             )}
           </View>
           <View style={styles.vipButton}>
             <Text style={styles.vipButtonText}>
-              {vipActive ? '续费会员' : '立即开通'} {'>'}
+              {vipActive ? t('myPage.renew') : t('myPage.activate')} {'>'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -247,19 +255,19 @@ const MyPage: React.FC = () => {
               <View style={styles.menuDivider} />
             </>
           )}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/purchase-history')}
           >
             <View style={styles.menuLeft}>
               <Ionicons name="receipt-outline" size={22} color="#8A919E" />
-              <Text style={styles.menuText}>购买记录</Text>
+              <Text style={styles.menuText}>{t('myPage.purchaseHistory')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
           {/* 兑换记录 - 暂时隐藏 */}
           {/* <View style={styles.menuDivider} />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/profile/redemption-history')}
           >
@@ -274,7 +282,7 @@ const MyPage: React.FC = () => {
         {/* Menu List 2 */}
         <View style={styles.menuCard}>
           {/* 邀请好友菜单 - 暂时隐藏 */}
-          {/* <TouchableOpacity 
+          {/* <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/invite-friends')}
           >
@@ -291,7 +299,7 @@ const MyPage: React.FC = () => {
           >
             <View style={styles.menuLeft}>
               <Ionicons name="call-outline" size={22} color="#8A919E" />
-              <Text style={styles.menuText}>联系客服</Text>
+              <Text style={styles.menuText}>{t('myPage.contactSupport')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
@@ -303,7 +311,7 @@ const MyPage: React.FC = () => {
           >
             <View style={styles.menuLeft}>
               <Ionicons name="settings-outline" size={22} color="#8A919E" />
-              <Text style={styles.menuText}>设置</Text>
+              <Text style={styles.menuText}>{t('myPage.settings')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#8A919E" />
           </TouchableOpacity>
@@ -344,6 +352,19 @@ const styles = StyleSheet.create({
   myHeaderTitle: {
     color: COLORS.textMain,
     fontSize: 18,
+    fontWeight: '600',
+  },
+  languageButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  languageText: {
+    color: COLORS.textMain,
+    fontSize: 14,
     fontWeight: '600',
   },
   myHeaderRight: {

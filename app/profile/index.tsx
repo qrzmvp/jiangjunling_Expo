@@ -9,6 +9,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 import { updateAvatarComplete } from '../../lib/avatarService';
 import { isVipActive } from '../../lib/redemptionService';
+import { useTranslation } from '../../lib/i18n';
 
 const COLORS = {
   backgroundDark: "#000000",
@@ -25,6 +26,7 @@ export default function PersonalInfoPage() {
   useProtectedRoute(); // 保护路由
   const { user, profile, signOut, refreshProfile } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Data from profile or fallback to user object
   const avatarUri = profile?.avatar_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg";
@@ -37,7 +39,7 @@ export default function PersonalInfoPage() {
   const [cropperVisible, setCropperVisible] = useState(false);
   const [tempImageUri, setTempImageUri] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  
+
   // Logout Modal & Toast State
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -48,7 +50,7 @@ export default function PersonalInfoPage() {
     await Clipboard.setStringAsync(text);
     // 显示成功提示
     setToastType('success');
-    setToastMessage('复制成功');
+    setToastMessage(t('profile.copySuccess'));
     setShowToast(true);
     setTimeout(() => setShowToast(false), 1500);
   };
@@ -60,19 +62,19 @@ export default function PersonalInfoPage() {
   const confirmLogout = async () => {
     // 1. Close modal immediately
     setLogoutModalVisible(false);
-    
+
     // 2. Show success toast first
     setToastType('success');
-    setToastMessage('退出登录成功');
+    setToastMessage(t('profile.logoutSuccess'));
     setShowToast(true);
-    
+
     try {
       // 3. Perform logout
       await signOut();
     } catch (e) {
       console.error('Logout error:', e);
     }
-    
+
     // 4. Redirect after toast (useProtectedRoute will handle the actual navigation)
     setTimeout(() => {
       setShowToast(false);
@@ -81,12 +83,12 @@ export default function PersonalInfoPage() {
 
   const pickImage = async () => {
     setModalVisible(false);
-    
+
     // 请求相册权限
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       setToastType('error');
-      setToastMessage('需要相册权限才能选择照片');
+      setToastMessage(t('profile.libraryPermissionDenied'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
       return;
@@ -107,7 +109,7 @@ export default function PersonalInfoPage() {
     } catch (error: any) {
       console.error('Image picker error:', error);
       setToastType('error');
-      setToastMessage('选择图片失败，请重试');
+      setToastMessage(t('profile.photoPickerFailed'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     }
@@ -115,21 +117,21 @@ export default function PersonalInfoPage() {
 
   const takePhoto = async () => {
     setModalVisible(false);
-    
+
     // Web 端不支持相机
     if (Platform.OS === 'web') {
       setToastType('error');
-      setToastMessage('Web 端暂不支持拍照功能，请选择相册图片');
+      setToastMessage(t('profile.cameraNotSupported'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
       return;
     }
-    
+
     // 请求相机权限
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       setToastType('error');
-      setToastMessage('需要相机权限才能拍照');
+      setToastMessage(t('profile.cameraPermissionDenied'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
       return;
@@ -151,12 +153,12 @@ export default function PersonalInfoPage() {
       // 模拟器会抛出错误
       if (error.message?.includes('simulator') || error.message?.includes('Camera') || error.message?.includes('available')) {
         setToastType('error');
-        setToastMessage('模拟器不支持拍照，请使用真机或选择相册');
+        setToastMessage(t('profile.simulatorNoCamera'));
         setShowToast(true);
         setTimeout(() => setShowToast(false), 2500);
       } else {
         setToastType('error');
-        setToastMessage('拍照失败，请重试');
+        setToastMessage(t('profile.photoFailed'));
         setShowToast(true);
         setTimeout(() => setShowToast(false), 2000);
       }
@@ -166,10 +168,10 @@ export default function PersonalInfoPage() {
   const handleCropComplete = async (uri: string) => {
     setCropperVisible(false);
     setTempImageUri(null);
-    
+
     if (!user?.id) {
       setToastType('error');
-      setToastMessage('用户信息不完整');
+      setToastMessage(t('profile.userInfoIncomplete'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
       return;
@@ -190,13 +192,13 @@ export default function PersonalInfoPage() {
 
       // 显示成功提示
       setToastType('success');
-      setToastMessage('头像更新成功');
+      setToastMessage(t('profile.avatarUpdateSuccess'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     } catch (error: any) {
       console.error('Avatar update error:', error);
       setToastType('error');
-      setToastMessage(error.message || '头像上传失败，请重试');
+      setToastMessage(error.message || t('profile.avatarUploadFailed'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     } finally {
@@ -208,36 +210,36 @@ export default function PersonalInfoPage() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.backgroundDark} />
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => router.back()}
           style={styles.iconButton}
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>个人信息</Text>
+        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
         <View style={styles.headerRight} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
       >
         <View style={styles.card}>
-          
+
           {/* Avatar Row */}
-          <TouchableOpacity 
-            style={styles.row} 
+          <TouchableOpacity
+            style={styles.row}
             onPress={() => setModalVisible(true)}
             disabled={uploadingAvatar}
           >
-            <Text style={styles.label}>头像</Text>
+            <Text style={styles.label}>{t('profile.avatar')}</Text>
             <View style={styles.rowRight}>
               <View style={styles.avatarImageContainer}>
-                <Image 
-                  source={{ uri: avatarUri }} 
+                <Image
+                  source={{ uri: avatarUri }}
                   style={styles.avatar}
                 />
                 {/* VIP Badge - Bottom Right */}
@@ -247,7 +249,7 @@ export default function PersonalInfoPage() {
                   </View>
                 ) : (
                   <View style={styles.freeBadge}>
-                    <Text style={styles.freeBadgeText}>免费</Text>
+                    <Text style={styles.freeBadgeText}>Free</Text>
                   </View>
                 )}
                 {uploadingAvatar && (
@@ -263,11 +265,11 @@ export default function PersonalInfoPage() {
           <View style={styles.divider} />
 
           {/* Nickname Row */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.row}
             onPress={() => router.push('/profile/edit-nickname')}
           >
-            <Text style={styles.label}>昵称</Text>
+            <Text style={styles.label}>{t('profile.nickname')}</Text>
             <View style={styles.rowRight}>
               <Text style={styles.valueText}>{nickname}</Text>
               <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
@@ -278,14 +280,14 @@ export default function PersonalInfoPage() {
 
           {/* Account Row */}
           <View style={styles.row}>
-            <Text style={styles.label}>账号</Text>
+            <Text style={styles.label}>{t('profile.account')}</Text>
             <View style={styles.rowRight}>
               <Text style={styles.valueText}>{accountId}</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.copyButton}
                 onPress={() => handleCopy(accountId)}
               >
-                <Text style={styles.copyButtonText}>复制</Text>
+                <Text style={styles.copyButtonText}>{t('profile.copy')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -294,7 +296,7 @@ export default function PersonalInfoPage() {
 
           {/* Email Row */}
           <View style={styles.row}>
-            <Text style={styles.label}>邮箱</Text>
+            <Text style={styles.label}>{t('profile.email')}</Text>
             <View style={styles.rowRight}>
               <Text style={styles.valueText}>{email}</Text>
             </View>
@@ -303,11 +305,11 @@ export default function PersonalInfoPage() {
           <View style={styles.divider} />
 
           {/* Change Password Row */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.row}
             onPress={() => router.push('/profile/change-password')}
           >
-            <Text style={styles.label}>修改密码</Text>
+            <Text style={styles.label}>{t('profile.changePassword')}</Text>
             <View style={styles.rowRight}>
               <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
             </View>
@@ -318,7 +320,7 @@ export default function PersonalInfoPage() {
             <>
               <View style={styles.divider} />
               <TouchableOpacity style={styles.row}>
-                <Text style={styles.label}>二维码名片</Text>
+                <Text style={styles.label}>{t('profile.qrCode')}</Text>
                 <View style={styles.rowRight}>
                   <MaterialIcons name="qr-code-2" size={24} color={COLORS.textSubDark} style={{ marginRight: 4 }} />
                   <Ionicons name="chevron-forward" size={20} color={COLORS.textSubDark} />
@@ -330,12 +332,12 @@ export default function PersonalInfoPage() {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.logoutButton}
           activeOpacity={0.7}
           onPress={handleLogout}
         >
-          <Text style={styles.logoutText}>退出登录</Text>
+          <Text style={styles.logoutText}>{t('profile.logout')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -348,28 +350,28 @@ export default function PersonalInfoPage() {
       >
         <View style={styles.logoutModalOverlay}>
           <View style={styles.logoutModalContent}>
-            <Text style={styles.logoutModalTitle}>提示</Text>
-            <Text style={styles.logoutModalMessage}>确定要退出登录吗？</Text>
+            <Text style={styles.logoutModalTitle}>{t('profile.prompt')}</Text>
+            <Text style={styles.logoutModalMessage}>{t('profile.logoutConfirm')}</Text>
             <View style={styles.logoutModalButtons}>
-              <TouchableOpacity 
-                style={[styles.logoutModalButton, styles.logoutCancelButton]} 
+              <TouchableOpacity
+                style={[styles.logoutModalButton, styles.logoutCancelButton]}
                 activeOpacity={0.7}
                 onPress={() => {
                   console.log('Cancel pressed');
                   setLogoutModalVisible(false);
                 }}
               >
-                <Text style={styles.logoutCancelButtonText}>取消</Text>
+                <Text style={styles.logoutCancelButtonText}>{t('profile.cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.logoutModalButton, styles.logoutConfirmButton]} 
+              <TouchableOpacity
+                style={[styles.logoutModalButton, styles.logoutConfirmButton]}
                 activeOpacity={0.7}
                 onPress={() => {
                   console.log('Confirm pressed');
                   confirmLogout();
                 }}
               >
-                <Text style={styles.logoutConfirmButtonText}>确定</Text>
+                <Text style={styles.logoutConfirmButtonText}>{t('profile.confirm')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -380,10 +382,10 @@ export default function PersonalInfoPage() {
       {showToast && (
         <View style={styles.toastContainer}>
           <View style={styles.toastContent}>
-            <Ionicons 
-              name={toastType === 'success' ? "checkmark-circle" : "close-circle"} 
-              size={20} 
-              color={toastType === 'success' ? "#4CAF50" : "#FF4D4F"} 
+            <Ionicons
+              name={toastType === 'success' ? "checkmark-circle" : "close-circle"}
+              size={20}
+              color={toastType === 'success' ? "#4CAF50" : "#FF4D4F"}
             />
             <Text style={styles.toastText}>{toastMessage}</Text>
           </View>
@@ -397,9 +399,9 @@ export default function PersonalInfoPage() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
           onPress={() => setModalVisible(false)}
         >
           <View style={styles.modalContent}>
@@ -409,7 +411,7 @@ export default function PersonalInfoPage() {
                 <>
                   <TouchableOpacity style={styles.modalButton} onPress={takePhoto}>
                     <Ionicons name="camera-outline" size={24} color={COLORS.textMainDark} />
-                    <Text style={styles.modalButtonText}>拍照</Text>
+                    <Text style={styles.modalButtonText}>{t('profile.takePhoto')}</Text>
                   </TouchableOpacity>
                   <View style={styles.modalDivider} />
                 </>
@@ -417,13 +419,13 @@ export default function PersonalInfoPage() {
               <TouchableOpacity style={styles.modalButton} onPress={pickImage}>
                 <Ionicons name="images-outline" size={24} color={COLORS.textMainDark} />
                 <Text style={styles.modalButtonText}>
-                  {Platform.OS === 'web' ? '选择图片' : '从手机相册选择'}
+                  {Platform.OS === 'web' ? t('profile.chooseImage') : t('profile.chooseFromLibrary')}
                 </Text>
               </TouchableOpacity>
             </View>
-            
+
             <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setModalVisible(false)}>
-              <Text style={styles.modalButtonText}>取消</Text>
+              <Text style={styles.modalButtonText}>{t('profile.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

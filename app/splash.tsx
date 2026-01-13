@@ -84,14 +84,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: -80,
   },
   logoWrapper: {
     alignItems: 'center',
   },
   chineseText: {
     color: '#FFFFFF',
-    fontSize: 36,
+    fontSize: 48,
     fontWeight: '800',
-    letterSpacing: 8,
+    letterSpacing: 10,
   },
 });

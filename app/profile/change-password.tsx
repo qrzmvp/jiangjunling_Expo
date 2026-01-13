@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import { useProtectedRoute } from '../../hooks/useProtectedRoute';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from '../../lib/i18n';
 
 const COLORS = {
   backgroundDark: "#000000",
@@ -17,9 +18,10 @@ const COLORS = {
 };
 
 export default function ChangePasswordPage() {
-  useProtectedRoute(); // 保护路由
+  useProtectedRoute();
   const router = useRouter();
   const { user, updatePassword } = useAuth();
+  const { t } = useTranslation();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -34,33 +36,32 @@ export default function ChangePasswordPage() {
   // 实时校验新密码
   const validateNewPassword = (value: string) => {
     if (!value.trim()) {
-      setPasswordError("请输入新密码");
+      setPasswordError(t('changePassword.passwordRequired'));
       return false;
     }
     if (value.length < 6) {
-      setPasswordError("密码长度至少为6个字符");
+      setPasswordError(t('changePassword.passwordMinLength'));
       return false;
     }
     setPasswordError("");
-    
-    // 如果确认密码已经输入，同时检查一致性
+
     if (confirmPassword && value !== confirmPassword) {
-      setConfirmPasswordError("两次输入的密码不一致");
+      setConfirmPasswordError(t('changePassword.passwordMismatch'));
     } else if (confirmPassword) {
       setConfirmPasswordError("");
     }
-    
+
     return true;
   };
 
   // 实时校验确认密码
   const validateConfirmPassword = (value: string) => {
     if (!value.trim()) {
-      setConfirmPasswordError("请再次输入新密码");
+      setConfirmPasswordError(t('changePassword.confirmPasswordRequired'));
       return false;
     }
     if (value !== password) {
-      setConfirmPasswordError("两次输入的密码不一致");
+      setConfirmPasswordError(t('changePassword.passwordMismatch'));
       return false;
     }
     setConfirmPasswordError("");
@@ -90,122 +91,77 @@ export default function ChangePasswordPage() {
   // 提交时的最终校验
   const validatePassword = () => {
     let isValid = true;
-    
+
     if (!password.trim()) {
-      setPasswordError("请输入新密码");
+      setPasswordError(t('changePassword.passwordRequired'));
       isValid = false;
     } else if (password.length < 6) {
-      setPasswordError("密码长度至少为6个字符");
+      setPasswordError(t('changePassword.passwordMinLength'));
       isValid = false;
     } else {
       setPasswordError("");
     }
-    
+
     if (!confirmPassword.trim()) {
-      setConfirmPasswordError("请再次输入新密码");
+      setConfirmPasswordError(t('changePassword.confirmPasswordRequired'));
       isValid = false;
     } else if (password !== confirmPassword) {
-      setConfirmPasswordError("两次输入的密码不一致");
+      setConfirmPasswordError(t('changePassword.passwordMismatch'));
       isValid = false;
     } else {
       setConfirmPasswordError("");
     }
-    
+
     return isValid;
   };
 
   const handleSave = async () => {
-    console.log('🔵 ============ handleSave 开始 ============');
-    console.log('🔵 当前时间:', new Date().toISOString());
-    console.log('🔵 密码值:', password);
-    console.log('🔵 确认密码值:', confirmPassword);
-    console.log('🔵 密码长度:', password.length);
-    console.log('🔵 确认密码长度:', confirmPassword.length);
-    
-    // 验证密码
     const isValid = validatePassword();
-    console.log('🔵 验证结果:', isValid);
-    
+
     if (!isValid) {
-      console.log('❌ 验证失败，停止执行');
       return;
     }
 
-    console.log('✅ 验证通过，准备保存');
-    console.log('📡 设置 saving = true');
     setSaving(true);
-    
+
     try {
-      console.log('📡 准备调用 updatePassword...');
-      console.log('📡 调用时间:', new Date().toISOString());
-      
-      // 增加整体超时保护到 35 秒
       const updatePromise = updatePassword(password);
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => {
-          console.log('⏰ 35秒超时触发');
-          reject(new Error('操作超时（超过30秒），请检查网络连接'));
+          reject(new Error(t('changePassword.timeoutError')));
         }, 35000)
       );
-      
-      console.log('📡 等待 Promise.race 结果...');
-      const result = await Promise.race([updatePromise, timeoutPromise]) as any;
-      console.log('📡 ========== Promise.race 完成 ==========');
-      console.log('📡 返回时间:', new Date().toISOString());
-      console.log('📡 返回结果:', JSON.stringify(result, null, 2));
-      console.log('📡 返回结果类型:', typeof result);
-      console.log('📡 result.error:', JSON.stringify(result?.error));
-      console.log('📡 result.error 是否存在:', !!result?.error);
-      console.log('📡 result.error 值:', result?.error);
 
-      // 检查是否有错误
-      // updatePassword 返回 { error: null } 表示成功，{ error: {...} } 表示失败
+      const result = await Promise.race([updatePromise, timeoutPromise]) as any;
+
       if (result?.error) {
-        console.error('❌ 结果包含错误:', JSON.stringify(result.error));
-        console.error('❌ 准备抛出错误');
         throw result.error;
       }
 
-      console.log('✅ 没有错误，密码更新成功！');
-      console.log('🎉 准备显示成功提示');
-      console.log('🎉 当前 showToast 状态:', showToast);
-      
-      // 显示成功提示
       setShowToast(true);
-      console.log('🎉 已调用 setShowToast(true)');
-      
-      // 1.5秒后隐藏提示并返回
+
       setTimeout(() => {
-        console.log('🔙 setTimeout 触发：隐藏提示，准备返回');
         setShowToast(false);
         router.back();
       }, 1500);
-      
-      console.log('✅ try 块执行完成');
+
     } catch (error: any) {
-      console.error('❌ ============ 捕获到错误 ============');
-      console.error('❌ 错误类型:', typeof error);
-      console.error('❌ 错误对象:', error);
-      console.error('❌ 错误消息:', error?.message);
-      console.error('❌ 错误堆栈:', error?.stack);
-      
-      let errorMessage = '修改失败';
+      let errorMessage = t('changePassword.saveFailed');
       if (error?.message) {
         errorMessage = error.message;
       }
-      
-      // 特别处理超时错误
+
       if (errorMessage.includes('超时') || errorMessage.includes('timeout')) {
-        errorMessage += '\n\n可能原因：\n1. 网络连接不稳定\n2. Supabase 服务器响应慢\n3. 防火墙或代理限制\n\n建议：稍后重试或检查网络设置';
+        errorMessage += '\n\n' + t('changePassword.timeoutReason1') + '\n' +
+          t('changePassword.timeoutReason2') + '\n' +
+          t('changePassword.timeoutReason3') + '\n' +
+          t('changePassword.timeoutReason4') + '\n\n' +
+          t('changePassword.timeoutSuggestion');
       }
-      
-      console.error('❌ 将显示错误提示:', errorMessage);
-      Alert.alert('错误', errorMessage);
+
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
-      console.log('🔵 finally 块执行');
-      console.log('🔵 设置 saving = false');
       setSaving(false);
-      console.log('🔵 ============ handleSave 结束 ============');
     }
   };
 
@@ -213,10 +169,10 @@ export default function ChangePasswordPage() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.backgroundDark} />
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             if (router.canGoBack()) {
               router.back();
@@ -228,14 +184,14 @@ export default function ChangePasswordPage() {
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>修改密码</Text>
+        <Text style={styles.headerTitle}>{t('changePassword.title')}</Text>
         <View style={styles.headerRight} />
       </View>
 
       <View style={styles.content}>
         {/* Email (Read-only) */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>邮箱账号</Text>
+          <Text style={styles.label}>{t('changePassword.emailAccount')}</Text>
           <View style={styles.emailContainer}>
             <Text style={styles.emailText}>{email}</Text>
           </View>
@@ -243,41 +199,41 @@ export default function ChangePasswordPage() {
 
         {/* New Password */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>新密码</Text>
+          <Text style={styles.label}>{t('changePassword.newPassword')}</Text>
           <View style={[styles.inputContainer, passwordError && styles.inputContainerError]}>
             <TextInput
               style={styles.input}
               value={password}
               onChangeText={handlePasswordChange}
-              placeholder="请输入新密码（至少6位）"
+              placeholder={t('changePassword.enterNewPassword')}
               placeholderTextColor="rgba(136, 136, 136, 0.5)"
               selectionColor={COLORS.accentOrange}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
             />
             {password.length > 0 && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   setPassword('');
                   setPasswordError('');
-                }} 
+                }}
                 style={styles.clearButton}
               >
-                <Ionicons 
-                  name="close-circle" 
-                  size={20} 
-                  color={COLORS.textSubDark} 
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={COLORS.textSubDark}
                 />
               </TouchableOpacity>
             )}
-            <TouchableOpacity 
-              onPress={() => setShowPassword(!showPassword)} 
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
               style={styles.eyeButton}
             >
-              <Ionicons 
-                name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                size={20} 
-                color={COLORS.textSubDark} 
+              <Ionicons
+                name={showPassword ? "eye-outline" : "eye-off-outline"}
+                size={20}
+                color={COLORS.textSubDark}
               />
             </TouchableOpacity>
           </View>
@@ -291,41 +247,41 @@ export default function ChangePasswordPage() {
 
         {/* Confirm Password */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>确认新密码</Text>
+          <Text style={styles.label}>{t('changePassword.confirmNewPassword')}</Text>
           <View style={[styles.inputContainer, confirmPasswordError && styles.inputContainerError]}>
             <TextInput
               style={styles.input}
               value={confirmPassword}
               onChangeText={handleConfirmPasswordChange}
-              placeholder="请再次输入新密码"
+              placeholder={t('changePassword.enterConfirmPassword')}
               placeholderTextColor="rgba(136, 136, 136, 0.5)"
               selectionColor={COLORS.accentOrange}
               secureTextEntry={!showConfirmPassword}
               autoCapitalize="none"
             />
             {confirmPassword.length > 0 && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   setConfirmPassword('');
                   setConfirmPasswordError('');
-                }} 
+                }}
                 style={styles.clearButton}
               >
-                <Ionicons 
-                  name="close-circle" 
-                  size={20} 
-                  color={COLORS.textSubDark} 
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={COLORS.textSubDark}
                 />
               </TouchableOpacity>
             )}
-            <TouchableOpacity 
-              onPress={() => setShowConfirmPassword(!showConfirmPassword)} 
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
               style={styles.eyeButton}
             >
-              <Ionicons 
-                name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
-                size={20} 
-                color={COLORS.textSubDark} 
+              <Ionicons
+                name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
+                size={20}
+                color={COLORS.textSubDark}
               />
             </TouchableOpacity>
           </View>
@@ -339,19 +295,19 @@ export default function ChangePasswordPage() {
 
         {/* Helper Text */}
         <View style={styles.helperTextContainer}>
-          <Text style={styles.helperText}>• 密码长度至少为6个字符</Text>
-          <Text style={styles.helperText}>• 两次输入的密码必须一致</Text>
+          <Text style={styles.helperText}>{t('changePassword.helperText1')}</Text>
+          <Text style={styles.helperText}>{t('changePassword.helperText2')}</Text>
         </View>
 
         {/* Save Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
           onPress={handleSave}
           disabled={saving}
           activeOpacity={0.7}
         >
           <Text style={styles.saveButtonText}>
-            {saving ? '保存中...' : '保存'}
+            {saving ? t('changePassword.saving') : t('changePassword.save')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -361,7 +317,7 @@ export default function ChangePasswordPage() {
         <View style={styles.toastContainer}>
           <View style={styles.toastContent}>
             <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            <Text style={styles.toastText}>修改成功</Text>
+            <Text style={styles.toastText}>{t('changePassword.saveSuccess')}</Text>
           </View>
         </View>
       )}

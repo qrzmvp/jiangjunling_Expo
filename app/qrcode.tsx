@@ -7,6 +7,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Asset } from 'expo-asset';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from '../components/Toast';
+import { useTranslation } from '../lib/i18n';
 
 // 导入图片资源
 const customerQRImage = require('../assets/images/customer-service-qr.jpg');
@@ -28,6 +29,7 @@ const COLORS = {
 export default function QRCodePage() {
   useProtectedRoute(); // 保护路由
   const router = useRouter();
+  const { t } = useTranslation();
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
 
@@ -35,10 +37,10 @@ export default function QRCodePage() {
   const handleCopyTelegramId = async () => {
     try {
       await Clipboard.setStringAsync('@Michael_Qin');
-      setToast({ visible: true, message: '电报ID已复制', type: 'success' });
+      setToast({ visible: true, message: t('qrcode.telegramIdCopied'), type: 'success' });
     } catch (error) {
       console.error('复制失败:', error);
-      setToast({ visible: true, message: '复制失败', type: 'error' });
+      setToast({ visible: true, message: t('qrcode.copyFailed'), type: 'error' });
     }
   };
 
@@ -95,10 +97,11 @@ export default function QRCodePage() {
           }, 100);
           
           console.log('Web端下载完成');
-          Alert.alert('保存成功', '客服二维码已开始下载');
+          Alert.alert(t('qrcode.saveSuccess'), t('qrcode.saveSuccessWeb'));
         } catch (error) {
           console.error('Web下载失败:', error);
-          Alert.alert('下载失败', `错误: ${error instanceof Error ? error.message : '未知错误'}`);
+          const errorMsg = error instanceof Error ? error.message : t('qrcode.unknownError');
+          Alert.alert(t('qrcode.downloadFailed'), t('qrcode.downloadFailedMessage', { error: errorMsg }));
         }
         setIsSaving(false);
         return;
@@ -117,9 +120,9 @@ export default function QRCodePage() {
       // 请求媒体库权限
       const { status } = await MediaLibrary.requestPermissionsAsync();
       console.log('权限状态:', status);
-      
+
       if (status !== 'granted') {
-        Alert.alert('需要权限', '请授予访问相册的权限以保存图片');
+        Alert.alert(t('qrcode.permissionRequired'), t('qrcode.permissionRequiredMessage'));
         setIsSaving(false);
         return;
       }
@@ -133,12 +136,13 @@ export default function QRCodePage() {
       // 保存到相册
       const savedAsset = await MediaLibrary.createAssetAsync(asset.localUri);
       console.log('保存成功:', savedAsset);
-      
-      Alert.alert('保存成功', '客服二维码已保存到相册');
+
+      Alert.alert(t('qrcode.saveSuccess'), t('qrcode.saveSuccessAlbum'));
       setIsSaving(false);
     } catch (error) {
       console.error('保存图片失败:', error);
-      Alert.alert('保存失败', `无法保存图片: ${error instanceof Error ? error.message : '未知错误'}`);
+      const errorMsg = error instanceof Error ? error.message : t('qrcode.unknownError');
+      Alert.alert(t('qrcode.saveFailed'), t('qrcode.saveFailedMessage', { error: errorMsg }));
       setIsSaving(false);
     }
   };
@@ -169,18 +173,18 @@ export default function QRCodePage() {
             >
               <Ionicons name="download-outline" size={20} color="#000" />
               <Text style={styles.buttonText}>
-                {isSaving ? '保存中...' : '保存到相册'}
+                {isSaving ? t('qrcode.saving') : t('qrcode.saveToAlbum')}
               </Text>
             </TouchableOpacity>
 
             {/* 添加电报ID按钮 */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={handleCopyTelegramId}
               activeOpacity={0.7}
             >
               <Ionicons name="copy-outline" size={20} color="#000" />
-              <Text style={styles.buttonText}>添加电报ID</Text>
+              <Text style={styles.buttonText}>{t('qrcode.addTelegramId')}</Text>
             </TouchableOpacity>
           </View>
         </View>

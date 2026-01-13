@@ -4,11 +4,34 @@ import { View, StyleSheet, Animated, Pressable } from 'react-native';
 import { useRef, useEffect } from 'react';
 import { usePathname } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from '../../lib/i18n';
+
+// Tab Screen 组件包装器 - 支持动态标题
+function TabScreenWrapper({
+  name,
+  titleKey,
+  children,
+}: {
+  name: string;
+  titleKey: string;
+  children: React.ReactNode;
+}) {
+  const { t, language } = useTranslation();
+
+  useEffect(() => {
+    // 当语言变化时，通过 navigation 设置标题
+    // 这个方法在 Expo Router 中可能不完全有效，
+    // 但至少可以确保组件重新渲染
+  }, [language, titleKey]);
+
+  return <>{children}</>;
+}
 
 export default function TabLayout() {
   const pathname = usePathname();
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const { session, loading } = useAuth();
+  const { t, language } = useTranslation();
   const router = useRouter();
   const segments = useSegments();
 
@@ -17,7 +40,7 @@ export default function TabLayout() {
     if (loading) return;
 
     const inTabs = segments[0] === '(tabs)';
-    
+
     if (!session && inTabs) {
       // 未登录但在受保护页面，重定向到登录页
       router.replace('/login');
@@ -72,7 +95,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: '首页',
+          title: language === 'zh' ? '首页' : 'Home',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
@@ -88,7 +111,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="trade"
           options={{
-            title: '交易',
+            title: language === 'zh' ? '交易' : 'Trade',
             tabBarIcon: ({ focused }) => (
               <View style={styles.tradeButton}>
                 <Animated.View style={{ transform: [{ rotate }] }}>
@@ -108,7 +131,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="my"
         options={{
-          title: '我的',
+          title: language === 'zh' ? '我的' : 'My',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'person' : 'person-outline'}

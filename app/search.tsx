@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { searchTraders, TraderWithStats, getMultipleTradersRoiTrend } from '../lib/traderService';
 import { getSearchHistory, addSearchHistory, clearSearchHistory } from '../lib/searchHistoryService';
 import { getFollowedTraders, getSubscribedTraders } from '../lib/userTraderService';
+import { useTranslation } from '../lib/i18n';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -63,6 +64,7 @@ export default function SearchScreen() {
   useProtectedRoute();
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
   
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<string[]>([]);
@@ -122,6 +124,13 @@ export default function SearchScreen() {
       console.error('❌ [Search] 批量加载趋势数据失败:', error);
     }
   };
+
+  // 筛选选项
+  const filters = [
+    t('homePage.sortByRoi'),
+    t('homePage.sortByWinRate'),
+    t('homePage.followed')
+  ];
 
   // 执行搜索
   const performSearch = useCallback(async (searchQuery: string, reset: boolean = true) => {
@@ -268,7 +277,7 @@ export default function SearchScreen() {
           <MaterialIcons name="search" size={20} color={COLORS.textMuted} />
           <TextInput
             style={styles.input}
-            placeholder="搜索交易员名称或描述..."
+            placeholder={t('search.placeholder')}
             placeholderTextColor={COLORS.textMuted}
             value={query}
             onChangeText={handleSearch}
@@ -285,7 +294,7 @@ export default function SearchScreen() {
       {query.trim() === '' ? (
         <View style={styles.historyContainer}>
           <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>搜索历史</Text>
+            <Text style={styles.historyTitle}>{t('search.searchHistory')}</Text>
             {history.length > 0 && (
               <TouchableOpacity onPress={handleClearHistory}>
                 <MaterialIcons name="delete-outline" size={20} color={COLORS.textMuted} />
@@ -295,8 +304,8 @@ export default function SearchScreen() {
           {history.length > 0 ? (
             <View style={styles.historyTags}>
               {history.map((item, index) => (
-                <TouchableOpacity 
-                  key={index} 
+                <TouchableOpacity
+                  key={index}
                   style={styles.historyTag}
                   onPress={() => handleSelectHistory(item)}
                 >
@@ -306,7 +315,7 @@ export default function SearchScreen() {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>暂无搜索历史</Text>
+              <Text style={styles.emptyText}>{t('search.noHistory')}</Text>
             </View>
           )}
         </View>
@@ -333,22 +342,22 @@ export default function SearchScreen() {
           {loading && results.length === 0 ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={COLORS.primary} />
-              <Text style={styles.loadingText}>搜索中...</Text>
+              <Text style={styles.loadingText}>{t('search.searching')}</Text>
             </View>
           ) : results.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialIcons name="search-off" size={48} color={COLORS.textMuted} />
-              <Text style={styles.emptyText}>未找到匹配的交易员</Text>
-              <Text style={styles.emptySubtext}>试试其他关键词</Text>
+              <Text style={styles.emptyText}>{t('search.noResults')}</Text>
+              <Text style={styles.emptySubtext}>{t('search.tryOtherKeywords')}</Text>
             </View>
           ) : (
             <>
               <View style={styles.traderList}>
                 {results.map((trader) => (
-                  <TraderCard 
+                  <TraderCard
                     key={trader.id}
                     traderId={trader.id}
-                    roiLabel="累计收益率 (ROI)"
+                    roiLabel={t('traderCard.totalRoi')}
                     name={trader.name}
                     avatar={trader.avatar_url}
                     description={trader.description}
@@ -362,7 +371,7 @@ export default function SearchScreen() {
                     pnl=""
                     winRate={trader.win_rate !== undefined && trader.win_rate !== null ? `${trader.win_rate.toFixed(1)}%` : '-'}
                     aum={trader.profit_factor ? trader.profit_factor.toFixed(2) : '0'}
-                    aumLabel="总盈亏比"
+                    aumLabel={t('traderCard.profitFactor')}
                     days={trader.trading_days || 0}
                     coins={[]}
                     chartPath={generateChartPath(traderTrendData.get(trader.id) || [])}
@@ -376,14 +385,14 @@ export default function SearchScreen() {
               {loadingMore && (
                 <View style={styles.loadingMoreContainer}>
                   <ActivityIndicator size="small" color={COLORS.primary} />
-                  <Text style={styles.loadingMoreText}>加载中...</Text>
+                  <Text style={styles.loadingMoreText}>{t('search.loadingMore')}</Text>
                 </View>
               )}
-              
+
               {/* 没有更多数据提示 */}
               {!hasMore && results.length > 0 && (
                 <View style={styles.endContainer}>
-                  <Text style={styles.endText}>没有更多数据了</Text>
+                  <Text style={styles.endText}>{t('search.noMoreData')}</Text>
                 </View>
               )}
             </>

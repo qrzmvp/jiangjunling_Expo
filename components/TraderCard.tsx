@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../lib/userTraderService';
+import { useTranslation } from '../lib/i18n';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -18,20 +19,20 @@ const COLORS = {
   yellowText: "#facc15", // yellow-400
 };
 
-export const TraderCard = ({ 
+export const TraderCard = ({
   traderId,
-  name, 
-  avatar, 
-  followers, 
-  maxFollowers, 
+  name,
+  avatar,
+  followers,
+  maxFollowers,
   description,
-  roi, 
-  roiLabel = "Lead trader 90D PnL",
-  pnl, 
-  winRate, 
-  aum, 
+  roi,
+  roiLabel,
+  pnl,
+  winRate,
+  aum,
   aumLabel,
-  days, 
+  days,
   coins,
   chartPath,
   statusColor = COLORS.yellow,
@@ -64,13 +65,14 @@ export const TraderCard = ({
   onPress?: () => void
 }) => {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [isSubscribed, setIsSubscribed] = React.useState(initialIsSubscribed);
   const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
   const [loading, setLoading] = React.useState(false);
 
   // 截断描述文字，最多15个字
   const truncateDescription = (text: string | undefined, maxLength: number = 15): string => {
-    if (!text) return '暂无描述';
+    if (!text) return t('traderCard.noDescription');
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
   };
@@ -177,7 +179,7 @@ export const TraderCard = ({
               disabled={loading}
             >
               <Text style={styles.cardCopyBtnText}>
-                {loading ? '...' : (isSubscribed ? '已订阅' : '订阅')}
+                {loading ? '...' : (isSubscribed ? t('traderCard.subscribed') : t('traderCard.subscribe'))}
               </Text>
             </TouchableOpacity>
           )}
@@ -187,7 +189,7 @@ export const TraderCard = ({
       {/* Stats Section - 与详情页完全一致 */}
       <View style={styles.statsSection}>
         <View style={styles.statsHeader}>
-          <Text style={styles.statsLabel}>{roiLabel || "累计收益率 (ROI)"}</Text>
+          <Text style={styles.statsLabel}>{roiLabel || t('traderCard.totalRoi')}</Text>
         </View>
         <View style={styles.statsRow}>
           <Text style={[styles.statsValue, { color: roi.includes('-') ? COLORS.danger : COLORS.primary }]}>{roi}</Text>
@@ -209,15 +211,15 @@ export const TraderCard = ({
       {/* Footer Stats - 3列布局 */}
       <View style={styles.cardFooter}>
         <View style={styles.footerStatItem}>
-          <Text style={styles.footerLabel}>胜率</Text>
+          <Text style={styles.footerLabel}>{t('traderCard.winRate')}</Text>
           <Text style={[styles.footerValue, { color: parseFloat(winRate) >= 50 ? COLORS.primary : COLORS.textMain }]}>{winRate}</Text>
         </View>
         <View style={[styles.footerStatItem, { alignItems: 'center' }]}>
-          <Text style={styles.footerLabel}>{aumLabel || "总盈亏比"}</Text>
+          <Text style={styles.footerLabel}>{aumLabel || t('traderCard.profitFactor')}</Text>
           <Text style={styles.footerValue}>{aum}</Text>
         </View>
         <View style={[styles.footerStatItem, { alignItems: 'flex-end' }]}>
-          <Text style={styles.footerLabel}>交易天数</Text>
+          <Text style={styles.footerLabel}>{t('traderCard.tradingDays')}</Text>
           <Text style={styles.footerValue}>{days}</Text>
         </View>
       </View>

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useProtectedRoute } from '../hooks/useProtectedRoute';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from '../lib/i18n';
 
 const COLORS = {
   background: "#000000",
@@ -27,26 +28,26 @@ interface PurchaseRecord {
   currency: string;
 }
 
-const StatusBadge = ({ status }: { status: PurchaseRecord['status'] }) => {
+const StatusBadge = ({ status, t }: { status: PurchaseRecord['status'], t: any }) => {
   let color = COLORS.textMuted;
   let text = '未知';
 
   switch (status) {
     case 'completed':
       color = COLORS.success;
-      text = '已完成';
+      text = t('purchaseHistory.statusCompleted');
       break;
     case 'pending':
       color = '#eab308';
-      text = '待支付';
+      text = t('purchaseHistory.statusPending');
       break;
     case 'failed':
       color = COLORS.danger;
-      text = '支付失败';
+      text = t('purchaseHistory.statusFailed');
       break;
     case 'refunded':
       color = '#f97316';
-      text = '已退款';
+      text = t('purchaseHistory.statusRefunded');
       break;
   }
 
@@ -60,6 +61,7 @@ const StatusBadge = ({ status }: { status: PurchaseRecord['status'] }) => {
 export default function PurchaseHistoryPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [records, setRecords] = useState<PurchaseRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -119,30 +121,30 @@ export default function PurchaseHistoryPage() {
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Text style={styles.packageName}>{item.packageName}</Text>
-        <StatusBadge status={item.status} />
+        <StatusBadge status={item.status} t={t} />
       </View>
-      
+
       <View style={styles.divider} />
-      
+
       <View style={styles.row}>
-        <Text style={styles.label}>订单号</Text>
+        <Text style={styles.label}>{t('purchaseHistory.orderNo')}</Text>
         <Text style={styles.value} numberOfLines={1} ellipsizeMode="middle">
           {item.orderNo}
         </Text>
       </View>
-      
+
       <View style={styles.row}>
-        <Text style={styles.label}>购买时间</Text>
+        <Text style={styles.label}>{t('purchaseHistory.purchaseTime')}</Text>
         <Text style={styles.value}>{item.date}</Text>
       </View>
-      
+
       <View style={styles.row}>
-        <Text style={styles.label}>付款方式</Text>
+        <Text style={styles.label}>{t('purchaseHistory.paymentMethod')}</Text>
         <Text style={styles.value}>{item.paymentMethod}</Text>
       </View>
-      
+
       <View style={[styles.row, { marginTop: 4 }]}>
-        <Text style={styles.label}>支付金额</Text>
+        <Text style={styles.label}>{t('purchaseHistory.amount')}</Text>
         <Text style={styles.amount}>{item.amount}</Text>
       </View>
     </View>
@@ -154,7 +156,7 @@ export default function PurchaseHistoryPage() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>购买记录</Text>
+        <Text style={styles.headerTitle}>{t('purchaseHistory.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -172,7 +174,7 @@ export default function PurchaseHistoryPage() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="receipt-outline" size={64} color={COLORS.textMuted} />
-              <Text style={styles.emptyText}>暂无购买记录</Text>
+              <Text style={styles.emptyText}>{t('purchaseHistory.noRecords')}</Text>
             </View>
           }
         />

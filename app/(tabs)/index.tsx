@@ -26,6 +26,7 @@ import {
 import { getPlatformStats, PlatformStats } from '../../lib/platformStatsService';
 import { supabase } from '../../lib/supabase';
 import type { Trader } from '../../types';
+import { useTranslation } from '../../lib/i18n';
 
 const { width } = Dimensions.get('window');
 
@@ -43,7 +44,30 @@ const COLORS = {
 };
 
 // 错误边界组件：用于捕获 SVG 渲染错误（通常是因为未重新构建 App）
-class ChartErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
+const ChartErrorBoundaryWithI18n = ({ children, t }: { children: React.ReactNode, t: any }) => {
+  const [hasError, setHasError] = React.useState(false);
+
+  React.useEffect(() => {
+    const componentDidCatch = () => setHasError(true);
+    return () => {};
+  }, []);
+
+  if (hasError) {
+    return (
+      <View style={[styles.chartArea, { justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,0,0,0.05)' }]}>
+        <MaterialIcons name="build" size={32} color={COLORS.danger} style={{ marginBottom: 8 }} />
+        <Text style={{ color: COLORS.danger, fontWeight: 'bold', marginBottom: 4 }}>{t('homePage.chartNotLoaded')}</Text>
+        <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>{t('homePage.rebuildPrompt')}</Text>
+        <View style={{ backgroundColor: '#000', padding: 8, borderRadius: 4, marginTop: 8 }}>
+          <Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'Menlo' }}>npx expo run:ios</Text>
+        </View>
+      </View>
+    );
+  }
+  return <>{children}</>;
+};
+
+class ChartErrorBoundary extends React.Component<{children: React.ReactNode, t: any}, {hasError: boolean}> {
   state = { hasError: false };
   static getDerivedStateFromError(_: any) { return { hasError: true }; }
   render() {
@@ -51,8 +75,8 @@ class ChartErrorBoundary extends React.Component<{children: React.ReactNode}, {h
       return (
         <View style={[styles.chartArea, { justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,0,0,0.05)' }]}>
           <MaterialIcons name="build" size={32} color={COLORS.danger} style={{ marginBottom: 8 }} />
-          <Text style={{ color: COLORS.danger, fontWeight: 'bold', marginBottom: 4 }}>图表组件未加载</Text>
-          <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>请在终端运行以下命令重新构建：</Text>
+          <Text style={{ color: COLORS.danger, fontWeight: 'bold', marginBottom: 4 }}>{this.props.t('homePage.chartNotLoaded') || '图表组件未加载'}</Text>
+          <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>{this.props.t('homePage.rebuildPrompt') || '请在终端运行以下命令重新构建：'}</Text>
           <View style={{ backgroundColor: '#000', padding: 8, borderRadius: 4, marginTop: 8 }}>
             <Text style={{ color: COLORS.primary, fontSize: 12, fontFamily: 'Menlo' }}>npx expo run:ios</Text>
           </View>
@@ -237,8 +261,9 @@ const LeaderboardItem = ({
 const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => void, currentTab?: string }) => {
   const { width: windowWidth } = useWindowDimensions();
   const { user } = useAuth();
-  const { timezone } = useSettings();
-  const [timeFilter, setTimeFilter] = React.useState('近一周');
+  const { timezone, language } = useSettings();
+  const { t } = useTranslation();
+  const [timeFilter, setTimeFilter] = React.useState(language === 'zh' ? '近一周' : 'Last Week');
   const [hiddenTraders, setHiddenTraders] = React.useState<string[]>([]);
   const [leaderboardData, setLeaderboardData] = React.useState<LeaderboardTrader[]>([]);
   const [leaderboardLoading, setLeaderboardLoading] = React.useState(true);
@@ -296,7 +321,8 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
   const loadTrendData = React.useCallback(async () => {
     try {
       setTrendLoading(true);
-      const days = timeFilter === '近一周' ? 7 : 30;
+      const lastWeekText = language === 'zh' ? '近一周' : 'Last Week';
+      const days = timeFilter === lastWeekText ? 7 : 30;
       const data = await getTopTradersTrendData(days);
       setTrendData(data);
       console.log('✅ 成功加载收益趋势数据，交易员数量:', data.length);
@@ -306,7 +332,7 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     } finally {
       setTrendLoading(false);
     }
-  }, [timeFilter]);
+  }, [timeFilter, language]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -676,35 +702,35 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     {/* Platform Statistics Section */}
     <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { fontSize: 14, fontWeight: '600' }]}>平台概览</Text>
+        <Text style={[styles.sectionTitle, { fontSize: 14, fontWeight: '600' }]}>{t('homePage.platformOverview')}</Text>
       </View>
     </View>
-    
+
     {/* Statistics Section - 3 columns 2 rows */}
     <View style={styles.statsContainer}>
       <View style={styles.statItemGrid}>
         <Text style={styles.statValue}>{platformStats.todaySignalCount}</Text>
-        <Text style={styles.statLabelSmall}>今日信号</Text>
+        <Text style={styles.statLabelSmall}>{t('homePage.todaySignals')}</Text>
       </View>
       <View style={styles.statItemGrid}>
         <Text style={styles.statValue}>{platformStats.longSignalCount}</Text>
-        <Text style={styles.statLabelSmall}>做多信号</Text>
+        <Text style={styles.statLabelSmall}>{t('homePage.longSignals')}</Text>
       </View>
       <View style={styles.statItemGrid}>
         <Text style={styles.statValue}>{platformStats.shortSignalCount}</Text>
-        <Text style={styles.statLabelSmall}>做空信号</Text>
+        <Text style={styles.statLabelSmall}>{t('homePage.shortSignals')}</Text>
       </View>
       <View style={styles.statItemGrid}>
         <Text style={styles.statValue}>{platformStats.activeTraderCount}</Text>
-        <Text style={styles.statLabelSmall}>活跃博主</Text>
+        <Text style={styles.statLabelSmall}>{t('homePage.activeTraders')}</Text>
       </View>
       <View style={styles.statItemGrid}>
         <Text style={styles.statValue}>{followCount}</Text>
-        <Text style={styles.statLabelSmall}>关注博主</Text>
+        <Text style={styles.statLabelSmall}>{t('homePage.followedTraders')}</Text>
       </View>
       <View style={styles.statItemGrid}>
         <Text style={styles.statValue}>{platformStats.tradingPairCount}</Text>
-        <Text style={styles.statLabelSmall}>交易币种</Text>
+        <Text style={styles.statLabelSmall}>{t('homePage.tradingPairs')}</Text>
       </View>
     </View>
 
@@ -886,9 +912,9 @@ const OverviewTabContent = ({ onMorePress, currentTab }: { onMorePress: () => vo
     {/* Leaderboard Section */}
     <View style={{ paddingHorizontal: 16, paddingBottom: 20, paddingTop: 24 }}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { fontSize: 14, fontWeight: '600' }]}>排行榜</Text>
+        <Text style={[styles.sectionTitle, { fontSize: 14, fontWeight: '600' }]}>{t('homePage.leaderboard')}</Text>
         <TouchableOpacity onPress={onMorePress}>
-          <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>更多 {'>'}</Text>
+          <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>{t('homePage.more')} {'>'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -982,8 +1008,14 @@ const generateChartPath = (trendData: Array<{ date: string; roi: number }>) => {
 const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy' }: TabContentProps) => {
   const router = useRouter();
   const { user } = useAuth();
+  const { language } = useSettings();
+  const { t } = useTranslation();
   // 更新筛选条件
-  const filters = ['按收益率', '按胜率', '已关注'];
+  const filters = [
+    t('homePage.sortByRoi'),
+    t('homePage.sortByWinRate'),
+    t('homePage.followed')
+  ];
   const [traders, setTraders] = useState<TraderWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -1059,10 +1091,10 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
       console.log('🔍 [TradersTabContent] 加载交易员，筛选条件:', activeFilters);
 
       // 解析筛选条件
-      const sortByRoi = activeFilters.includes('按收益率');
-      const sortByWinRate = activeFilters.includes('按胜率');
-      const filterSubscribed = activeFilters.includes('已订阅');
-      const filterFollowed = activeFilters.includes('已关注');
+      const sortByRoi = activeFilters.includes(t('homePage.sortByRoi'));
+      const sortByWinRate = activeFilters.includes(t('homePage.sortByWinRate'));
+      const filterSubscribed = activeFilters.includes(t('homePage.subscribed'));
+      const filterFollowed = activeFilters.includes(t('homePage.followed'));
 
       // 使用新的 RPC 函数：getTradersWithStats，传入筛选参数
       const tradersWithStatus = await getTradersWithStats(
@@ -1241,7 +1273,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   const handleSubscriptionChange = async () => {
     if (!user?.id) return;
     // 如果当前启用了筛选"已订阅"，则可能需要刷新列表移除该项
-    if (activeFilters.includes('已订阅')) {
+    if (activeFilters.includes(t('homePage.subscribed'))) {
        loadTraders(true); // 重新加载以更新列表
     } else {
         // 仅刷新状态集合
@@ -1258,7 +1290,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
   const handleFavoriteChange = async () => {
     if (!user?.id) return;
     // 如果当前启用了筛选"已关注"，则可能需要刷新列表移除该项
-    if (activeFilters.includes('已关注')) {
+    if (activeFilters.includes(t('homePage.followed'))) {
         loadTraders(true);
     } else {
         try {
@@ -1272,24 +1304,27 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
 
   const handleFilterPress = (filter: string) => {
     let newFilters = [...activeFilters];
-    
-    if (filter === '按收益率') {
-        if (newFilters.includes('按收益率')) {
+
+    const sortByRoi = t('homePage.sortByRoi');
+    const sortByWinRate = t('homePage.sortByWinRate');
+
+    if (filter === sortByRoi) {
+        if (newFilters.includes(sortByRoi)) {
              // 如果已经选中，且没有选中其他排序，则不能取消（至少保持一个排序? 或者允许无排序默认ROI）
              // 策略：允许取消，取消后相当于无显式排序(RPC默认ROI)
-             newFilters = newFilters.filter(f => f !== '按收益率');
+             newFilters = newFilters.filter(f => f !== sortByRoi);
         } else {
              // 选中ROI，取消胜率（互斥）
-             newFilters = newFilters.filter(f => f !== '按胜率');
-             newFilters.push('按收益率');
+             newFilters = newFilters.filter(f => f !== sortByWinRate);
+             newFilters.push(sortByRoi);
         }
-    } else if (filter === '按胜率') {
-        if (newFilters.includes('按胜率')) {
-             newFilters = newFilters.filter(f => f !== '按胜率');
+    } else if (filter === sortByWinRate) {
+        if (newFilters.includes(sortByWinRate)) {
+             newFilters = newFilters.filter(f => f !== sortByWinRate);
         } else {
              // 选中胜率，取消ROI（互斥）
-             newFilters = newFilters.filter(f => f !== '按收益率');
-             newFilters.push('按胜率');
+             newFilters = newFilters.filter(f => f !== sortByRoi);
+             newFilters.push(sortByWinRate);
         }
     } else {
         // 处理 Subscribed / Followed，普通 Toggle
@@ -1373,16 +1408,16 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
         </View>
       ) : traders.length === 0 ? (
         <View style={{ padding: 40, alignItems: 'center' }}>
-          <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>暂无交易员数据</Text>
+          <Text style={{ color: COLORS.textMuted, fontSize: 14 }}>{t('homePage.noTraders')}</Text>
         </View>
       ) : (
         <>
           <View style={styles.traderList}>
             {traders.map((trader) => (
-              <TraderCard 
+              <TraderCard
                 key={trader.id}
                 traderId={trader.id}
-                roiLabel="累计收益率 (ROI)"
+                roiLabel={t('traderCard.totalRoi')}
                 name={trader.name}
                 avatar={trader.avatar_url}
                 description={trader.description}
@@ -1397,7 +1432,7 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
                 pnl=""
                 winRate={trader.win_rate !== undefined && trader.win_rate !== null ? `${trader.win_rate.toFixed(1)}%` : '-'}
                 aum={trader.profit_factor ? trader.profit_factor.toFixed(2) : '0'}
-                aumLabel="总盈亏比"
+                aumLabel={t('traderCard.profitFactor')}
                 days={trader.trading_days || 0}
                 coins={[
                   "https://lh3.googleusercontent.com/aida-public/AB6AXuATVNwivtQOZ2npc_w1PrcrX_4y17f4sOiNkn0PcY8zqp0YLkQ3QuxIkuDHNbTjM1ZyrnwY3GKd7UVSYfoETg68d3DNq3yliS1uwFDzri7UqYgzB5fN2Ju5KYY8plwkhuhEWVym03IBsLlyKhgTloiJKTujcHXIe_z-lpDvnkbxcYGocB5nfG-PQGKRLQ1b7pknYTUavPCwz1iU0-cRBaTMqb597A3OgbOCuT2YYwBSVl3V5yGQaMdwr6lBh9K9vzREuJyuOGn7Tg",
@@ -1421,16 +1456,16 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
             <View style={{ padding: 20, alignItems: 'center' }}>
               <ActivityIndicator size="small" color={COLORS.primary} />
               <Text style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 8 }}>
-                加载中...
+                {t('homePage.loading')}
               </Text>
             </View>
           )}
-          
+
           {/* 没有更多数据提示 */}
           {!hasMore && traders.length > 0 && (
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>
-                没有更多数据了
+                {t('homePage.noMoreData')}
               </Text>
             </View>
           )}
@@ -1445,8 +1480,14 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
   const router = useRouter();
   const { user } = useAuth();
   const { timezone } = useSettings();
+  const { t } = useTranslation();
   // 更新筛选条件：全部、做多、做空、已关注
-  const filters = ['全部', '做多', '做空', '已关注'];
+  const filters = [
+    t('homePage.all'),
+    t('homePage.long'),
+    t('homePage.short'),
+    t('homePage.followed')
+  ];
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -1520,10 +1561,10 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
       let data: Signal[] = [];
 
       // 检查筛选条件
-      const hasLong = activeFilters.includes('做多');
-      const hasShort = activeFilters.includes('做空');
-      const hasSubscribed = activeFilters.includes('已订阅');
-      const hasFollowed = activeFilters.includes('已关注');
+      const hasLong = activeFilters.includes(t('homePage.long'));
+      const hasShort = activeFilters.includes(t('homePage.short'));
+      const hasSubscribed = activeFilters.includes(t('homePage.subscribed'));
+      const hasFollowed = activeFilters.includes(t('homePage.followed'));
 
       // 根据筛选条件获取信号 - 使用新的 RPC 函数
       let direction: 'long' | 'short' | undefined = undefined;
@@ -1625,22 +1666,26 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
   };
 
   const handleFilterPress = (filter: string) => {
-    if (filter === '全部') {
-      setActiveFilters(['全部']);
+    const allFilter = t('homePage.all');
+    const longFilter = t('homePage.long');
+    const shortFilter = t('homePage.short');
+
+    if (filter === allFilter) {
+      setActiveFilters([allFilter]);
       return;
     }
 
     let newFilters = [...activeFilters];
-    if (newFilters.includes('全部')) {
-      newFilters = newFilters.filter(f => f !== '全部');
+    if (newFilters.includes(allFilter)) {
+      newFilters = newFilters.filter(f => f !== allFilter);
     }
 
     // 处理做多/做空的互斥逻辑
-    if (filter === '做多' || filter === '做空') {
+    if (filter === longFilter || filter === shortFilter) {
       // 如果点击做多，移除做空；如果点击做空，移除做多
-      const oppositeFilter = filter === '做多' ? '做空' : '做多';
+      const oppositeFilter = filter === longFilter ? shortFilter : longFilter;
       newFilters = newFilters.filter(f => f !== oppositeFilter);
-      
+
       // 切换当前筛选项
       if (newFilters.includes(filter)) {
         newFilters = newFilters.filter(f => f !== filter);
@@ -1658,7 +1703,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
 
     // 如果没有任何筛选项，恢复为"全部"
     if (newFilters.length === 0) {
-      setActiveFilters(['全部']);
+      setActiveFilters([allFilter]);
     } else {
       setActiveFilters(newFilters);
     }
@@ -1725,7 +1770,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
             marginLeft: 8,
             fontWeight: '500',
           }}>
-            已加载 {loadedCount} 条最新数据
+            {t('homePage.loadedCount', { count: loadedCount })}
           </Text>
         </View>
       </View>
@@ -1744,7 +1789,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
           fontSize: 12,
           marginTop: 8,
         }}>
-          加载中...
+          {t('homePage.chartLoading')}
         </Text>
       </View>
     )}
@@ -1775,7 +1820,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
         </View>
       ) : signals.length === 0 ? (
         <View style={{ padding: 40, alignItems: 'center' }}>
-          <Text style={{ color: COLORS.textMuted }}>暂无信号数据</Text>
+          <Text style={{ color: COLORS.textMuted }}>{t('homePage.noSignals')}</Text>
         </View>
       ) : (
         <>
@@ -1814,8 +1859,8 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
             };
 
             // 信号类型显示
-            const signalTypeText = signal.signal_type === 'spot' ? '现货' : 
-                                  signal.signal_type === 'futures' ? '永续' : '杠杆';
+            const signalTypeText = signal.signal_type === 'spot' ? t('homePage.spot') :
+                                  signal.signal_type === 'futures' ? t('homePage.futures') : t('homePage.leverage');
 
             return (
               <View key={signal.id} style={styles.signalCard}>
@@ -1839,9 +1884,9 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
                       <View style={styles.signalOnlineIndicator} />
                     </View>
                     <View style={styles.signalTraderTextContainer}>
-                      <Text style={styles.signalTraderName}>{signalWithTrader.trader_name || '未知交易员'}</Text>
+                      <Text style={styles.signalTraderName}>{signalWithTrader.trader_name || t('homePage.unknownTrader')}</Text>
                       <Text style={styles.signalTraderDesc} numberOfLines={1}>
-                        {signalWithTrader.trader_description || '专业交易员'}
+                        {signalWithTrader.trader_description || t('homePage.professionalTrader')}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -1863,7 +1908,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
                     <Text style={styles.signalPairText}>{signal.currency} {signalTypeText}</Text>
                     <View style={[styles.signalStatusTag, { backgroundColor: statusBgColor }]}>
                       <Text style={[styles.signalStatusText, { color: statusTextColor }]}>
-                        {isLong ? '做多' : '做空'}
+                        {isLong ? t('homePage.long') : t('homePage.short')}
                       </Text>
                     </View>
                     <View style={[styles.signalLeverageTag, { marginRight: 'auto' }]}>
@@ -1873,30 +1918,30 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
 
                   <View style={styles.signalInfoGrid}>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>入场价</Text>
+                      <Text style={styles.signalInfoLabel}>{t('homePage.entryPrice')}</Text>
                       <Text style={styles.signalInfoValue}>{signal.entry_price}</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>仓位模式</Text>
-                      <Text style={styles.signalInfoValue}>全仓</Text>
+                      <Text style={styles.signalInfoLabel}>{t('homePage.positionMode')}</Text>
+                      <Text style={styles.signalInfoValue}>{t('homePage.fullPosition')}</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>委托时间</Text>
+                      <Text style={styles.signalInfoLabel}>{t('homePage.orderTime')}</Text>
                       <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time)}</Text>
                     </View>
                   </View>
 
                   <View style={styles.signalInfoGrid}>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止盈价</Text>
+                      <Text style={styles.signalInfoLabel}>{t('homePage.takeProfitPrice')}</Text>
                       <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.take_profit}</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>止损价</Text>
+                      <Text style={styles.signalInfoLabel}>{t('homePage.stopLossPrice')}</Text>
                       <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stop_loss}</Text>
                     </View>
                     <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>盈亏比</Text>
+                      <Text style={styles.signalInfoLabel}>{t('homePage.profitLossRatio')}</Text>
                       <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
                     </View>
                   </View>
@@ -1919,7 +1964,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
                 <ActivityIndicator size="small" color={COLORS.textMain} />
               ) : (
                 <Text style={{ color: COLORS.textMain, fontSize: 14 }}>
-                  加载更多
+                  {t('homePage.loadMore')}
                 </Text>
               )}
             </TouchableOpacity>
@@ -1928,7 +1973,7 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
           {!hasMore && signals.length > 0 && (
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{ color: COLORS.textMuted, fontSize: 12 }}>
-                已加载全部信号
+                {t('homePage.allSignalsLoaded')}
               </Text>
             </View>
           )}
@@ -1951,15 +1996,16 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
 export default function HomePage() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { timezone } = useSettings();
+  const { timezone, language } = useSettings();
+  const { t } = useTranslation();
   const { width: windowWidth } = useWindowDimensions();
   const [containerWidth, setContainerWidth] = React.useState(windowWidth);
   const [activeTab, setActiveTab] = React.useState<'overview' | 'copy' | 'signal'>('overview');
   const scrollViewRef = React.useRef<ScrollView>(null);
   const [heights, setHeights] = React.useState({ overview: 0, copy: 0, signal: 0 });
   // 分别管理每个 Tab 的筛选状态，确保持久化和默认选中
-  const [signalFilters, setSignalFilters] = React.useState<string[]>(['全部']);
-  const [traderFilters, setTraderFilters] = React.useState<string[]>(['按收益率']);
+  const [signalFilters, setSignalFilters] = React.useState<string[]>([language === 'zh' ? '全部' : 'All']);
+  const [traderFilters, setTraderFilters] = React.useState<string[]>([language === 'zh' ? '按收益率' : 'By ROI']);
   
   const isScrollingRef = React.useRef(false); // 用于标记是否正在滚动
   const [refreshSignalTab, setRefreshSignalTab] = React.useState(0); // 用于触发信号Tab刷新
@@ -2046,25 +2092,25 @@ export default function HomePage() {
       <View style={styles.stickyNavTabs}>
         <View style={styles.navBarContent}>
           <View style={styles.navTabs}>
-            <TouchableOpacity 
-              style={styles.tabItem} 
+            <TouchableOpacity
+              style={styles.tabItem}
               onPress={() => handleTabPress('overview')}
             >
-              <Text style={activeTab === 'overview' ? styles.tabTextActive : styles.tabText}>总览</Text>
+              <Text style={activeTab === 'overview' ? styles.tabTextActive : styles.tabText}>{t('homePage.overview')}</Text>
               {activeTab === 'overview' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.tabItem}
               onPress={() => handleTabPress('signal')}
             >
-              <Text style={activeTab === 'signal' ? styles.tabTextActive : styles.tabText}>信号</Text>
+              <Text style={activeTab === 'signal' ? styles.tabTextActive : styles.tabText}>{t('homePage.signal')}</Text>
               {activeTab === 'signal' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.tabItem}
               onPress={() => handleTabPress('copy')}
             >
-              <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>交易员</Text>
+              <Text style={activeTab === 'copy' ? styles.tabTextActive : styles.tabText}>{t('homePage.traders')}</Text>
               {activeTab === 'copy' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
           </View>

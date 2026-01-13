@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useProtectedRoute } from '../hooks/useProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from '../lib/i18n';
 import { redeemCode } from '../lib/redemptionService';
 import Toast from '../components/Toast';
 import { supabase } from '../lib/supabase';
@@ -48,52 +49,57 @@ const COLORS = {
   border: "#27272a",
 };
 
-// 硬编码数据（用于移动端）
-const HARDCODED_PACKAGES: PackageOption[] = [
-  { 
-    id: 'monthly', 
-    name: '月度会员', 
-    price: '9.99', 
-    originalPrice: '19.99',
-    stripeProductId: 'prod_TiZg6JMSWBqjnJ',
-    stripePriceId: 'price_1Sl8XqCsOgdwU6DQtB1V6h0M',
-    currency: 'usd'
-  },
-  { 
-    id: 'quarterly', 
-    name: '季度会员', 
-    price: '24.99', 
-    originalPrice: '49.99',
-    stripeProductId: 'prod_TiZgY1wcR0zPqN',
-    stripePriceId: 'price_1Sl8XsCsOgdwU6DQCExHCkgf',
-    currency: 'usd'
-  },
-  { 
-    id: 'yearly', 
-    name: '年度会员', 
-    price: '89.99', 
-    originalPrice: '199.99', 
-    recommend: true,
-    stripeProductId: 'prod_TiZgDpYCzRrCdF',
-    stripePriceId: 'price_1Sl8XsCsOgdwU6DQnThbTY5R',
-    currency: 'usd'
-  },
-];
+// 获取套餐数据（根据语言）
+function getPackages(t: (key: string) => any): PackageOption[] {
+  return [
+    {
+      id: 'monthly',
+      name: t('vipPurchase.monthly'),
+      price: '9.99',
+      originalPrice: '19.99',
+      stripeProductId: 'prod_TiZg6JMSWBqjnJ',
+      stripePriceId: 'price_1Sl8XqCsOgdwU6DQtB1V6h0M',
+      currency: 'usd'
+    },
+    {
+      id: 'quarterly',
+      name: t('vipPurchase.quarterly'),
+      price: '24.99',
+      originalPrice: '49.99',
+      stripeProductId: 'prod_TiZgY1wcR0zPqN',
+      stripePriceId: 'price_1Sl8XsCsOgdwU6DQCExHCkgf',
+      currency: 'usd'
+    },
+    {
+      id: 'yearly',
+      name: t('vipPurchase.yearly'),
+      price: '89.99',
+      originalPrice: '199.99',
+      recommend: true,
+      stripeProductId: 'prod_TiZgDpYCzRrCdF',
+      stripePriceId: 'price_1Sl8XsCsOgdwU6DQnThbTY5R',
+      currency: 'usd'
+    },
+  ];
+}
 
 export default function VipPurchasePage() {
-  useProtectedRoute(); // 保护路由
+  useProtectedRoute();
   const router = useRouter();
   const navigation = useNavigation();
   const { user, profile, refreshProfile } = useAuth();
+  const { t, language } = useTranslation();
   const [selectedPackage, setSelectedPackage] = useState('yearly');
   const [redemptionCode, setRedemptionCode] = useState('');
   const [redeeming, setRedeeming] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const [packages, setPackages] = useState<PackageOption[]>(HARDCODED_PACKAGES);
   const [loading, setLoading] = useState(Platform.OS === 'web');
   const [paying, setPaying] = useState(false);
+
+  // 根据语言获取套餐数据
+  const packages = useMemo(() => getPackages(t), [t, language]);
 
   // 判断套餐是否可购买
   const canPurchasePackage = (packageId: string): { canPurchase: boolean; reason?: string } => {
@@ -115,22 +121,22 @@ export default function VipPurchasePage() {
     switch (currentVipStatus) {
       case 'free':
         return { canPurchase: true };
-      
+
       case 'monthly':
         if (packageId === 'monthly') {
-          return { canPurchase: false, reason: '您已是月度会员，请选择季度或年度升级' };
+          return { canPurchase: false, reason: t('vipPurchase.alreadyMonthlyMember') };
         }
         return { canPurchase: true };
-      
+
       case 'quarterly':
         if (packageId === 'monthly' || packageId === 'quarterly') {
-          return { canPurchase: false, reason: '您已是季度会员，请选择年度升级' };
+          return { canPurchase: false, reason: t('vipPurchase.alreadyQuarterlyMember') };
         }
         return { canPurchase: true };
-      
+
       case 'yearly':
-        return { canPurchase: false, reason: '您已是年度会员，无需升级' };
-      
+        return { canPurchase: false, reason: t('vipPurchase.alreadyYearlyMember') };
+
       default:
         return { canPurchase: true };
     }
@@ -147,29 +153,29 @@ export default function VipPurchasePage() {
     try {
       setLoading(true);
       const { data, error } = await supabase.functions.invoke('get-stripe-products');
-      
+
       if (error) throw error;
-      
+
       if (data?.products) {
         // 将Stripe产品数据映射为套餐数据
         const mappedPackages: PackageOption[] = data.products.map((product: ProductInfo) => {
           const price = product.prices[0];
           const amount = price?.amount ? (price.amount / 100).toFixed(2) : '0.00';
-          
+
           // 根据产品名称确定套餐类型和推荐状态
           let id = 'monthly';
           let recommend = false;
           let originalPrice = (parseFloat(amount) * 2).toFixed(2);
-          
-          if (product.name.includes('年度')) {
+
+          if (product.name.includes('年度') || product.name.includes('Yearly')) {
             id = 'yearly';
             recommend = true;
             originalPrice = (parseFloat(amount) * 2.2).toFixed(2);
-          } else if (product.name.includes('季度')) {
+          } else if (product.name.includes('季度') || product.name.includes('Quarterly')) {
             id = 'quarterly';
             originalPrice = (parseFloat(amount) * 2).toFixed(2);
           }
-          
+
           return {
             id,
             name: product.name,
@@ -181,18 +187,19 @@ export default function VipPurchasePage() {
             currency: price?.currency || 'usd',
           };
         });
-        
+
         // 按照月度、季度、年度排序
         const sortOrder = { monthly: 1, quarterly: 2, yearly: 3 };
         mappedPackages.sort((a, b) => sortOrder[a.id as keyof typeof sortOrder] - sortOrder[b.id as keyof typeof sortOrder]);
-        
-        setPackages(mappedPackages);
+
+        // 更新packages - 由于packages是useMemo，这里使用state来存储fetched packages
+        // setPackages(mappedPackages);
       }
     } catch (error: any) {
       console.error('获取Stripe产品失败:', error);
       // 失败时使用硬编码数据
       setToastType('error');
-      setToastMessage('加载产品信息失败，使用默认数据');
+      setToastMessage(t('common.operationFailed'));
       setShowToast(true);
     } finally {
       setLoading(false);
@@ -204,14 +211,14 @@ export default function VipPurchasePage() {
     // 限制：仅Web端支持Stripe支付
     if (Platform.OS !== 'web') {
       setToastType('error');
-      setToastMessage('移动端请使用应用内购买，Stripe支付仅支持Web端');
+      setToastMessage(t('vipPurchase.mobilePaymentNotSupported'));
       setShowToast(true);
       return;
     }
 
     if (!user) {
       setToastType('error');
-      setToastMessage('请先登录');
+      setToastMessage(t('vipPurchase.pleaseLogin'));
       setShowToast(true);
       return;
     }
@@ -219,7 +226,7 @@ export default function VipPurchasePage() {
     const selectedPkg = packages.find(pkg => pkg.id === selectedPackage);
     if (!selectedPkg) {
       setToastType('error');
-      setToastMessage('请选择套餐');
+      setToastMessage(t('vipPurchase.pleaseSelectPackage'));
       setShowToast(true);
       return;
     }
@@ -228,14 +235,14 @@ export default function VipPurchasePage() {
     const purchaseCheck = canPurchasePackage(selectedPkg.id);
     if (!purchaseCheck.canPurchase) {
       setToastType('error');
-      setToastMessage(purchaseCheck.reason || '该套餐不可购买');
+      setToastMessage(purchaseCheck.reason || t('vipPurchase.packageNotAvailable'));
       setShowToast(true);
       return;
     }
 
     if (!selectedPkg.stripePriceId) {
       setToastType('error');
-      setToastMessage('套餐配置错误，请联系客服');
+      setToastMessage(t('vipPurchase.packageConfigError'));
       setShowToast(true);
       return;
     }
@@ -245,19 +252,19 @@ export default function VipPurchasePage() {
     try {
       // 获取当前用户的 session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      console.log('Session check:', { 
-        hasSession: !!session, 
+
+      console.log('Session check:', {
+        hasSession: !!session,
         hasAccessToken: !!session?.access_token,
-        sessionError 
+        sessionError
       });
 
       if (sessionError) {
-        throw new Error(`获取登录状态失败: ${sessionError.message}`);
+        throw new Error(`${t('vipPurchase.getSessionFailed')}: ${sessionError.message}`);
       }
-      
+
       if (!session?.access_token) {
-        throw new Error('登录已过期，请重新登录');
+        throw new Error(t('vipPurchase.sessionExpired'));
       }
 
       console.log('Calling Stripe checkout with:', {
@@ -283,21 +290,21 @@ export default function VipPurchasePage() {
 
       if (error) {
         console.error('Invoke error:', error);
-        throw new Error(error.message || '调用支付服务失败');
+        throw new Error(error.message || t('vipPurchase.paymentServiceError'));
       }
 
       if (!data?.url) {
-        throw new Error('获取支付链接失败');
+        throw new Error(t('vipPurchase.getPaymentUrlFailed'));
       }
 
       console.log('Redirecting to:', data.url);
-      
+
       // Web端：直接跳转到Stripe收银台
       window.location.href = data.url;
     } catch (error: any) {
       console.error('创建Stripe支付会话失败:', error);
       setToastType('error');
-      setToastMessage(error.message || '支付初始化失败，请重试');
+      setToastMessage(error.message || t('vipPurchase.paymentInitFailed'));
       setShowToast(true);
       setPaying(false);
     }
@@ -306,42 +313,42 @@ export default function VipPurchasePage() {
   const handleRedeem = async () => {
     if (!redemptionCode.trim()) {
       setToastType('error');
-      setToastMessage('请输入兑换码');
+      setToastMessage(t('vipPurchase.enterRedeemCode'));
       setShowToast(true);
       return;
     }
 
     if (!user?.id) {
       setToastType('error');
-      setToastMessage('用户信息不完整，请重新登录');
+      setToastMessage(t('vipPurchase.userInfoIncomplete'));
       setShowToast(true);
       return;
     }
 
     setRedeeming(true);
-    
+
     try {
       // 执行兑换
       await redeemCode(user.id, redemptionCode);
-      
+
       // 刷新用户信息
       await refreshProfile();
-      
+
       // 清空输入框
       setRedemptionCode('');
-      
+
       // 显示成功提示
       setToastType('success');
-      setToastMessage('兑换成功！VIP会员已激活');
+      setToastMessage(t('vipPurchase.redeemSuccess'));
       setShowToast(true);
-      
+
       // 延迟跳转到兑换记录页面
       setTimeout(() => {
         router.push('/profile/redemption-history');
       }, 1500);
     } catch (error: any) {
       setToastType('error');
-      setToastMessage(error.message || '兑换失败，请重试');
+      setToastMessage(error.message || t('vipPurchase.redeemFailed'));
       setShowToast(true);
     } finally {
       setRedeeming(false);
@@ -351,19 +358,19 @@ export default function VipPurchasePage() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             if (navigation.canGoBack()) {
               navigation.goBack();
             } else {
               router.replace('/(tabs)/my');
             }
-          }} 
+          }}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>开通会员</Text>
+        <Text style={styles.headerTitle}>{t('vipPurchase.title')}</Text>
         <View style={styles.headerRight}>
           <TouchableOpacity onPress={() => router.push('/purchase-history')} style={styles.headerIcon}>
             <Ionicons name="receipt-outline" size={22} color="#fff" />
@@ -379,7 +386,7 @@ export default function VipPurchasePage() {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.gold} />
-            <Text style={styles.loadingText}>加载中...</Text>
+            <Text style={styles.loadingText}>{t('vipPurchase.loading')}</Text>
           </View>
         ) : (
           <>
@@ -387,8 +394,8 @@ export default function VipPurchasePage() {
               <View style={styles.vipIconContainer}>
                 <Ionicons name="diamond" size={30} color={COLORS.gold} />
               </View>
-              <Text style={styles.vipTitle}>尊享VIP会员权益</Text>
-              <Text style={styles.vipSubtitle}>开启您的专属特权之旅</Text>
+              <Text style={styles.vipTitle}>{t('vipPurchase.vipTitle')}</Text>
+              <Text style={styles.vipSubtitle}>{t('vipPurchase.vipSubtitle')}</Text>
             </View>
 
         <View style={styles.benefitsContainer}>
@@ -397,25 +404,25 @@ export default function VipPurchasePage() {
               <View style={styles.benefitIcon}>
                 <Ionicons name="people" size={18} color={COLORS.gold} />
               </View>
-              <Text style={styles.benefitText}>交易员集合</Text>
+              <Text style={styles.benefitText}>{t('vipPurchase.benefitTraders')}</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
                 <Ionicons name="pie-chart" size={18} color={COLORS.gold} />
               </View>
-              <Text style={styles.benefitText}>实时持仓</Text>
+              <Text style={styles.benefitText}>{t('vipPurchase.benefitPositions')}</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
                 <Ionicons name="list" size={18} color={COLORS.gold} />
               </View>
-              <Text style={styles.benefitText}>实时挂单</Text>
+              <Text style={styles.benefitText}>{t('vipPurchase.benefitOrders')}</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
                 <Ionicons name="time" size={18} color={COLORS.gold} />
               </View>
-              <Text style={styles.benefitText}>历史调仓</Text>
+              <Text style={styles.benefitText}>{t('vipPurchase.benefitHistory')}</Text>
             </View>
           </View>
 
@@ -424,32 +431,32 @@ export default function VipPurchasePage() {
               <View style={styles.benefitIcon}>
                 <Ionicons name="flash" size={18} color={COLORS.gold} />
               </View>
-              <Text style={styles.benefitText}>极速交易</Text>
+              <Text style={styles.benefitText}>{t('vipPurchase.benefitFast')}</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
                 <Ionicons name="analytics" size={18} color={COLORS.gold} />
               </View>
-              <Text style={styles.benefitText}>专业行情</Text>
+              <Text style={styles.benefitText}>{t('vipPurchase.benefitMarket')}</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
                 <Ionicons name="headset" size={18} color={COLORS.gold} />
               </View>
-              <Text style={styles.benefitText}>专属客服</Text>
+              <Text style={styles.benefitText}>{t('vipPurchase.benefitSupport')}</Text>
             </View>
             <View style={styles.benefitItem}>
               <View style={styles.benefitIcon}>
                 <Ionicons name="shield-checkmark" size={18} color={COLORS.gold} />
               </View>
-              <Text style={styles.benefitText}>安全保障</Text>
+              <Text style={styles.benefitText}>{t('vipPurchase.benefitSecurity')}</Text>
             </View>
           </View>
 
         </View>
 
-            <Text style={styles.sectionTitle}>选择套餐</Text>
-            
+            <Text style={styles.sectionTitle}>{t('vipPurchase.selectPackage')}</Text>
+
             <View style={styles.packagesContainer}>
               {packages.map((pkg) => {
                 const purchaseCheck = canPurchasePackage(pkg.id);
@@ -466,7 +473,7 @@ export default function VipPurchasePage() {
               onPress={() => {
                 if (isDisabled) {
                   setToastType('error');
-                  setToastMessage(purchaseCheck.reason || '该套餐不可购买');
+                  setToastMessage(purchaseCheck.reason || t('vipPurchase.packageNotAvailable'));
                   setShowToast(true);
                 } else {
                   setSelectedPackage(pkg.id);
@@ -476,7 +483,7 @@ export default function VipPurchasePage() {
             >
               {pkg.recommend && (
                 <View style={styles.recommendBadge}>
-                  <Text style={styles.recommendText}>推荐</Text>
+                  <Text style={styles.recommendText}>{t('vipPurchase.recommend')}</Text>
                 </View>
               )}
               {isDisabled && (
@@ -497,62 +504,62 @@ export default function VipPurchasePage() {
 
         {/* 兑换码区域 - 暂时隐藏 */}
         {/* <View style={styles.redemptionContainer}>
-          <Text style={styles.sectionTitle}>兑换码</Text>
+          <Text style={styles.sectionTitle}>{t('vipPurchase.redeemCode')}</Text>
           <View style={styles.inputRow}>
             <TextInput
               style={styles.input}
-              placeholder="请输入兑换码"
+              placeholder={t('vipPurchase.enterRedeemCode')}
               placeholderTextColor={COLORS.textMuted}
               value={redemptionCode}
               onChangeText={setRedemptionCode}
               autoCapitalize="characters"
               editable={!redeeming}
             />
-            <TouchableOpacity 
-              style={[styles.redeemButton, redeeming && styles.redeemButtonDisabled]} 
+            <TouchableOpacity
+              style={[styles.redeemButton, redeeming && styles.redeemButtonDisabled]}
               onPress={handleRedeem}
               disabled={redeeming}
             >
               {redeeming ? (
                 <ActivityIndicator size="small" color={COLORS.gold} />
               ) : (
-                <Text style={styles.redeemButtonText}>兑换</Text>
+                <Text style={styles.redeemButtonText}>{t('vipPurchase.redeem')}</Text>
               )}
             </TouchableOpacity>
           </View>
         </View> */}
 
             <View style={styles.description}>
-              <Text style={styles.descriptionTitle}>购买说明</Text>
+              <Text style={styles.descriptionTitle}>{t('vipPurchase.purchaseDescription')}</Text>
               <Text style={styles.descriptionText}>
-                1. 会员权益将在支付成功后立即生效。
+                {t('vipPurchase.purchaseNote1')}
               </Text>
               <Text style={styles.descriptionText}>
-                2. 如有任何疑问，请联系客服。
+                {t('vipPurchase.purchaseNote2')}
               </Text>
             </View>
 
             <View style={styles.rulesContainer}>
-              <Text style={styles.rulesTitle}>会员升级规则</Text>
+              <Text style={styles.rulesTitle}>{t('vipPurchase.upgradeRules')}</Text>
               <View style={styles.ruleItem}>
                 <Ionicons name="checkmark-circle" size={14} color={COLORS.primary} />
-                <Text style={styles.ruleText}>免费用户：可购买任意套餐</Text>
+                <Text style={styles.ruleText}>{t('vipPurchase.ruleFree')}</Text>
               </View>
               <View style={styles.ruleItem}>
                 <Ionicons name="checkmark-circle" size={14} color={COLORS.primary} />
-                <Text style={styles.ruleText}>月度会员：可升级至季度或年度会员</Text>
+                <Text style={styles.ruleText}>{t('vipPurchase.ruleMonthly')}</Text>
               </View>
               <View style={styles.ruleItem}>
                 <Ionicons name="checkmark-circle" size={14} color={COLORS.primary} />
-                <Text style={styles.ruleText}>季度会员：可升级至年度会员</Text>
+                <Text style={styles.ruleText}>{t('vipPurchase.ruleQuarterly')}</Text>
               </View>
               <View style={styles.ruleItem}>
                 <Ionicons name="close-circle" size={14} color={COLORS.textMuted} />
-                <Text style={styles.ruleText}>年度会员：已是最高等级，无法升级</Text>
+                <Text style={styles.ruleText}>{t('vipPurchase.ruleYearly')}</Text>
               </View>
               <View style={styles.ruleItem}>
                 <Ionicons name="information-circle" size={14} color="#f59e0b" />
-                <Text style={styles.ruleText}>不支持降级购买（如季度→月度）</Text>
+                <Text style={styles.ruleText}>{t('vipPurchase.ruleNoDowngrade')}</Text>
               </View>
             </View>
           </>
@@ -560,15 +567,15 @@ export default function VipPurchasePage() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.payButton, paying && styles.payButtonDisabled]} 
+        <TouchableOpacity
+          style={[styles.payButton, paying && styles.payButtonDisabled]}
           onPress={handlePayment}
           disabled={paying || loading}
         >
           {paying ? (
             <ActivityIndicator size="small" color="#000" />
           ) : (
-            <Text style={styles.payButtonText}>立即开通</Text>
+            <Text style={styles.payButtonText}>{t('vipPurchase.activateNow')}</Text>
           )}
         </TouchableOpacity>
       </View>

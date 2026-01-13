@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Sta
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import { useSettings, TIMEZONES, Language, Timezone } from '../contexts/SettingsContext';
+import { useTranslation } from '../lib/i18n';
 
 const COLORS = {
   backgroundDark: "#000000",
@@ -18,6 +19,7 @@ const COLORS = {
 export default function SettingsPage() {
   const router = useRouter();
   const { language, timezone, setLanguage, setTimezone } = useSettings();
+  const { t } = useTranslation();
 
   // Modal State
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
@@ -31,12 +33,12 @@ export default function SettingsPage() {
       await setLanguage(lang);
       setLanguageModalVisible(false);
       setToastType('success');
-      setToastMessage(lang === 'zh' ? '语言设置已更新' : 'Language updated');
+      setToastMessage(t('settings.languageUpdated'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 1500);
     } catch (error) {
       setToastType('error');
-      setToastMessage('设置失败，请重试');
+      setToastMessage(t('settings.settingFailed'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     }
@@ -47,12 +49,12 @@ export default function SettingsPage() {
       await setTimezone(tz);
       setTimezoneModalVisible(false);
       setToastType('success');
-      setToastMessage('时区设置已更新');
+      setToastMessage(t('settings.timezoneUpdated'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 1500);
     } catch (error) {
       setToastType('error');
-      setToastMessage('设置失败，请重试');
+      setToastMessage(t('settings.settingFailed'));
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     }
@@ -62,20 +64,20 @@ export default function SettingsPage() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.backgroundDark} />
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => router.back()}
           style={styles.iconButton}
         >
           <Ionicons name="chevron-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>设置</Text>
+        <Text style={styles.headerTitle}>{t('settings.title')}</Text>
         <View style={styles.headerRight} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
       >
@@ -83,13 +85,13 @@ export default function SettingsPage() {
           {/* Language Setting Row - 暂时隐藏 */}
           {false && (
             <>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.row}
                 onPress={() => setLanguageModalVisible(true)}
               >
                 <View style={styles.rowLeft}>
                   <Ionicons name="language-outline" size={22} color={COLORS.textMainDark} />
-                  <Text style={styles.label}>语言设置</Text>
+                  <Text style={styles.label}>{t('settings.languageSetting')}</Text>
                 </View>
                 <View style={styles.rowRight}>
                   <Text style={styles.valueText}>{language === 'zh' ? '中文' : 'English'}</Text>
@@ -102,13 +104,13 @@ export default function SettingsPage() {
           )}
 
           {/* Timezone Setting Row */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.row}
             onPress={() => setTimezoneModalVisible(true)}
           >
             <View style={styles.rowLeft}>
               <Ionicons name="time-outline" size={22} color={COLORS.textMainDark} />
-              <Text style={styles.label}>时区设置</Text>
+              <Text style={styles.label}>{t('settings.timezoneSetting')}</Text>
             </View>
             <View style={styles.rowRight}>
               <Text style={styles.valueText}>{timezone.label}</Text>
@@ -120,7 +122,7 @@ export default function SettingsPage() {
         <View style={styles.tipCard}>
           <Ionicons name="information-circle-outline" size={18} color={COLORS.textSubDark} />
           <Text style={styles.tipText}>
-            时区设置将应用于所有时间显示。接口返回的时间为 UTC+0 时区，系统会自动转换为您选择的时区。
+            {t('settings.timezoneDescription')}
           </Text>
         </View>
       </ScrollView>
@@ -132,20 +134,20 @@ export default function SettingsPage() {
         visible={languageModalVisible}
         onRequestClose={() => setLanguageModalVisible(false)}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
           onPress={() => setLanguageModalVisible(false)}
         >
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>选择语言</Text>
+              <Text style={styles.modalTitle}>{t('settings.selectLanguage')}</Text>
               <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
                 <Ionicons name="close" size={24} color={COLORS.textMainDark} />
               </TouchableOpacity>
             </View>
             <View style={styles.optionsContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.optionItem}
                 onPress={() => handleLanguageChange('zh')}
               >
@@ -155,7 +157,7 @@ export default function SettingsPage() {
                 )}
               </TouchableOpacity>
               <View style={styles.optionDivider} />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.optionItem}
                 onPress={() => handleLanguageChange('en')}
               >
@@ -176,14 +178,14 @@ export default function SettingsPage() {
         visible={timezoneModalVisible}
         onRequestClose={() => setTimezoneModalVisible(false)}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
           onPress={() => setTimezoneModalVisible(false)}
         >
           <View style={[styles.modalContent, styles.timezoneModalContent]} onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>选择时区</Text>
+              <Text style={styles.modalTitle}>{t('settings.selectTimezone')}</Text>
               <TouchableOpacity onPress={() => setTimezoneModalVisible(false)}>
                 <Ionicons name="close" size={24} color={COLORS.textMainDark} />
               </TouchableOpacity>
@@ -192,7 +194,7 @@ export default function SettingsPage() {
               <View style={styles.optionsContainer}>
                 {TIMEZONES.map((tz, index) => (
                   <React.Fragment key={tz.value}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.optionItem}
                       onPress={() => handleTimezoneChange(tz)}
                     >
@@ -214,10 +216,10 @@ export default function SettingsPage() {
       {showToast && (
         <View style={styles.toastContainer}>
           <View style={styles.toastContent}>
-            <Ionicons 
-              name={toastType === 'success' ? "checkmark-circle" : "close-circle"} 
-              size={20} 
-              color={toastType === 'success' ? "#4CAF50" : "#FF4D4F"} 
+            <Ionicons
+              name={toastType === 'success' ? "checkmark-circle" : "close-circle"}
+              size={20}
+              color={toastType === 'success' ? "#4CAF50" : "#FF4D4F"}
             />
             <Text style={styles.toastText}>{toastMessage}</Text>
           </View>

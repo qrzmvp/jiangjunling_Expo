@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Signal } from '../lib/signalService';
 import { ExchangeAccountService } from '../lib/exchangeAccountService';
 import type { ExchangeAccount } from '../types';
+import { useTranslation } from '../lib/i18n';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -36,6 +37,7 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
   onConfirm,
 }) => {
   const router = useRouter();
+  const { t } = useTranslation();
   const [editableData, setEditableData] = useState({
     entryPrice: '',
     takeProfit: '',
@@ -140,7 +142,7 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
         <View style={styles.modalContainer}>
           {/* Modal Header */}
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>复制交易信号</Text>
+            <Text style={styles.modalTitle}>{t('copySignalModal.title')}</Text>
             <TouchableOpacity onPress={onClose}>
               <MaterialIcons name="close" size={24} color={COLORS.textMain} />
             </TouchableOpacity>
@@ -150,7 +152,7 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {/* 交易账户 - 最上面 */}
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>交易账户</Text>
+              <Text style={styles.formLabel}>{t('copySignalModal.tradingAccount')}</Text>
               {loadingAccounts ? (
                 <View style={styles.formInputDisabled}>
                   <ActivityIndicator size="small" color={COLORS.primary} />
@@ -164,7 +166,7 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
                   }}
                 >
                   <MaterialIcons name="add-circle-outline" size={20} color={COLORS.primary} />
-                  <Text style={styles.createAccountButtonText}>创建交易账户</Text>
+                  <Text style={styles.createAccountButtonText}>{t('copySignalModal.createAccount')}</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
@@ -173,8 +175,8 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
                 >
                   <Text style={editableData.accountId ? styles.formInputText : styles.formInputPlaceholder}>
                     {editableData.accountId
-                      ? exchangeAccounts.find(acc => acc.id === editableData.accountId)?.account_nickname || '请选择交易账户'
-                      : '请选择交易账户'}
+                      ? exchangeAccounts.find(acc => acc.id === editableData.accountId)?.account_nickname || t('copySignalModal.selectAccount')
+                      : t('copySignalModal.selectAccount')}
                   </Text>
                   <MaterialIcons name="arrow-drop-down" size={24} color={COLORS.textMuted} />
                 </TouchableOpacity>
@@ -183,7 +185,7 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
 
             {/* 入场金额 - 第二个 */}
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>入场金额</Text>
+              <Text style={styles.formLabel}>{t('copySignalModal.entryAmount')}</Text>
               <TextInput
                 style={styles.formInput}
                 value={editableData.entryAmount}
@@ -193,7 +195,7 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
                   setEditableData({ ...editableData, entryAmount: filtered });
                 }}
                 keyboardType="number-pad"
-                placeholder="请输入入场金额"
+                placeholder={t('copySignalModal.enterEntryAmount')}
                 placeholderTextColor={COLORS.textMuted}
               />
             </View>
@@ -201,13 +203,13 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
             {/* 两列布局 - 交易对 | 方向 */}
             <View style={styles.formRow}>
               <View style={styles.formGroupHalf}>
-                <Text style={styles.formLabel}>交易对</Text>
+                <Text style={styles.formLabel}>{t('copySignalModal.tradingPair')}</Text>
                 <View style={styles.formInputDisabled}>
                   <Text style={styles.formInputDisabledText}>{signal.currency}</Text>
                 </View>
               </View>
               <View style={styles.formGroupHalf}>
-                <Text style={styles.formLabel}>方向</Text>
+                <Text style={styles.formLabel}>{t('copySignalModal.direction')}</Text>
                 <View style={styles.formInputDisabled}>
                   <Text
                     style={[
@@ -217,7 +219,7 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
                       },
                     ]}
                   >
-                    {signal.direction === 'long' ? '做多' : '做空'}
+                    {signal.direction === 'long' ? t('copySignalModal.long') : t('copySignalModal.short')}
                   </Text>
                 </View>
               </View>
@@ -226,21 +228,21 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
             {/* 两列布局 - 杠杆 | 入场价 */}
             <View style={styles.formRow}>
               <View style={styles.formGroupHalf}>
-                <Text style={styles.formLabel}>杠杆（倍数）</Text>
+                <Text style={styles.formLabel}>{t('copySignalModal.leverage')}</Text>
                 <View style={styles.formInputDisabled}>
                   <Text style={styles.formInputDisabledText}>{signal.leverage.replace(/x$/i, '')}</Text>
                 </View>
               </View>
               <View style={styles.formGroupHalf}>
-                <Text style={styles.formLabel}>入场价</Text>
+                <Text style={styles.formLabel}>{t('copySignalModal.entryPrice')}</Text>
                 <TextInput
                   style={styles.formInput}
-                  value={editableData.entryPrice === '未提供' ? '' : editableData.entryPrice}
+                  value={editableData.entryPrice === t('copySignalModal.notProvided') ? '' : editableData.entryPrice}
                   onChangeText={(text) =>
                     setEditableData({ ...editableData, entryPrice: text })
                   }
                   keyboardType="decimal-pad"
-                  placeholder="请输入入场价"
+                  placeholder={t('copySignalModal.enterEntryPrice')}
                   placeholderTextColor={COLORS.textMuted}
                 />
               </View>
@@ -249,28 +251,28 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
             {/* 两列布局 - 止盈价 | 止损价 */}
             <View style={styles.formRow}>
               <View style={styles.formGroupHalf}>
-                <Text style={styles.formLabel}>止盈价</Text>
+                <Text style={styles.formLabel}>{t('copySignalModal.takeProfit')}</Text>
                 <TextInput
                   style={styles.formInput}
-                  value={editableData.takeProfit === '未提供' ? '' : editableData.takeProfit}
+                  value={editableData.takeProfit === t('copySignalModal.notProvided') ? '' : editableData.takeProfit}
                   onChangeText={(text) =>
                     setEditableData({ ...editableData, takeProfit: text })
                   }
                   keyboardType="decimal-pad"
-                  placeholder="请输入止盈价"
+                  placeholder={t('copySignalModal.enterTakeProfit')}
                   placeholderTextColor={COLORS.textMuted}
                 />
               </View>
               <View style={styles.formGroupHalf}>
-                <Text style={styles.formLabel}>止损价</Text>
+                <Text style={styles.formLabel}>{t('copySignalModal.stopLoss')}</Text>
                 <TextInput
                   style={styles.formInput}
-                  value={editableData.stopLoss === '未提供' ? '' : editableData.stopLoss}
+                  value={editableData.stopLoss === t('copySignalModal.notProvided') ? '' : editableData.stopLoss}
                   onChangeText={(text) =>
                     setEditableData({ ...editableData, stopLoss: text })
                   }
                   keyboardType="decimal-pad"
-                  placeholder="请输入止损价"
+                  placeholder={t('copySignalModal.enterStopLoss')}
                   placeholderTextColor={COLORS.textMuted}
                 />
               </View>
@@ -278,7 +280,7 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
 
             {/* 盈亏比 - 自动计算 */}
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>盈亏比</Text>
+              <Text style={styles.formLabel}>{t('copySignalModal.profitLossRatio')}</Text>
               <View style={styles.formInputDisabled}>
                 <Text style={[styles.formInputDisabledText, { color: COLORS.yellow }]}>
                   {calculateProfitLossRatio(
@@ -295,10 +297,10 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
           {/* Modal Footer */}
           <View style={styles.modalFooter}>
             <TouchableOpacity style={styles.modalCancelButton} onPress={onClose}>
-              <Text style={styles.modalCancelButtonText}>取消</Text>
+              <Text style={styles.modalCancelButtonText}>{t('copySignalModal.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.modalConfirmButton} onPress={handleConfirm}>
-              <Text style={styles.modalConfirmButtonText}>确认复制</Text>
+              <Text style={styles.modalConfirmButtonText}>{t('copySignalModal.confirmCopy')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -319,7 +321,7 @@ export const CopySignalModal: React.FC<CopySignalModalProps> = ({
           />
           <View style={styles.pickerContainer}>
             <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>选择交易账户</Text>
+              <Text style={styles.pickerTitle}>{t('copySignalModal.selectTradingAccount')}</Text>
               <TouchableOpacity onPress={() => setShowAccountPicker(false)}>
                 <MaterialIcons name="close" size={24} color={COLORS.textMain} />
               </TouchableOpacity>

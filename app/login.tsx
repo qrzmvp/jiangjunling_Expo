@@ -17,6 +17,7 @@ import { Stack, useRouter } from 'expo-router';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from '../lib/i18n';
 import Toast from '../components/Toast';
 
 const COLORS = {
@@ -24,21 +25,21 @@ const COLORS = {
   danger: "#f6465d",
   background: "#000000",
   surface: "#131313",
-  surfaceLight: "#1c1c1e", // Lighter gray for cards
+  surfaceLight: "#1c1c1e",
   textMain: "#ffffff",
   textMuted: "#9ca3af",
   border: "#27272a",
-  yellow: "#eab308", // yellow-500
-  yellowText: "#facc15", // yellow-400
+  yellow: "#eab308",
+  yellowText: "#facc15",
 };
 
 export default function LoginScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const { signInWithOtp, verifyOtp, signInWithPassword } = useAuth();
-  // Force dark mode as requested
-  const isDark = true; 
-  
+  const { t } = useTranslation();
+  const isDark = true;
+
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +64,7 @@ export default function LoginScreen() {
 
   const handleSendCode = async () => {
     if (!email) {
-      setToastMessage('请输入邮箱');
+      setToastMessage(t('login.pleaseEnterEmail'));
       setToastType('warning');
       setShowToast(true);
       return;
@@ -77,7 +78,7 @@ export default function LoginScreen() {
       setShowToast(true);
     } else {
       setCountdown(60);
-      setToastMessage('验证码已发送');
+      setToastMessage(t('login.codeSent'));
       setToastType('success');
       setShowToast(true);
     }
@@ -85,7 +86,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email) {
-      setToastMessage('请输入邮箱');
+      setToastMessage(t('login.pleaseEnterEmail'));
       setToastType('warning');
       setShowToast(true);
       return;
@@ -94,7 +95,7 @@ export default function LoginScreen() {
     let result;
     if (isPasswordLogin) {
       if (!password) {
-        setToastMessage('请输入密码');
+        setToastMessage(t('login.pleaseEnterPassword'));
         setToastType('warning');
         setShowToast(true);
         setLoading(false);
@@ -103,7 +104,7 @@ export default function LoginScreen() {
       result = await signInWithPassword(email, password);
     } else {
       if (!code) {
-        setToastMessage('请输入验证码');
+        setToastMessage(t('login.pleaseEnterCode'));
         setToastType('warning');
         setShowToast(true);
         setLoading(false);
@@ -114,11 +115,10 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (result.error) {
-      setToastMessage(result.error.message || '登录失败，请重试');
+      setToastMessage(result.error.message || t('login.loginFailed'));
       setToastType('error');
       setShowToast(true);
     } else {
-      // Success, navigate to home
       router.replace('/(tabs)');
     }
   };
@@ -145,7 +145,7 @@ export default function LoginScreen() {
         style={{ flex: 1 }}
       >
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>登录/注册</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>{t('login.title')}</Text>
         </View>
 
         <ScrollView
@@ -153,15 +153,15 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.titleContainer}>
-            <Text style={[styles.title, { color: theme.text }]}>欢迎回来</Text>
+            <Text style={[styles.title, { color: theme.text }]}>{t('login.welcome')}</Text>
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              请输入您的邮箱以登录或创建新账户。
+              {t('login.subtitle')}
             </Text>
           </View>
 
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.text }]}>邮箱</Text>
+              <Text style={[styles.label, { color: theme.text }]}>{t('login.email')}</Text>
               <View style={styles.inputWrapper}>
                 <TextInput
                   style={[
@@ -193,13 +193,13 @@ export default function LoginScreen() {
             <View style={styles.inputGroup}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={[styles.label, { color: theme.text }]}>
-                  {isPasswordLogin ? '密码' : '验证码'}
+                  {isPasswordLogin ? t('login.password') : t('login.verificationCode')}
                 </Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setIsPasswordLogin(!isPasswordLogin)}
                 >
                   <Text style={{ fontSize: 14, color: theme.text, fontWeight: '500' }}>
-                    {isPasswordLogin ? '切换验证码登录' : '切换密码登录'}
+                    {isPasswordLogin ? t('login.switchToCode') : t('login.switchToPassword')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -220,7 +220,7 @@ export default function LoginScreen() {
                         color: theme.text,
                       },
                     ]}
-                    placeholder="请输入密码"
+                    placeholder={t('login.enterPassword')}
                     placeholderTextColor={theme.placeholder}
                     value={password}
                     onChangeText={setPassword}
@@ -239,10 +239,10 @@ export default function LoginScreen() {
                     onPress={() => setShowPassword(!showPassword)}
                     style={styles.passwordEyeButton}
                   >
-                    <Ionicons 
-                      name={showPassword ? "eye-outline" : "eye-off-outline"} 
-                      size={20} 
-                      color={COLORS.textMuted} 
+                    <Ionicons
+                      name={showPassword ? "eye-outline" : "eye-off-outline"}
+                      size={20}
+                      color={COLORS.textMuted}
                     />
                   </TouchableOpacity>
                 </View>
@@ -255,10 +255,10 @@ export default function LoginScreen() {
                         backgroundColor: theme.inputBg,
                         borderColor: theme.inputBorder,
                         color: theme.text,
-                        paddingRight: 100, // Space for the button
+                        paddingRight: 100,
                       },
                     ]}
-                    placeholder="输入6位验证码"
+                    placeholder={t('login.enterCode')}
                     placeholderTextColor={theme.placeholder}
                     value={code}
                     onChangeText={setCode}
@@ -273,40 +273,18 @@ export default function LoginScreen() {
                       <Ionicons name="close-circle" size={20} color={COLORS.textMuted} />
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.getCodeButton, countdown > 0 && { opacity: 0.5 }]}
                     onPress={handleSendCode}
                     disabled={countdown > 0 || loading}
                   >
                     <Text style={styles.getCodeText}>
-                      {countdown > 0 ? `${countdown}s` : '获取验证码'}
+                      {countdown > 0 ? `${countdown}s` : t('login.getCode')}
                     </Text>
                   </TouchableOpacity>
                 </View>
               )}
             </View>
-
-            {/* 邀请码输入框 - 暂时隐藏 */}
-            {/* <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: theme.text }]}>邀请码 (选填)</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: theme.inputBg,
-                      borderColor: theme.inputBorder,
-                      color: theme.text,
-                    },
-                  ]}
-                  placeholder="请输入邀请码"
-                  placeholderTextColor={theme.placeholder}
-                  value={inviteCode}
-                  onChangeText={setInviteCode}
-                  autoCapitalize="none"
-                />
-              </View>
-            </View> */}
           </View>
 
           <View style={styles.actionContainer}>
@@ -319,68 +297,20 @@ export default function LoginScreen() {
                 <ActivityIndicator color={theme.mainButtonText} />
               ) : (
                 <Text style={[styles.mainButtonText, { color: theme.mainButtonText }]}>
-                  登录/注册
+                  {t('login.loginOrRegister')}
                 </Text>
               )}
             </TouchableOpacity>
           </View>
-
-          {/* <View style={styles.dividerContainer}>
-            <View style={[styles.divider, { backgroundColor: theme.inputBorder }]} />
-            <Text style={styles.dividerText}>其他方式登录</Text>
-            <View style={[styles.divider, { backgroundColor: theme.inputBorder }]} />
-          </View>
-
-          <View style={styles.socialContainer}>
-            <TouchableOpacity
-              style={[
-                styles.socialButton,
-                {
-                  backgroundColor: theme.socialBg,
-                  borderColor: theme.socialBorder,
-                },
-              ]}
-            >
-              <Svg width={20} height={20} viewBox="0 0 24 24" fill={theme.text}>
-                <Path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.78.81.04 2.39-1.04 4.02-.2 1.07.55 1.78 1.48 2.2 1.83-3.66 1.79-2.73 7.02.66 8.35-.49 1.1-1.07 1.84-1.96 2.21zM13.24 2.1c.45 2.51-2.4 4.67-4.47 4.54-.31-2.45 2.25-4.87 4.47-4.54z" />
-              </Svg>
-              <Text style={[styles.socialButtonText, { color: theme.text }]}>Apple</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.socialButton,
-                {
-                  backgroundColor: theme.socialBg,
-                  borderColor: theme.socialBorder,
-                },
-              ]}
-            >
-              <Svg width={20} height={20} viewBox="0 0 24 24" fill={theme.text}>
-                <Path d="M21.35 11.1h-9.17v2.73h6.51c-.33 3.81-3.5 5.44-6.5 5.44C8.36 19.27 5 16.25 5 12c0-4.1 3.2-7.27 7.2-7.27 3.09 0 4.9 1.97 4.9 1.97L19 4.72S16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12c0 5.05 4.13 10 10.22 10 5.35 0 9.25-3.67 9.25-9.09 0-1.15-.15-1.81-.15-1.81z" />
-              </Svg>
-              <Text style={[styles.socialButtonText, { color: theme.text }]}>Google</Text>
-            </TouchableOpacity>
-          </View> */}
         </ScrollView>
 
-        {/* <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            继续即代表您同意
-            <Text style={styles.linkText}>《服务协议》</Text>
-            和
-            <Text style={styles.linkText}>《隐私政策》</Text>
-          </Text>
-        </View> */}
+        <Toast
+          visible={showToast}
+          message={toastMessage}
+          type={toastType}
+          onHide={() => setShowToast(false)}
+        />
       </KeyboardAvoidingView>
-      
-      {/* Toast Notification */}
-      <Toast
-        visible={showToast}
-        message={toastMessage}
-        type={toastType}
-        onHide={() => setShowToast(false)}
-      />
     </SafeAreaView>
   );
 }
