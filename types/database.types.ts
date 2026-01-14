@@ -259,6 +259,13 @@ export type Database = {
           take_profit: string
           trader_id: string
           updated_at: string | null
+          roi: number | null
+          realized_pnl: number | null
+          closed_at: string | null
+          exit_price: number | null
+          exit_reason: string | null
+          last_checked_at: string | null
+          duration: number | null
         }
         Insert: {
           created_at?: string | null
@@ -274,6 +281,13 @@ export type Database = {
           take_profit: string
           trader_id: string
           updated_at?: string | null
+          roi?: number | null
+          realized_pnl?: number | null
+          closed_at?: string | null
+          exit_price?: number | null
+          exit_reason?: string | null
+          last_checked_at?: string | null
+          duration?: number | null
         }
         Update: {
           created_at?: string | null
@@ -289,6 +303,13 @@ export type Database = {
           take_profit?: string
           trader_id?: string
           updated_at?: string | null
+          roi?: number | null
+          realized_pnl?: number | null
+          closed_at?: string | null
+          exit_price?: number | null
+          exit_reason?: string | null
+          last_checked_at?: string | null
+          duration?: number | null
         }
         Relationships: [
           {
@@ -515,6 +536,7 @@ export type Database = {
           realized_pnl: number
           exit_price: number
           exit_reason: string
+          duration: number  // 新增：信号时长（小时）
           trader_name: string
           trader_avatar_url: string
           trader_is_online: boolean

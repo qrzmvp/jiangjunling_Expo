@@ -476,21 +476,50 @@ const TraderDetailScreen = () => {
         resultText = t('traderDetail.cancelled');
     }
 
-    // 计算信号时长
+    // 获取信号时长
     const getDuration = () => {
-        if (!isHistory || !signal.closed_at) return '-';
-        const start = new Date(signal.signal_time).getTime();
-        const end = new Date(signal.closed_at).getTime();
-        const diffMs = end - start;
-        if (diffMs < 0) return '-';
+        if (!isHistory) return '-';
         
-        const diffSecs = Math.floor(diffMs / 1000);
-        const hours = Math.floor(diffSecs / 3600);
-        const minutes = Math.floor((diffSecs % 3600) / 60);
-        const seconds = diffSecs % 60;
-
-        const pad = (n: number) => n.toString().padStart(2, '0');
-        return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        let durationHours = 0;
+        
+        // 优先使用数据库的duration字段
+        if (signal.duration !== undefined && signal.duration !== null) {
+            durationHours = signal.duration;
+        } else if (signal.closed_at) {
+            // 回退：计算时长
+            const start = new Date(signal.signal_time).getTime();
+            const end = new Date(signal.closed_at).getTime();
+            const diffMs = end - start;
+            if (diffMs < 0) return '-';
+            durationHours = diffMs / (1000 * 60 * 60);
+        } else {
+            return '-';
+        }
+        
+        // 格式化显示
+        const totalMinutes = durationHours * 60;
+        const totalSeconds = Math.floor(totalMinutes * 60);
+        
+        if (durationHours >= 1) {
+            // 大于等于1小时：显示"X小时Y分"
+            const hours = Math.floor(durationHours);
+            const minutes = Math.floor((durationHours % 1) * 60);
+            if (minutes > 0) {
+                return `${hours}小时${minutes}分`;
+            }
+            return `${hours}小时`;
+        } else if (totalMinutes >= 1) {
+            // 1分钟到1小时之间：显示"X分Y秒"
+            const minutes = Math.floor(totalMinutes);
+            const seconds = totalSeconds % 60;
+            if (seconds > 0) {
+                return `${minutes}分${seconds}秒`;
+            }
+            return `${minutes}分`;
+        } else {
+            // 小于1分钟：显示"X秒"
+            return `${totalSeconds}秒`;
+        }
     };
 
     const roiValue = signal.roi ? (signal.roi * 100).toFixed(2) + '%' : '-';

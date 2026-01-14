@@ -19,6 +19,7 @@ export interface Signal {
   realized_pnl?: number;
   exit_price?: number;
   exit_reason?: 'tp' | 'sl' | 'manual';
+  duration?: number; // 信号持续时长（小时）
   // 关联的交易员信息
   trader?: {
     id: string;
