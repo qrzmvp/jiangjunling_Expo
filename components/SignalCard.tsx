@@ -13,6 +13,7 @@ import {
 } from '../lib/userTraderService';
 import { formatDateTime } from '../lib/timezoneUtils';
 import Toast from './Toast';
+import { BlurredContent } from './BlurredContent';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -154,6 +155,9 @@ export const SignalCard = ({
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+  // 调试：检查用户登录状态
+  console.log('SignalCard - 用户登录状态:', !!user, 'isBlurred:', !user);
 
   // 计算盈亏比
   const riskRewardRatio = calculateRiskRewardRatio(entry, stopLoss, takeProfit, direction);
@@ -304,41 +308,45 @@ export const SignalCard = ({
           <Text style={styles.signalLabel}>币种：</Text>
           <Text style={styles.signalValue}>{currency}</Text>
         </View>
-        <View style={styles.signalRow}>
-          <Text style={styles.signalLabel}>入场：</Text>
-          <Text style={styles.signalValue}>{entry}</Text>
-        </View>
-        <View style={styles.signalRow}>
-          <Text style={styles.signalLabel}>方向：</Text>
-          <Text style={[styles.signalValue, { color: directionColor }]}>{directionText}</Text>
-        </View>
-        <View style={styles.signalRow}>
-          <Text style={styles.signalLabel}>杠杆：</Text>
-          <Text style={styles.signalValue}>10x</Text>
-        </View>
-        <View style={styles.signalRow}>
-          <Text style={styles.signalLabel}>止损：</Text>
-          <Text style={styles.signalValue}>{stopLoss}</Text>
-        </View>
-        <View style={styles.signalRow}>
-          <Text style={styles.signalLabel}>止盈：</Text>
-          <Text style={styles.signalValue}>{takeProfit}</Text>
-        </View>
-        <View style={styles.signalRow}>
-          <Text style={styles.signalLabel}>盈亏：</Text>
-          <Text style={styles.riskRewardValue}>
-            {riskRewardRatio !== '-' ? (
-              riskRewardRatio.includes('-') 
-                ? `${riskRewardRatio}:1` 
-                : `${riskRewardRatio}:1`
-            ) : '-'}
-          </Text>
-        </View>
-        <View style={styles.signalTimeContainer}>
-          <Text style={styles.timeText}>
-            {formatDateTime(time, timezone.offset, 'datetime')}
-          </Text>
-        </View>
+        <BlurredContent isBlurred={!user} message="登录后查看交易数据">
+          <View>
+            <View style={styles.signalRow}>
+              <Text style={styles.signalLabel}>入场：</Text>
+              <Text style={styles.signalValue}>{entry}</Text>
+            </View>
+            <View style={styles.signalRow}>
+              <Text style={styles.signalLabel}>方向：</Text>
+              <Text style={[styles.signalValue, { color: directionColor }]}>{directionText}</Text>
+            </View>
+            <View style={styles.signalRow}>
+              <Text style={styles.signalLabel}>杠杆：</Text>
+              <Text style={styles.signalValue}>10x</Text>
+            </View>
+            <View style={styles.signalRow}>
+              <Text style={styles.signalLabel}>止损：</Text>
+              <Text style={styles.signalValue}>{stopLoss}</Text>
+            </View>
+            <View style={styles.signalRow}>
+              <Text style={styles.signalLabel}>止盈：</Text>
+              <Text style={styles.signalValue}>{takeProfit}</Text>
+            </View>
+            <View style={styles.signalRow}>
+              <Text style={styles.signalLabel}>盈亏：</Text>
+              <Text style={styles.riskRewardValue}>
+                {riskRewardRatio !== '-' ? (
+                  riskRewardRatio.includes('-') 
+                    ? `${riskRewardRatio}:1` 
+                    : `${riskRewardRatio}:1`
+                ) : '-'}
+              </Text>
+            </View>
+            <View style={styles.signalTimeContainer}>
+              <Text style={styles.timeText}>
+                {formatDateTime(time, timezone.offset, 'datetime')}
+              </Text>
+            </View>
+          </View>
+        </BlurredContent>
       </View>
 
       {/* Footer - Removed as time is moved */}

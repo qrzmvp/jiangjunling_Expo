@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, NativeSyntheticEvent, NativeScrollEvent, useWindowDimensions, LayoutChangeEvent, ActivityIndicator, RefreshControl, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, NativeSyntheticEvent, NativeScrollEvent, useWindowDimensions, LayoutChangeEvent, ActivityIndicator, RefreshControl, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -9,6 +9,7 @@ import { AddToHomeScreen } from '../../components/AddToHomeScreen';
 import { TraderCard } from '../../components/TraderCard';
 import { SignalCard } from '../../components/SignalCard';
 import { CopySignalModal } from '../../components/CopySignalModal';
+import { BlurredContent } from '../../components/BlurredContent';
 import { SignalService, Signal } from '../../lib/signalService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
@@ -1657,12 +1658,85 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
   };
 
   // 确认Copy
-  const handleConfirmCopy = (editedData: { entryPrice: string; takeProfit: string; stopLoss: string }) => {
-    // TODO: 实现实际的copy功能，比如复制到剪贴板或提交到交易所
-    console.log('确认Copy:', {
-      signal: selectedSignal,
-      editedData,
-    });
+  const handleConfirmCopy = async (editedData: { 
+    entryPrice: string; 
+    takeProfit: string; 
+    stopLoss: string;
+    entryAmount: string; 
+    accountId: string; 
+  }): Promise<boolean> => { // 返回 Promise<boolean>
+    if (!selectedSignal) return false;
+
+    // 简单校验
+    if (!editedData.accountId) {
+      Alert.alert(t('error', '错误'), t('copySignalModal.selectAccount', '请选择交易账户'));
+      return false;
+    }
+    if (!editedData.entryAmount) {
+      Alert.alert(t('error', '错误'), t('copySignalModal.enterEntryAmount', '请输入入场金额'));
+      return false;
+    }
+
+    try {
+      // 1. 数据清洗：移除所有非数字字符（保留小数点）
+      // 避免传入 "65,000", "NaN" 或其他奇怪的字符
+      const cleanNumber = (str: string) => {
+        if (!str) return '0';
+        // 移除逗号和其他非数字符号，只保留数字和小数点
+        const cleaned = str.replace(/[^0-9.]/g, '');
+        // 简单的 NaN 检查
+        if (cleaned === '' || isNaN(parseFloat(cleaned))) return '0';
+        return cleaned;
+      };
+
+      const payload = {
+        accountId: editedData.accountId,
+        symbol: selectedSignal.currency,
+        direction: selectedSignal.direction,
+        amount: cleanNumber(editedData.entryAmount),
+        entryPrice: cleanNumber(editedData.entryPrice),
+        takeProfit: cleanNumber(editedData.takeProfit),
+        stopLoss: cleanNumber(editedData.stopLoss),
+        // 清洗杠杆：移除 'x', 'X' 和空格
+        leverage: selectedSignal.leverage ? selectedSignal.leverage.replace(/[xX\s]/g, '') : '1',
+      };
+
+      console.log('正在调用云函数 copy_signal...', payload);
+      
+      const { data, error } = await supabase.functions.invoke('copy_signal', {
+        body: payload
+      });
+
+      if (error) {
+        console.error('云函数调用失败:', error);
+        let errorMessage = error.message;
+        try {
+          if (error instanceof Response) {
+             const errorData = await error.json();
+             errorMessage = errorData.error || errorMessage;
+          }
+        } catch (e) {}
+        
+        Alert.alert('Copy失败', errorMessage || '请求失败');
+        return false; // 失败
+      }
+
+      console.log('云函数调用成功:', data);
+      
+      if (data && data.success) {
+        Alert.alert('Copy成功', `订单已提交！\n订单ID: ${data.orderId}`);
+        // 成功时返回 true，Modal 才会关闭
+        return true;
+      } else {
+         Alert.alert('Copy失败', data?.error || '未知错误');
+         return false;
+      }
+
+    } catch (err: any) {
+      console.error('Copy异常:', err);
+      Alert.alert('系统错误', err.message || '发生未知错误');
+      return false;
+    }
   };
 
   const handleFilterPress = (filter: string) => {
@@ -1891,15 +1965,13 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
                     </View>
                   </TouchableOpacity>
                   
-                  {/* Copy 按钮 - 暂时隐藏 */}
-                  {false && (
-                    <TouchableOpacity
-                      style={styles.signalCopyButton}
-                      onPress={() => handleCopySignal(signal)}
-                    >
-                      <Text style={styles.signalCopyButtonText}>Copy</Text>
-                    </TouchableOpacity>
-                  )}
+                  {/* Copy 按钮 */}
+                  <TouchableOpacity
+                    style={styles.signalCopyButton}
+                    onPress={() => handleCopySignal(signal)}
+                  >
+                    <Text style={styles.signalCopyButtonText}>Copy</Text>
+                  </TouchableOpacity>
                 </View>
 
                 {/* 信号详情 */}
@@ -1916,35 +1988,39 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
                     </View>
                   </View>
 
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>{t('homePage.entryPrice')}</Text>
-                      <Text style={styles.signalInfoValue}>{signal.entry_price}</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>{t('homePage.positionMode')}</Text>
-                      <Text style={styles.signalInfoValue}>{t('homePage.fullPosition')}</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>{t('homePage.orderTime')}</Text>
-                      <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time)}</Text>
-                    </View>
-                  </View>
+                  <BlurredContent isBlurred={!user} message="登录后查看交易数据">
+                    <View>
+                      <View style={styles.signalInfoGrid}>
+                        <View style={styles.signalGridItem}>
+                          <Text style={styles.signalInfoLabel}>{t('homePage.entryPrice')}</Text>
+                          <Text style={styles.signalInfoValue}>{signal.entry_price}</Text>
+                        </View>
+                        <View style={styles.signalGridItem}>
+                          <Text style={styles.signalInfoLabel}>{t('homePage.positionMode')}</Text>
+                          <Text style={styles.signalInfoValue}>{t('homePage.fullPosition')}</Text>
+                        </View>
+                        <View style={styles.signalGridItem}>
+                          <Text style={styles.signalInfoLabel}>{t('homePage.orderTime')}</Text>
+                          <Text style={styles.signalInfoValue}>{formatTime(signal.signal_time)}</Text>
+                        </View>
+                      </View>
 
-                  <View style={styles.signalInfoGrid}>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>{t('homePage.takeProfitPrice')}</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.take_profit}</Text>
+                      <View style={styles.signalInfoGrid}>
+                        <View style={styles.signalGridItem}>
+                          <Text style={styles.signalInfoLabel}>{t('homePage.takeProfitPrice')}</Text>
+                          <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.take_profit}</Text>
+                        </View>
+                        <View style={styles.signalGridItem}>
+                          <Text style={styles.signalInfoLabel}>{t('homePage.stopLossPrice')}</Text>
+                          <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stop_loss}</Text>
+                        </View>
+                        <View style={styles.signalGridItem}>
+                          <Text style={styles.signalInfoLabel}>{t('homePage.profitLossRatio')}</Text>
+                          <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
+                        </View>
+                      </View>
                     </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>{t('homePage.stopLossPrice')}</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stop_loss}</Text>
-                    </View>
-                    <View style={styles.signalGridItem}>
-                      <Text style={styles.signalInfoLabel}>{t('homePage.profitLossRatio')}</Text>
-                      <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
-                    </View>
-                  </View>
+                  </BlurredContent>
                 </View>
               </View>
             );

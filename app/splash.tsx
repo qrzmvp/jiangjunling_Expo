@@ -42,22 +42,18 @@ export default function SplashScreen() {
   const { session, loading } = useAuth();
 
   useEffect(() => {
-    // 超时保护：5秒后强制跳转到登录页
+    // 超时保护：5秒后强制跳转到首页
     const forceRedirectTimer = setTimeout(() => {
-      console.warn('Auth loading timeout, forcing redirect to login');
-      router.replace('/login');
+      console.warn('Auth loading timeout, forcing redirect to home');
+      router.replace('/(tabs)');
     }, 5000);
 
     if (loading) return () => clearTimeout(forceRedirectTimer);
 
-    // 正常流程：等待2秒后跳转
+    // 正常流程：等待2秒后跳转到首页（无论是否登录）
     const timer = setTimeout(() => {
       clearTimeout(forceRedirectTimer);
-      if (session) {
-        router.replace('/(tabs)');
-      } else {
-        router.replace('/login');
-      }
+      router.replace('/(tabs)');
     }, 2000);
 
     return () => {

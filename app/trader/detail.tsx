@@ -16,6 +16,7 @@ import type { Trader } from '../../types';
 import Toast from '../../components/Toast';
 import { CopySignalModal } from '../../components/CopySignalModal';
 import { useTranslation } from '../../lib/i18n';
+import { BlurredContent } from '../../components/BlurredContent';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -331,6 +332,7 @@ const TraderDetailScreen = () => {
   const handleFavoriteToggle = async () => {
     if (!user?.id || !trader) {
       console.log('请先登录');
+      router.push('/login');
       return;
     }
 
@@ -571,10 +573,12 @@ const TraderDetailScreen = () => {
         </View>
 
         <View style={styles.signalInfoGrid}>
-          <View style={styles.signalGridItem}>
-            <Text style={styles.signalInfoLabel}>{t('traderDetail.entryPrice')}</Text>
-            <Text style={styles.signalInfoValue}>{signal.entry_price}</Text>
-          </View>
+          <BlurredContent isBlurred={!user} message="登录后查看信号价格">
+            <View style={styles.signalGridItem}>
+              <Text style={styles.signalInfoLabel}>{t('traderDetail.entryPrice')}</Text>
+              <Text style={styles.signalInfoValue}>{signal.entry_price}</Text>
+            </View>
+          </BlurredContent>
           <View style={styles.signalGridItem}>
             <Text style={styles.signalInfoLabel}>{t('traderDetail.positionMode')}</Text>
             <Text style={styles.signalInfoValue}>{t('traderDetail.fullPosition')}</Text>
@@ -594,20 +598,22 @@ const TraderDetailScreen = () => {
           </View>
         </View>
 
-        <View style={styles.signalInfoGrid}>
-          <View style={styles.signalGridItem}>
-            <Text style={styles.signalInfoLabel}>{t('traderDetail.takeProfitPrice')}</Text>
-            <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.take_profit}</Text>
+        <BlurredContent isBlurred={!user} message="登录后查看信号价格">
+          <View style={styles.signalInfoGrid}>
+            <View style={styles.signalGridItem}>
+              <Text style={styles.signalInfoLabel}>{t('traderDetail.takeProfitPrice')}</Text>
+              <Text style={[styles.signalInfoValue, { color: COLORS.primary }]}>{signal.take_profit}</Text>
+            </View>
+            <View style={styles.signalGridItem}>
+              <Text style={styles.signalInfoLabel}>{t('traderDetail.stopLossPrice')}</Text>
+              <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stop_loss}</Text>
+            </View>
+            <View style={styles.signalGridItem}>
+              <Text style={styles.signalInfoLabel}>{t('traderDetail.profitLossRatio')}</Text>
+              <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
+            </View>
           </View>
-          <View style={styles.signalGridItem}>
-            <Text style={styles.signalInfoLabel}>{t('traderDetail.stopLossPrice')}</Text>
-            <Text style={[styles.signalInfoValue, { color: COLORS.danger }]}>{signal.stop_loss}</Text>
-          </View>
-          <View style={styles.signalGridItem}>
-            <Text style={styles.signalInfoLabel}>{t('traderDetail.profitLossRatio')}</Text>
-            <Text style={[styles.signalInfoValue, { color: COLORS.yellow }]}>{profitLossRatio}</Text>
-          </View>
-        </View>
+        </BlurredContent>
 
         {isHistory && (
             <View style={[styles.signalInfoGrid, { marginTop: 4 }]}>
@@ -821,109 +827,111 @@ const TraderDetailScreen = () => {
               </View>
             </View>
 
-          <View style={styles.statsContainer}>
-            <View style={styles.roiSection}>
-              <View style={styles.roiHeader}>
-                <View style={styles.roiHeaderLeft}>
-                  <Text style={styles.roiLabel}>{t('traderDetail.totalRoi')}</Text>
-                  <MaterialIcons name="info-outline" size={14} color="rgba(136, 136, 136, 0.5)" />
+          <BlurredContent isBlurred={!user} message="登录后查看交易员数据">
+            <View style={styles.statsContainer}>
+              <View style={styles.roiSection}>
+                <View style={styles.roiHeader}>
+                  <View style={styles.roiHeaderLeft}>
+                    <Text style={styles.roiLabel}>{t('traderDetail.totalRoi')}</Text>
+                    <MaterialIcons name="info-outline" size={14} color="rgba(136, 136, 136, 0.5)" />
+                  </View>
+                  <View style={styles.periodSelector}>
+                    <TouchableOpacity
+                      style={[styles.periodButton, signalTrendPeriod === '7' && styles.periodButtonActive]}
+                      onPress={() => setSignalTrendPeriod('7')}
+                    >
+                      <Text style={[styles.periodButtonText, signalTrendPeriod === '7' && styles.periodButtonTextActive]}>{t('traderDetail.last7Days')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.periodButton, signalTrendPeriod === '30' && styles.periodButtonActive]}
+                      onPress={() => setSignalTrendPeriod('30')}
+                    >
+                      <Text style={[styles.periodButtonText, signalTrendPeriod === '30' && styles.periodButtonTextActive]}>{t('traderDetail.last30Days')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.periodButton, signalTrendPeriod === '90' && styles.periodButtonActive]}
+                      onPress={() => setSignalTrendPeriod('90')}
+                    >
+                      <Text style={[styles.periodButtonText, signalTrendPeriod === '90' && styles.periodButtonTextActive]}>{t('traderDetail.last90Days')}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <View style={styles.periodSelector}>
-                  <TouchableOpacity
-                    style={[styles.periodButton, signalTrendPeriod === '7' && styles.periodButtonActive]}
-                    onPress={() => setSignalTrendPeriod('7')}
-                  >
-                    <Text style={[styles.periodButtonText, signalTrendPeriod === '7' && styles.periodButtonTextActive]}>{t('traderDetail.last7Days')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.periodButton, signalTrendPeriod === '30' && styles.periodButtonActive]}
-                    onPress={() => setSignalTrendPeriod('30')}
-                  >
-                    <Text style={[styles.periodButtonText, signalTrendPeriod === '30' && styles.periodButtonTextActive]}>{t('traderDetail.last30Days')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.periodButton, signalTrendPeriod === '90' && styles.periodButtonActive]}
-                    onPress={() => setSignalTrendPeriod('90')}
-                  >
-                    <Text style={[styles.periodButtonText, signalTrendPeriod === '90' && styles.periodButtonTextActive]}>{t('traderDetail.last90Days')}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View style={styles.roiRow}>
-                <View style={styles.roiValues}>
-                  <Text style={[styles.roiPercent, { color: (trader?.total_roi || 0) >= 0 ? COLORS.primary : COLORS.danger }]}>
-                    {trader?.total_roi !== undefined ? `${trader.total_roi > 0 ? '+' : ''}${trader.total_roi.toFixed(2)}%` : '0.00%'}
-                  </Text>
-                </View>
-                <View style={styles.miniChartContainer}>
-                  {trendLoading ? (
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                      <ActivityIndicator size="small" color={COLORS.primary} />
-                    </View>
-                  ) : (
-                    <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
-                      <Path 
-                        d={generateChartPath()} 
-                        fill="none" 
-                        stroke={COLORS.primary} 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round"
-                      />
-                    </Svg>
-                  )}
-                </View>
-              </View>
-            </View>
-
-            {/* 展开/收起按钮 */}
-            <TouchableOpacity 
-              style={{ alignItems: 'center', paddingVertical: 4, marginTop: -8 }}
-              onPress={() => setShowStats(!showStats)}
-            >
-              <MaterialIcons 
-                name={showStats ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-                size={24} 
-                color={COLORS.textSub} 
-              />
-            </TouchableOpacity>
-
-            {showStats && (
-              <>
-                <View style={[styles.gridStats, { paddingTop: 4, borderTopColor: 'transparent' }]}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>{t('traderDetail.winRate')}</Text>
-                    <Text style={[styles.statValue, { color: (trader?.win_rate || 0) >= 50 ? COLORS.primary : COLORS.textMain }]}>
-                      {trader?.win_rate !== undefined ? `${trader.win_rate.toFixed(1)}%` : '-'}
+                <View style={styles.roiRow}>
+                  <View style={styles.roiValues}>
+                    <Text style={[styles.roiPercent, { color: (trader?.total_roi || 0) >= 0 ? COLORS.primary : COLORS.danger }]}>
+                      {trader?.total_roi !== undefined ? `${trader.total_roi > 0 ? '+' : ''}${trader.total_roi.toFixed(2)}%` : '0.00%'}
                     </Text>
                   </View>
-                  <View style={[styles.statItem, { alignItems: 'center' }]}>
-                    <Text style={styles.statLabel}>{t('traderDetail.profitFactor')}</Text>
-                    <Text style={styles.statValue}>{trader?.profit_factor ? trader.profit_factor.toFixed(2) : '0'}</Text>
-                  </View>
-                  <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
-                    <Text style={styles.statLabel}>{t('traderDetail.tradingDays')}</Text>
-                    <Text style={styles.statValue}>{trader?.trading_days !== undefined && trader?.trading_days !== null ? trader.trading_days : '-'}</Text>
+                  <View style={styles.miniChartContainer}>
+                    {trendLoading ? (
+                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                        <ActivityIndicator size="small" color={COLORS.primary} />
+                      </View>
+                    ) : (
+                      <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
+                        <Path 
+                          d={generateChartPath()} 
+                          fill="none" 
+                          stroke={COLORS.primary} 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        />
+                      </Svg>
+                    )}
                   </View>
                 </View>
+              </View>
 
-                <View style={[styles.gridStats, { marginTop: 4, paddingTop: 0, borderTopWidth: 0 }]}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>{t('traderDetail.totalSignals')}</Text>
-                    <Text style={styles.statValue}>{trader?.total_signals || 0}</Text>
+              {/* 展开/收起按钮 */}
+              <TouchableOpacity 
+                style={{ alignItems: 'center', paddingVertical: 4, marginTop: -8 }}
+                onPress={() => setShowStats(!showStats)}
+              >
+                <MaterialIcons 
+                  name={showStats ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+                  size={24} 
+                  color={COLORS.textSub} 
+                />
+              </TouchableOpacity>
+
+              {showStats && (
+                <>
+                  <View style={[styles.gridStats, { paddingTop: 4, borderTopColor: 'transparent' }]}>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statLabel}>{t('traderDetail.winRate')}</Text>
+                      <Text style={[styles.statValue, { color: (trader?.win_rate || 0) >= 50 ? COLORS.primary : COLORS.textMain }]}>
+                        {trader?.win_rate !== undefined ? `${trader.win_rate.toFixed(1)}%` : '-'}
+                      </Text>
+                    </View>
+                    <View style={[styles.statItem, { alignItems: 'center' }]}>
+                      <Text style={styles.statLabel}>{t('traderDetail.profitFactor')}</Text>
+                      <Text style={styles.statValue}>{trader?.profit_factor ? trader.profit_factor.toFixed(2) : '0'}</Text>
+                    </View>
+                    <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
+                      <Text style={styles.statLabel}>{t('traderDetail.tradingDays')}</Text>
+                      <Text style={styles.statValue}>{trader?.trading_days !== undefined && trader?.trading_days !== null ? trader.trading_days : '-'}</Text>
+                    </View>
                   </View>
-                  <View style={[styles.statItem, { alignItems: 'center' }]}>
-                    <Text style={styles.statLabel}>{t('traderDetail.longSignals')}</Text>
-                    <Text style={styles.statValue}>{trader?.long_signals || 0}</Text>
+
+                  <View style={[styles.gridStats, { marginTop: 4, paddingTop: 0, borderTopWidth: 0 }]}>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statLabel}>{t('traderDetail.totalSignals')}</Text>
+                      <Text style={styles.statValue}>{trader?.total_signals || 0}</Text>
+                    </View>
+                    <View style={[styles.statItem, { alignItems: 'center' }]}>
+                      <Text style={styles.statLabel}>{t('traderDetail.longSignals')}</Text>
+                      <Text style={styles.statValue}>{trader?.long_signals || 0}</Text>
+                    </View>
+                    <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
+                      <Text style={styles.statLabel}>{t('traderDetail.shortSignals')}</Text>
+                      <Text style={styles.statValue}>{trader?.short_signals || 0}</Text>
+                    </View>
                   </View>
-                  <View style={[styles.statItem, { alignItems: 'flex-end' }]}>
-                    <Text style={styles.statLabel}>{t('traderDetail.shortSignals')}</Text>
-                    <Text style={styles.statValue}>{trader?.short_signals || 0}</Text>
-                  </View>
-                </View>
-              </>
-            )}
-          </View>
+                </>
+              )}
+            </View>
+          </BlurredContent>
         </View>
 
         {/* Rank Section - 暂时隐藏 */}

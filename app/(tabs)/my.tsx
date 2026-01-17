@@ -32,6 +32,18 @@ const MyPage: React.FC = () => {
   const [followCount, setFollowCount] = useState<number>(0);
   const [subscriptionCount, setSubscriptionCount] = useState<number>(0);
 
+  // 未登录用户直接跳转到登录页
+  useEffect(() => {
+    if (!user) {
+      router.replace('/login');
+    }
+  }, [user]);
+
+  // 如果未登录，不渲染任何内容（跳转会立即发生）
+  if (!user) {
+    return null;
+  }
+
   // Generate default info from user object or profile
   const defaultNickname = profile?.username || user?.email?.split('@')[0] || 'User';
   const accountId = profile?.account_id || (user?.id ? user.id.substring(0, 8).toUpperCase() : 'UNKNOWN');
@@ -239,22 +251,19 @@ const MyPage: React.FC = () => {
 
         {/* Menu List 1 */}
         <View style={styles.menuCard}>
-          {/* 交易所账户菜单 - 暂时隐藏 */}
-          {false && (
-            <>
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => router.push('/profile/exchange-accounts')}
-              >
-                <View style={styles.menuLeft}>
-                  <Ionicons name="pricetag" size={22} color="#8A919E" />
-                  <Text style={styles.menuText}>交易所账户</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#8A919E" />
-              </TouchableOpacity>
-              <View style={styles.menuDivider} />
-            </>
-          )}
+          {/* 交易所账户菜单 */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push('/profile/exchange-accounts')}
+          >
+            <View style={styles.menuLeft}>
+              <Ionicons name="pricetag" size={22} color="#8A919E" />
+              <Text style={styles.menuText}>交易所账户</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#8A919E" />
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push('/purchase-history')}

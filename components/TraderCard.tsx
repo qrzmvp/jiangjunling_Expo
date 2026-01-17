@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { useAuth } from '../contexts/AuthContext';
 import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../lib/userTraderService';
 import { useTranslation } from '../lib/i18n';
+import { BlurredContent } from './BlurredContent';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -66,6 +68,7 @@ export const TraderCard = ({
 }) => {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const router = useRouter();
   const [isSubscribed, setIsSubscribed] = React.useState(initialIsSubscribed);
   const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
   const [loading, setLoading] = React.useState(false);
@@ -113,6 +116,7 @@ export const TraderCard = ({
   const handleFavoriteToggle = async () => {
     if (!user?.id) {
       console.log('请先登录');
+      router.push('/login');
       return;
     }
 
@@ -187,42 +191,44 @@ export const TraderCard = ({
       </View>
 
       {/* Stats Section - 与详情页完全一致 */}
-      <View style={styles.statsSection}>
-        <View style={styles.statsHeader}>
-          <Text style={styles.statsLabel}>{roiLabel || t('traderCard.totalRoi')}</Text>
-        </View>
-        <View style={styles.statsRow}>
-          <Text style={[styles.statsValue, { color: roi.includes('-') ? COLORS.danger : COLORS.primary }]}>{roi}</Text>
-          <View style={styles.miniChartContainer}>
-            <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
-              <Path 
-                d={chartPath} 
-                fill="none" 
-                stroke={COLORS.primary} 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              />
-            </Svg>
+      <BlurredContent isBlurred={!user} message="登录后查看交易数据">
+        <View style={styles.statsSection}>
+          <View style={styles.statsHeader}>
+            <Text style={styles.statsLabel}>{roiLabel || t('traderCard.totalRoi')}</Text>
+          </View>
+          <View style={styles.statsRow}>
+            <Text style={[styles.statsValue, { color: roi.includes('-') ? COLORS.danger : COLORS.primary }]}>{roi}</Text>
+            <View style={styles.miniChartContainer}>
+              <Svg height="100%" width="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
+                <Path 
+                  d={chartPath} 
+                  fill="none" 
+                  stroke={COLORS.primary} 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Footer Stats - 3列布局 */}
-      <View style={styles.cardFooter}>
-        <View style={styles.footerStatItem}>
-          <Text style={styles.footerLabel}>{t('traderCard.winRate')}</Text>
-          <Text style={[styles.footerValue, { color: parseFloat(winRate) >= 50 ? COLORS.primary : COLORS.textMain }]}>{winRate}</Text>
+        {/* Footer Stats - 3列布局 */}
+        <View style={styles.cardFooter}>
+          <View style={styles.footerStatItem}>
+            <Text style={styles.footerLabel}>{t('traderCard.winRate')}</Text>
+            <Text style={[styles.footerValue, { color: parseFloat(winRate) >= 50 ? COLORS.primary : COLORS.textMain }]}>{winRate}</Text>
+          </View>
+          <View style={[styles.footerStatItem, { alignItems: 'center' }]}>
+            <Text style={styles.footerLabel}>{aumLabel || t('traderCard.profitFactor')}</Text>
+            <Text style={styles.footerValue}>{aum}</Text>
+          </View>
+          <View style={[styles.footerStatItem, { alignItems: 'flex-end' }]}>
+            <Text style={styles.footerLabel}>{t('traderCard.tradingDays')}</Text>
+            <Text style={styles.footerValue}>{days}</Text>
+          </View>
         </View>
-        <View style={[styles.footerStatItem, { alignItems: 'center' }]}>
-          <Text style={styles.footerLabel}>{aumLabel || t('traderCard.profitFactor')}</Text>
-          <Text style={styles.footerValue}>{aum}</Text>
-        </View>
-        <View style={[styles.footerStatItem, { alignItems: 'flex-end' }]}>
-          <Text style={styles.footerLabel}>{t('traderCard.tradingDays')}</Text>
-          <Text style={styles.footerValue}>{days}</Text>
-        </View>
-      </View>
+      </BlurredContent>
     </TouchableOpacity>
   );
 };

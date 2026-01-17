@@ -35,18 +35,6 @@ export default function TabLayout() {
   const router = useRouter();
   const segments = useSegments();
 
-  // 登录检查
-  useEffect(() => {
-    if (loading) return;
-
-    const inTabs = segments[0] === '(tabs)';
-
-    if (!session && inTabs) {
-      // 未登录但在受保护页面，重定向到登录页
-      router.replace('/login');
-    }
-  }, [session, loading, segments]);
-
   useEffect(() => {
     if (pathname === '/trade') {
       // 切换到交易页，旋转90度并保持
