@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, SafeAreaView, StatusBar, Modal, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
@@ -45,14 +45,34 @@ export default function PersonalInfoPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  
+  // 用于清理定时器和跟踪组件状态
+  const isMounted = useRef(true);
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
+
+  // 清理所有定时器
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
+      timeoutRefs.current = [];
+    };
+  }, []);
 
   const handleCopy = async (text: string) => {
     await Clipboard.setStringAsync(text);
     // 显示成功提示
-    setToastType('success');
-    setToastMessage(t('profile.copySuccess'));
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 1500);
+    if (isMounted.current) {
+      setToastType('success');
+      setToastMessage(t('profile.copySuccess'));
+      setShowToast(true);
+      const timeout = setTimeout(() => {
+        if (isMounted.current) {
+          setShowToast(false);
+        }
+      }, 1500);
+      timeoutRefs.current.push(timeout);
+    }
   };
 
   const handleLogout = () => {
@@ -60,25 +80,30 @@ export default function PersonalInfoPage() {
   };
 
   const confirmLogout = async () => {
-    // 1. Close modal immediately
-    setLogoutModalVisible(false);
-
-    // 2. Show success toast first
-    setToastType('success');
-    setToastMessage(t('profile.logoutSuccess'));
-    setShowToast(true);
-
     try {
-      // 3. Perform logout
+      // 1. Close modal immediately
+      setLogoutModalVisible(false);
+      
+      // 2. Perform logout
       await signOut();
+      
+      // 3. Immediately navigate to login page to prevent hooks errors
+      router.replace('/login');
     } catch (e) {
       console.error('Logout error:', e);
+      // 只有在退出失败时才显示错误
+      if (isMounted.current) {
+        setToastType('error');
+        setToastMessage(t('profile.logoutFailed') || '退出登录失败');
+        setShowToast(true);
+        const timeout = setTimeout(() => {
+          if (isMounted.current) {
+            setShowToast(false);
+          }
+        }, 2000);
+        timeoutRefs.current.push(timeout);
+      }
     }
-
-    // 4. Redirect after toast (useProtectedRoute will handle the actual navigation)
-    setTimeout(() => {
-      setShowToast(false);
-    }, 1500);
   };
 
   const pickImage = async () => {
@@ -87,10 +112,15 @@ export default function PersonalInfoPage() {
     // 请求相册权限
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      setToastType('error');
-      setToastMessage(t('profile.libraryPermissionDenied'));
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
+      if (isMounted.current) {
+        setToastType('error');
+        setToastMessage(t('profile.libraryPermissionDenied'));
+        setShowToast(true);
+        const timeout = setTimeout(() => {
+          if (isMounted.current) setShowToast(false);
+        }, 2000);
+        timeoutRefs.current.push(timeout);
+      }
       return;
     }
 
@@ -108,10 +138,15 @@ export default function PersonalInfoPage() {
       }
     } catch (error: any) {
       console.error('Image picker error:', error);
-      setToastType('error');
-      setToastMessage(t('profile.photoPickerFailed'));
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
+      if (isMounted.current) {
+        setToastType('error');
+        setToastMessage(t('profile.photoPickerFailed'));
+        setShowToast(true);
+        const timeout = setTimeout(() => {
+          if (isMounted.current) setShowToast(false);
+        }, 2000);
+        timeoutRefs.current.push(timeout);
+      }
     }
   };
 
@@ -120,20 +155,30 @@ export default function PersonalInfoPage() {
 
     // Web 端不支持相机
     if (Platform.OS === 'web') {
-      setToastType('error');
-      setToastMessage(t('profile.cameraNotSupported'));
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
+      if (isMounted.current) {
+        setToastType('error');
+        setToastMessage(t('profile.cameraNotSupported'));
+        setShowToast(true);
+        const timeout = setTimeout(() => {
+          if (isMounted.current) setShowToast(false);
+        }, 2000);
+        timeoutRefs.current.push(timeout);
+      }
       return;
     }
 
     // 请求相机权限
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      setToastType('error');
-      setToastMessage(t('profile.cameraPermissionDenied'));
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
+      if (isMounted.current) {
+        setToastType('error');
+        setToastMessage(t('profile.cameraPermissionDenied'));
+        setShowToast(true);
+        const timeout = setTimeout(() => {
+          if (isMounted.current) setShowToast(false);
+        }, 2000);
+        timeoutRefs.current.push(timeout);
+      }
       return;
     }
 
@@ -151,16 +196,24 @@ export default function PersonalInfoPage() {
     } catch (error: any) {
       console.error('Camera error:', error);
       // 模拟器会抛出错误
-      if (error.message?.includes('simulator') || error.message?.includes('Camera') || error.message?.includes('available')) {
-        setToastType('error');
-        setToastMessage(t('profile.simulatorNoCamera'));
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 2500);
-      } else {
-        setToastType('error');
-        setToastMessage(t('profile.photoFailed'));
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 2000);
+      if (isMounted.current) {
+        if (error.message?.includes('simulator') || error.message?.includes('Camera') || error.message?.includes('available')) {
+          setToastType('error');
+          setToastMessage(t('profile.simulatorNoCamera'));
+          setShowToast(true);
+          const timeout = setTimeout(() => {
+            if (isMounted.current) setShowToast(false);
+          }, 2500);
+          timeoutRefs.current.push(timeout);
+        } else {
+          setToastType('error');
+          setToastMessage(t('profile.photoFailed'));
+          setShowToast(true);
+          const timeout = setTimeout(() => {
+            if (isMounted.current) setShowToast(false);
+          }, 2000);
+          timeoutRefs.current.push(timeout);
+        }
       }
     }
   };
@@ -170,10 +223,15 @@ export default function PersonalInfoPage() {
     setTempImageUri(null);
 
     if (!user?.id) {
-      setToastType('error');
-      setToastMessage(t('profile.userInfoIncomplete'));
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
+      if (isMounted.current) {
+        setToastType('error');
+        setToastMessage(t('profile.userInfoIncomplete'));
+        setShowToast(true);
+        const timeout = setTimeout(() => {
+          if (isMounted.current) setShowToast(false);
+        }, 2000);
+        timeoutRefs.current.push(timeout);
+      }
       return;
     }
 
@@ -191,18 +249,30 @@ export default function PersonalInfoPage() {
       await refreshProfile();
 
       // 显示成功提示
-      setToastType('success');
-      setToastMessage(t('profile.avatarUpdateSuccess'));
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
+      if (isMounted.current) {
+        setToastType('success');
+        setToastMessage(t('profile.avatarUpdateSuccess'));
+        setShowToast(true);
+        const timeout = setTimeout(() => {
+          if (isMounted.current) setShowToast(false);
+        }, 2000);
+        timeoutRefs.current.push(timeout);
+      }
     } catch (error: any) {
       console.error('Avatar update error:', error);
-      setToastType('error');
-      setToastMessage(error.message || t('profile.avatarUploadFailed'));
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 2000);
+      if (isMounted.current) {
+        setToastType('error');
+        setToastMessage(error.message || t('profile.avatarUploadFailed'));
+        setShowToast(true);
+        const timeout = setTimeout(() => {
+          if (isMounted.current) setShowToast(false);
+        }, 2000);
+        timeoutRefs.current.push(timeout);
+      }
     } finally {
-      setUploadingAvatar(false);
+      if (isMounted.current) {
+        setUploadingAvatar(false);
+      }
     }
   };
 

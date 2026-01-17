@@ -39,11 +39,6 @@ const MyPage: React.FC = () => {
     }
   }, [user]);
 
-  // 如果未登录，不渲染任何内容（跳转会立即发生）
-  if (!user) {
-    return null;
-  }
-
   // Generate default info from user object or profile
   const defaultNickname = profile?.username || user?.email?.split('@')[0] || 'User';
   const accountId = profile?.account_id || (user?.id ? user.id.substring(0, 8).toUpperCase() : 'UNKNOWN');
@@ -111,6 +106,11 @@ const MyPage: React.FC = () => {
     const newLanguage: Language = language === 'zh' ? 'en' : 'zh';
     await setLanguage(newLanguage);
   };
+
+  // 如果未登录，不渲染任何内容（跳转会立即发生）
+  if (!user) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>

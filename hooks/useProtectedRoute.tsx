@@ -11,26 +11,30 @@ export function useProtectedRoute() {
   const router = useRouter();
   const segments = useSegments();
   const hasRedirected = useRef(false);
+  const isRedirecting = useRef(false);
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || isRedirecting.current) return;
 
     // 如果没有登录且不在登录页或启动页
     const inAuthGroup = segments[0] === 'login' || segments[0] === 'splash';
     
     if (!session && !inAuthGroup && !hasRedirected.current) {
       hasRedirected.current = true;
-      // 使用 setTimeout 确保在下一个事件循环中执行，避免与其他导航冲突
-      setTimeout(() => {
+      isRedirecting.current = true;
+      
+      // 使用 requestAnimationFrame 确保在渲染周期外执行
+      requestAnimationFrame(() => {
         router.replace('/login');
-      }, 100);
+      });
     }
     
     // 重置标志当用户重新登录时
     if (session) {
       hasRedirected.current = false;
+      isRedirecting.current = false;
     }
-  }, [session, loading, segments]);
+  }, [session, loading, segments, router]);
 
   return { session, loading };
 }
