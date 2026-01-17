@@ -15,6 +15,9 @@ interface BlurredContentProps {
   children: React.ReactNode;
   isBlurred: boolean;
   message?: string;
+  actionLabel?: string;
+  showPrompt?: boolean;
+  showAction?: boolean;
   onPress?: () => void;
 }
 
@@ -25,6 +28,9 @@ export const BlurredContent: React.FC<BlurredContentProps> = ({
   children, 
   isBlurred, 
   message = '登录后查看完整内容',
+  actionLabel = '立即登录',
+  showPrompt = true,
+  showAction = true,
   onPress 
 }) => {
   const router = useRouter();
@@ -43,18 +49,22 @@ export const BlurredContent: React.FC<BlurredContentProps> = ({
       {children}
       {isBlurred && (
         <BlurView intensity={80} tint="dark" style={styles.blurOverlay}>
-          <TouchableOpacity 
-            style={styles.loginPrompt}
-            onPress={handlePress}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="lock" size={32} color={COLORS.primary} />
-            <Text style={styles.promptText}>{message}</Text>
-            <View style={styles.loginButton}>
-              <Text style={styles.loginButtonText}>立即登录</Text>
-              <MaterialIcons name="arrow-forward" size={16} color={COLORS.background} />
-            </View>
-          </TouchableOpacity>
+          {showPrompt && (
+            <TouchableOpacity 
+              style={styles.loginPrompt}
+              onPress={handlePress}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons name="lock" size={32} color={COLORS.primary} />
+              <Text style={styles.promptText}>{message}</Text>
+              {showAction && (
+                <View style={styles.loginButton}>
+                  <Text style={styles.loginButtonText}>{actionLabel}</Text>
+                  <MaterialIcons name="arrow-forward" size={16} color={COLORS.background} />
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
         </BlurView>
       )}
     </View>

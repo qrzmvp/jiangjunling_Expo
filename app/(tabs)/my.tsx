@@ -9,6 +9,7 @@ import { useSettings, Language } from '../../contexts/SettingsContext';
 import { useTranslation } from '../../lib/i18n';
 import { isVipActive, formatVipExpiresAt } from '../../lib/redemptionService';
 import { getUserStats } from '../../lib/userTraderService';
+import { getMetricsAccessState } from '../../lib/vipAccessUtils';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -45,6 +46,9 @@ const MyPage: React.FC = () => {
   const avatarUri = profile?.avatar_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuAaf9dVjkyC17LtClctTc-4sEEVvnJDQ0sqSp-elCOM8ljGaMwkhTiacOULcPPbYtSTu_lFPmnNtKsVxiOA5eHNZkJE8KHzJP-Ltx4rAvebxj5DVRDSPgWop3DQj8PuIxIIGVG_9IjKOT49af1xYWNvQQvVOeMdNj3kbhN4shXLBHo1Imm3YXyaQ_Bf8Gav9EMWI697UBzvaFwIV24Dxnf9tVPbk9jCB7kc-S_KzV8Gm3EW2a9jUrIkf3nvAt1kgTa8y1UdRtKUfg";
   const isVerified = profile?.is_verified || false;
   const vipActive = isVipActive(profile?.vip_expires_at || null);
+  const accessState = getMetricsAccessState(user, profile);
+  const isFreeExpired = accessState.reason === 'free_expired';
+  const isFreeTrialActive = accessState.isFreeTrialActive && profile?.vip_status === 'free';
 
   // 加载所有统计数据（关注、订阅、交易账户）
   useEffect(() => {
@@ -168,25 +172,23 @@ const MyPage: React.FC = () => {
           </View>
         </TouchableOpacity>
 
-        {/* Stats Section - 暂时隐藏 */}
-        {false && (
-          <View style={styles.statsCard}>
-            <View style={styles.statsRow}>
-              <TouchableOpacity style={styles.statItem} onPress={() => router.push('/(tabs)?tab=copy&filter=已订阅')}>
-                <Text style={styles.statNumber}>{subscriptionCount}</Text>
-                <Text style={styles.statLabel}>订阅</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.statItem} onPress={() => router.push('/(tabs)?tab=copy&filter=已关注')}>
-                <Text style={styles.statNumber}>{followCount}</Text>
-                <Text style={styles.statLabel}>关注</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.statItem} onPress={() => router.push('/profile/exchange-accounts')}>
-                <Text style={styles.statNumber}>{exchangeAccountCount > 99 ? '99+' : exchangeAccountCount}</Text>
-                <Text style={styles.statLabel}>交易账户</Text>
-              </TouchableOpacity>
-            </View>
+        {/* Stats Section */}
+        <View style={styles.statsCard}>
+          <View style={styles.statsRow}>
+            <TouchableOpacity style={styles.statItem} onPress={() => router.push('/(tabs)?tab=copy&filter=已订阅')}>
+              <Text style={styles.statNumber}>{subscriptionCount}</Text>
+              <Text style={styles.statLabel}>订阅</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.statItem} onPress={() => router.push('/(tabs)?tab=copy&filter=已关注')}>
+              <Text style={styles.statNumber}>{followCount}</Text>
+              <Text style={styles.statLabel}>关注</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.statItem} onPress={() => router.push('/profile/exchange-accounts')}>
+              <Text style={styles.statNumber}>{exchangeAccountCount > 99 ? '99+' : exchangeAccountCount}</Text>
+              <Text style={styles.statLabel}>交易账户</Text>
+            </TouchableOpacity>
           </View>
-        )}
+        </View>
 
         {/* Promotion Banner */}
         {/* <View style={styles.promoBanner}>
@@ -234,7 +236,13 @@ const MyPage: React.FC = () => {
               <Text style={styles.vipTitle}>{t('myPage.vipCenter')}</Text>
             </View>
             {!vipActive && (
-              <Text style={styles.vipSubtitle}>{t('myPage.vipSubtitle')}</Text>
+              <Text style={styles.vipSubtitle}>
+                {isFreeTrialActive
+                  ? `体验剩余${accessState.remainingDays ?? 0}天`
+                  : isFreeExpired
+                    ? '体验已结束'
+                    : t('myPage.vipSubtitle')}
+              </Text>
             )}
             {vipActive && (
               <Text style={styles.vipExpiryText}>

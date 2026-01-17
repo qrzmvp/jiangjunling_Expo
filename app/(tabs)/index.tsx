@@ -15,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { formatDateTime } from '../../lib/timezoneUtils';
 import { getFollowedTraders, getSubscribedTraders, subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader, getUserStats } from '../../lib/userTraderService';
+import { getMetricsAccessState } from '../../lib/vipAccessUtils';
 import {
   getTradersWithStats,
   TraderWithStats,
@@ -1479,9 +1480,12 @@ const TradersTabContent = ({ activeFilters, setActiveFilters, currentTab = 'copy
 
 const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, currentTab = 'signal' }: TabContentProps) => {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { timezone } = useSettings();
   const { t } = useTranslation();
+  const accessState = getMetricsAccessState(user, profile);
+  const isBlurred = !accessState.canViewMetrics;
+  const isFreeExpired = accessState.reason === 'free_expired';
   // 更新筛选条件：全部、做多、做空、已关注
   const filters = [
     t('homePage.all'),
@@ -1988,7 +1992,12 @@ const SignalTabContent = ({ activeFilters, setActiveFilters, refreshTrigger, cur
                     </View>
                   </View>
 
-                  <BlurredContent isBlurred={!user} message="登录后查看交易数据">
+                  <BlurredContent
+                    isBlurred={isBlurred}
+                    message={isFreeExpired ? '开通会员查看交易数据' : '登录后查看交易数据'}
+                    actionLabel={isFreeExpired ? '开通会员' : '立即登录'}
+                    onPress={isFreeExpired ? () => router.push('/vip-purchase') : undefined}
+                  >
                     <View>
                       <View style={styles.signalInfoGrid}>
                         <View style={styles.signalGridItem}>

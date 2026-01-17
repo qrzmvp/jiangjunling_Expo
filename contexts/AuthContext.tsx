@@ -10,6 +10,7 @@ export type UserProfile = {
   id: string;
   email: string;
   username: string | null;
+  created_at?: string | null;
   account_id: string;
   avatar_url: string | null;
   is_verified: boolean;

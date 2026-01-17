@@ -14,6 +14,8 @@ import {
 import { formatDateTime } from '../lib/timezoneUtils';
 import Toast from './Toast';
 import { BlurredContent } from './BlurredContent';
+import { useRouter } from 'expo-router';
+import { getMetricsAccessState } from '../lib/vipAccessUtils';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -145,8 +147,9 @@ export const SignalCard = ({
   onSubscribe,
   onStatsChange
 }: SignalCardProps) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { timezone } = useSettings();
+  const router = useRouter();
   const isLong = direction === 'long';
   const directionText = isLong ? '多单' : '空单';
   const directionColor = isLong ? COLORS.primary : COLORS.danger;
@@ -156,8 +159,9 @@ export const SignalCard = ({
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
-  // 调试：检查用户登录状态
-  console.log('SignalCard - 用户登录状态:', !!user, 'isBlurred:', !user);
+  const accessState = getMetricsAccessState(user, profile);
+  const isBlurred = !accessState.canViewMetrics;
+  const isFreeExpired = accessState.reason === 'free_expired';
 
   // 计算盈亏比
   const riskRewardRatio = calculateRiskRewardRatio(entry, stopLoss, takeProfit, direction);
@@ -308,7 +312,12 @@ export const SignalCard = ({
           <Text style={styles.signalLabel}>币种：</Text>
           <Text style={styles.signalValue}>{currency}</Text>
         </View>
-        <BlurredContent isBlurred={!user} message="登录后查看交易数据">
+        <BlurredContent
+          isBlurred={isBlurred}
+          message={isFreeExpired ? '开通会员查看交易数据' : '登录后查看交易数据'}
+          actionLabel={isFreeExpired ? '开通会员' : '立即登录'}
+          onPress={isFreeExpired ? () => router.push('/vip-purchase') : undefined}
+        >
           <View>
             <View style={styles.signalRow}>
               <Text style={styles.signalLabel}>入场：</Text>

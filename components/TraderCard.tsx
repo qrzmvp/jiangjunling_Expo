@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { subscribeTrader, unsubscribeTrader, followTrader, unfollowTrader } from '../lib/userTraderService';
 import { useTranslation } from '../lib/i18n';
 import { BlurredContent } from './BlurredContent';
+import { getMetricsAccessState } from '../lib/vipAccessUtils';
 
 const COLORS = {
   primary: "#2ebd85",
@@ -66,9 +67,12 @@ export const TraderCard = ({
   onFavoriteChange?: () => void,
   onPress?: () => void
 }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useTranslation();
   const router = useRouter();
+    const accessState = getMetricsAccessState(user, profile);
+    const isBlurred = !accessState.canViewMetrics;
+    const isFreeExpired = accessState.reason === 'free_expired';
   const [isSubscribed, setIsSubscribed] = React.useState(initialIsSubscribed);
   const [isFavorite, setIsFavorite] = React.useState(initialIsFavorite);
   const [loading, setLoading] = React.useState(false);
@@ -191,7 +195,12 @@ export const TraderCard = ({
       </View>
 
       {/* Stats Section - 与详情页完全一致 */}
-      <BlurredContent isBlurred={!user} message="登录后查看交易数据">
+      <BlurredContent
+        isBlurred={isBlurred}
+        message={isFreeExpired ? '开通会员查看交易数据' : '登录后查看交易数据'}
+        actionLabel={isFreeExpired ? '开通会员' : '立即登录'}
+        onPress={isFreeExpired ? () => router.push('/vip-purchase') : undefined}
+      >
         <View style={styles.statsSection}>
           <View style={styles.statsHeader}>
             <Text style={styles.statsLabel}>{roiLabel || t('traderCard.totalRoi')}</Text>
