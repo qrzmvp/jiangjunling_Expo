@@ -104,6 +104,54 @@ async function checkSignalExists(
   return data && data.length > 0;
 }
 
+// 获取或创建交易对
+async function getOrCreateTradingPair(supabaseClient: any, symbol: string) {
+  // 第一次查询：检查交易对是否存在
+  const { data: existingPair, error: selectError } = await supabaseClient
+    .from('symbols')
+    .select('*')
+    .eq('symbol', symbol)
+    .maybeSingle();
+
+  if (selectError) {
+    console.error(`查询交易对失败: ${selectError.message}`);
+    throw new Error(`查询交易对失败: ${selectError.message}`);
+  }
+
+  if (existingPair) {
+    return { tradingPair: existingPair, created: false };
+  }
+
+  // 尝试创建新交易对
+  const { data: newPair, error: createError } = await supabaseClient
+    .from('symbols')
+    .insert({
+      symbol: symbol,
+      display_name: symbol, // 默认使用 symbol 作为展示名称
+    })
+    .select()
+    .single();
+
+  // 如果插入失败（可能因为唯一性约束冲突），再次查询
+  if (createError) {
+    console.warn(`创建交易对失败（可能已存在），尝试再次查询: ${createError.message}`);
+    
+    const { data: retryPair, error: retryError } = await supabaseClient
+      .from('symbols')
+      .select('*')
+      .eq('symbol', symbol)
+      .maybeSingle();
+
+    if (retryError || !retryPair) {
+      throw new Error(`创建和查询交易对均失败: ${createError.message}`);
+    }
+
+    return { tradingPair: retryPair, created: false };
+  }
+
+  return { tradingPair: newPair, created: true };
+}
+
 // 转换八爪鱼数据格式为标准格式
 function convertOctopusToSignals(octopusData: OctopusData): SignalData {
   const { ColumnNames, Values } = octopusData;
@@ -208,10 +256,12 @@ Deno.serve(async (req) => {
 
     const results = {
       traders_auto_created: 0,
+      trading_pairs_auto_created: 0,
       signals_processed: 0,
       signals_created: 0,
       signals_skipped_spot: 0,
       signals_skipped_duplicate: 0,
+      signals_skipped_incomplete_prices: 0,
       errors: [] as string[],
     };
 
@@ -222,6 +272,14 @@ Deno.serve(async (req) => {
         if (!signal.trader_name || !signal.currency || !signal.direction) {
           results.errors.push(`信号 ${results.signals_processed}: 缺少必填字段`);
           continue;
+        }
+
+        // 获取或创建交易对（提前到这里，即使信号被过滤也会创建交易对）
+        const { tradingPair, created: pairCreated } = await getOrCreateTradingPair(supabaseClient, signal.currency);
+
+        if (pairCreated) {
+          results.trading_pairs_auto_created++;
+          console.log(`✅ 自动创建交易对: ${signal.currency}`);
         }
 
         if (signal.direction === 'spot') {
@@ -253,6 +311,17 @@ Deno.serve(async (req) => {
 
         if (isDuplicate) {
           results.signals_skipped_duplicate++;
+          continue;
+        }
+
+        // 价格完整性验证：入场价、止损价、止盈价必须都不为空
+        const hasEntryPrice = signal.entry_price && signal.entry_price !== '未提供';
+        const hasStopLoss = signal.stop_loss && signal.stop_loss !== '未提供';
+        const hasTakeProfit = signal.take_profit && signal.take_profit !== '未提供';
+
+        if (!hasEntryPrice || !hasStopLoss || !hasTakeProfit) {
+          results.signals_skipped_incomplete_prices++;
+          console.log(`⚠️ 信号价格不完整已过滤 - 交易员: ${signal.trader_name}, 币种: ${signal.currency}, 入场价: ${signal.entry_price || '空'}, 止损: ${signal.stop_loss || '空'}, 止盈: ${signal.take_profit || '空'}`);
           continue;
         }
 
@@ -288,9 +357,11 @@ Deno.serve(async (req) => {
       '信号处理完成---',
       `- 收到 ${signals.length} 个信号`,
       `- 自动创建交易员: ${results.traders_auto_created} 个`,
+      `- 自动创建交易对: ${results.trading_pairs_auto_created} 个`,
       `- 成功创建信号: ${results.signals_created} 个`,
       `- 跳过现货: ${results.signals_skipped_spot} 个`,
       `- 跳过重复: ${results.signals_skipped_duplicate} 个`,
+      `- 跳过价格不完整: ${results.signals_skipped_incomplete_prices} 个`,
     ];
     
     if (results.errors.length > 0) {
